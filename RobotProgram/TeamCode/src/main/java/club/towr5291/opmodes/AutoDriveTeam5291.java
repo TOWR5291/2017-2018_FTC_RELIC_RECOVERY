@@ -38,6 +38,9 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import com.qualcomm.hardware.bosch.BNO055IMU;
+import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
+
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -215,7 +218,7 @@ public class AutoDriveTeam5291 extends LinearOpMode
 
     //adafruit IMU
     // The IMU sensor object
-    //private BNO055IMU imu;
+    private BNO055IMU imu;
     // State used for updating telemetry
     private boolean useAdafruitIMU = false;
 
@@ -833,21 +836,21 @@ public class AutoDriveTeam5291 extends LinearOpMode
         // Set up the parameters with which we will use our IMU. Note that integration
         // algorithm here just reports accelerations to the logcat log; it doesn't actually
         // provide positional information.
-        //BNO055IMU.Parameters parametersAdafruitImu  = new BNO055IMU.Parameters();
-        //parametersAdafruitImu.angleUnit             = BNO055IMU.AngleUnit.DEGREES;
-        //parametersAdafruitImu.accelUnit             = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        //parametersAdafruitImu.calibrationDataFile   = "AdafruitIMUCalibration.json"; // see the calibration sample opmode
-        //parametersAdafruitImu.loggingEnabled        = true;
-        //parametersAdafruitImu.loggingTag            = "IMU";
-        //parametersAdafruitImu.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+        BNO055IMU.Parameters parametersAdafruitImu  = new BNO055IMU.Parameters();
+        parametersAdafruitImu.angleUnit             = BNO055IMU.AngleUnit.DEGREES;
+        parametersAdafruitImu.accelUnit             = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parametersAdafruitImu.calibrationDataFile   = "AdafruitIMUCalibration.json"; // see the calibration sample opmode
+        parametersAdafruitImu.loggingEnabled        = true;
+        parametersAdafruitImu.loggingTag            = "IMU";
+        parametersAdafruitImu.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
 
         //don't crash the program if the GRYO is faulty, just bypass it
         try {
             // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
             // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
             // and named "imu".
-            //imu = hardwareMap.get(BNO055IMU.class, "imu");
-            //imu.initialize(parametersAdafruitImu);
+            imu = hardwareMap.get(BNO055IMU.class, "imu");
+            imu.initialize(parametersAdafruitImu);
 
             // get a reference to a Modern Robotics GyroSensor object.
             gyro = (ModernRoboticsI2cGyro)hardwareMap.gyroSensor.get("gyro");
@@ -997,7 +1000,7 @@ public class AutoDriveTeam5291 extends LinearOpMode
             Log.d(TAG, "Value of Gyro Before Reset " + gyro.getIntegratedZValue());
         }
 
-        //imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
+        imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
         gyro.resetZAxisIntegrator();
 
         //the main loop.  this is where the action happens
@@ -4301,9 +4304,8 @@ public class AutoDriveTeam5291 extends LinearOpMode
     private Double getAdafruitHeading ()
     {
         Orientation angles;
-        //angles = imu.getAngularOrientation().toAxesReference(AxesReference.INTRINSIC).toAxesOrder(AxesOrder.ZYX);
-        //return angleToHeading(formatAngle(angles.angleUnit, angles.firstAngle));
-        return 10.1;
+        angles = imu.getAngularOrientation().toAxesReference(AxesReference.INTRINSIC).toAxesOrder(AxesOrder.ZYX);
+        return angleToHeading(formatAngle(angles.angleUnit, angles.firstAngle));
     }
 
     //for adafruit IMU
