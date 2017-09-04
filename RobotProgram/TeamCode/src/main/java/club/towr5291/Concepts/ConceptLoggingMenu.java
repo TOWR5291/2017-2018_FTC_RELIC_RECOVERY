@@ -10,7 +10,7 @@ import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity
 import club.towr5291.functions.FileLogger;
 
 import club.towr5291.libraries.LibField;
-import club.towr5291.opmodes.OpModeMaster;
+import club.towr5291.opmodes.OpModeMasterLinear;
 import club.towr5291.R;
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
@@ -22,7 +22,7 @@ import hallib.HalDashboard;
  */
 
 @TeleOp(name = "Concept Logging Menu", group = "5291 Concepts")
-public class ConceptLoggingMenu extends OpModeMaster implements FtcMenu.MenuButtons {
+public class ConceptLoggingMenu extends OpModeMasterLinear implements FtcMenu.MenuButtons {
 
     //set up the variables for the logger
     final String TAG = "Concept Logging";

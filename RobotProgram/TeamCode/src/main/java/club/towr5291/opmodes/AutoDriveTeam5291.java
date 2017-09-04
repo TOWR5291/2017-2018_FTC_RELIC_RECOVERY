@@ -140,7 +140,7 @@ Written by Ian Haden October 2016
 2017-03-19 - Ian Haden - Updated Beacon Viewing Area (Crop whole picture to just beacon)
 */
 @Autonomous(name="5291 Autonomous Drive", group="5291")
-public class AutoDriveTeam5291 extends LinearOpMode
+public class AutoDriveTeam5291 extends OpModeMasterLinear
 {
     //set up TAG for logging prefic, this info will appear first in every log statemend
     private static final String TAG = "AutoDriveTeam5291";
@@ -411,6 +411,9 @@ public class AutoDriveTeam5291 extends LinearOpMode
     {
         final boolean LedOn = false;
         final boolean LedOff = true;
+
+        //init openCV
+        initOpenCv();
 
         //load menu settings and setup robot and debug level
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(hardwareMap.appContext);

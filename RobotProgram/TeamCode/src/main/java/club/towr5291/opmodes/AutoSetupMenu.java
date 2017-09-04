@@ -12,7 +12,6 @@ import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity
 import club.towr5291.functions.FileLogger;
 
 import club.towr5291.libraries.LibField;
-import club.towr5291.opmodes.OpModeMaster;
 import club.towr5291.R;
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
@@ -24,7 +23,7 @@ import hallib.HalDashboard;
  */
 
 @Autonomous(name = "Auton Config", group = "0")
-public class AutoSetupMenu extends OpModeMaster implements FtcMenu.MenuButtons {
+public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuButtons {
 
     //set up the variables for the logger
     final String TAG = "Auton Menu";
@@ -110,8 +109,6 @@ public class AutoSetupMenu extends OpModeMaster implements FtcMenu.MenuButtons {
 
         doMenus();
         dashboard.displayPrintf(0, "COMPLETE - Settings Written");
-
-
     }
 
     //
