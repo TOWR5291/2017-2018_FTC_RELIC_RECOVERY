@@ -8,7 +8,7 @@ import com.vuforia.State;
 import com.vuforia.Vuforia;
 
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
-import org.firstinspires.ftc.robotcore.internal.VuforiaLocalizerImpl;
+import org.firstinspires.ftc.robotcore.internal.vuforia.VuforiaLocalizerImpl;
 
 /**
  * Created by ianhaden on 29/09/16.
