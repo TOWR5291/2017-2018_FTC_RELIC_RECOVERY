@@ -93,7 +93,58 @@ public class ReadStepFile {
         this.numberLoadedSteps++;
     }
 
-    public HashMap<String,LibraryStateSegAuto> ReadStepFile(String Filename, String allianceParkPosition, String numBeacons) {
+    public HashMap<String,LibraryStateSegAuto> ReadStepFileRelicRecovery(String Filename, String case1, String case2) {
+
+        boolean blnIfActive = false;
+        boolean blnIfStart = false;
+
+        //reset the steps, and init the hashmap
+        this.initReadStepsFile();
+
+        try {
+            File f = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOCUMENTS + "/Sequences"), Filename);
+            BufferedReader reader = new BufferedReader(new FileReader(f));
+
+            String csvLine;
+            while((csvLine = reader.readLine()) != null) {
+                //check if line is a comment and ignore it
+                if (!((csvLine.substring(0, 2).equals("//")) || (csvLine.substring(0, 2).equals("\"")))) {
+                    String[] row = csvLine.split(",");
+                    if (row[0].length() > 6) {
+                        if (row[0].substring(0, 5).equalsIgnoreCase("START")) {
+                            Log.d("readStepsFromFile", "Found START IF");
+                            blnIfStart = true;
+                            Log.d("readStepsFromFile", "Found In File " + row[0].substring(6));
+                            Log.d("readStepsFromFile", " -- Setting   " + case1);
+                            Log.d("readStepsFromFile", " -- Setting   " + case2);
+                            if ((row[0].substring(6).equalsIgnoreCase(case1)) || (row[0].substring(6).equalsIgnoreCase(case2))) {
+                                Log.d("readStepsFromFile", "Found ACTIVE IF");
+                                blnIfActive = true;
+                            }
+                        } else if (row[0].substring(0, 3).equals("END")) {
+                            Log.d("readStepsFromFile", "Found END IF");
+                            blnIfActive = false;
+                            blnIfStart = false;
+                        }
+                    } else {
+                        if ((blnIfActive && blnIfStart) || (!blnIfActive && !blnIfStart)) {
+                            //String[] row = csvLine.split(",");
+
+                            Log.d("readStepsFromFile", "CSV Value " + row[0].trim() + "," + row[1].trim() + "," + row[2].trim() + "," + row[3].trim() + "," + row[4].trim() + "," + row[5].trim() + "," + row[6].trim() + "," + row[7].trim() + "," + row[8].trim() + "," + row[9].trim() + "," + row[10].trim());
+                            loadSteps(Integer.parseInt(row[0].trim()), row[1].trim(), Boolean.parseBoolean(row[2].trim()), Boolean.parseBoolean(row[3].trim()), Double.parseDouble(row[4].trim()), Double.parseDouble(row[5].trim()), Double.parseDouble(row[6].trim()), Double.parseDouble(row[7].trim()), Double.parseDouble(row[8].trim()), Double.parseDouble(row[9].trim()), Double.parseDouble(row[10].trim()));
+                        }
+                    }
+                }
+            }
+        } catch(IOException ex) {
+            //throw new RuntimeException("Error in reading CSV file:" + ex);
+            Log.d("readStepsFromFile", "Error in reading CSV file:" + ex);
+        }
+
+        return autonomousStepsFromFile;
+    }
+
+    public HashMap<String,LibraryStateSegAuto> ReadStepFileVelocityVortex(String Filename, String allianceParkPosition, String numBeacons) {
 
         boolean blnIfActive = false;
         boolean blnIfStart = false;

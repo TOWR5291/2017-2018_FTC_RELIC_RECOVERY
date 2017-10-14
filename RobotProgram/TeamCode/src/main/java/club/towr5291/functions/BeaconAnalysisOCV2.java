@@ -4,7 +4,6 @@ package club.towr5291.functions;
 import android.os.Environment;
 import android.util.Log;
 
-import com.qualcomm.ftccommon.DbgLog;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
@@ -1049,9 +1048,6 @@ public class BeaconAnalysisOCV2 {
                 Math.pow( Range.clip( 0.6 - beac_rt, -0.6, 0.6 ) * 1.67, 2 );
         double rb_ratio_factor =
                 Math.pow( Range.clip( 0.4 - ( red_rt + blue_rt ) / 2, -0.4, 0.4 ) * 2.5, 2 );
-
-        DbgLog.msg("SJH: scoreFit beac_apsect_factor %4.3f" + "wb_ratio_factor %4.3f rb_ratio_factor %4.3f",
-                beac_aspect_factor, wb_ratio_factor, rb_ratio_factor);
 
         return Range.clip( 1 - Math.sqrt(
                 ( beac_aspect_factor +
