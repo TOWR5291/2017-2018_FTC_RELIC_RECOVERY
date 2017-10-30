@@ -148,7 +148,7 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         allianceParkPosition = sharedPreferences.getString("club.towr5291.Autonomous.ParkPosition", "Centre");
         numBeacons = sharedPreferences.getString("club.towr5291.Autonomous.Beacons", "Both");
         delay = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Delay", "0"));
-        robotConfig = sharedPreferences.getString("club.towr5291.Autonomous.RobotConfig", "TileRunner-2x40");
+        robotConfig = sharedPreferences.getString("club.towr5291.Autonomous.RobotConfig", "TileRunner-Mecanum-2x40");
         debug = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Debug", "1"));
 
         //
@@ -202,60 +202,27 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
             startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, beaconMenu);
         }
 
-        if (numBeacons.equals(LibField.BeaconChoice.BOTH.toString())) {
-            beaconMenu.addChoice(LibField.BeaconChoice.BOTH.toString(), LibField.BeaconChoice.BOTH, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.NEAR.toString(), LibField.BeaconChoice.NEAR, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.FAR.toString(), LibField.BeaconChoice.FAR, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.NONE.toString(), LibField.BeaconChoice.NONE, parkMenu);
-        } else if (numBeacons.equals(LibField.BeaconChoice.NEAR.toString())) {
-            beaconMenu.addChoice(LibField.BeaconChoice.NEAR.toString(), LibField.BeaconChoice.NEAR, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.BOTH.toString(), LibField.BeaconChoice.BOTH, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.FAR.toString(), LibField.BeaconChoice.FAR, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.NONE.toString(), LibField.BeaconChoice.NONE, parkMenu);
-        } else if (numBeacons.equals(LibField.BeaconChoice.FAR.toString())) {
-            beaconMenu.addChoice(LibField.BeaconChoice.FAR.toString(), LibField.BeaconChoice.FAR, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.NEAR.toString(), LibField.BeaconChoice.NEAR, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.BOTH.toString(), LibField.BeaconChoice.BOTH, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.NONE.toString(), LibField.BeaconChoice.NONE, parkMenu);
-        } else {
-            beaconMenu.addChoice(LibField.BeaconChoice.NONE.toString(), LibField.BeaconChoice.NONE, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.BOTH.toString(), LibField.BeaconChoice.BOTH, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.NEAR.toString(), LibField.BeaconChoice.NEAR, parkMenu);
-            beaconMenu.addChoice(LibField.BeaconChoice.FAR.toString(), LibField.BeaconChoice.FAR, parkMenu);
-        }
-
-        if (allianceParkPosition.equals(LibField.ParkChoice.CENTER_PARK.toString())) {
-            parkMenu.addChoice(LibField.ParkChoice.CENTER_PARK.toString(), LibField.ParkChoice.CENTER_PARK, delayMenu);
-            parkMenu.addChoice(LibField.ParkChoice.CORNER_PARK.toString(), LibField.ParkChoice.CORNER_PARK, delayMenu);
-            parkMenu.addChoice(LibField.ParkChoice.DEFEND_PARK.toString(), LibField.ParkChoice.DEFEND_PARK, delayMenu);
-        } else if (allianceParkPosition.equals(LibField.ParkChoice.CORNER_PARK.toString())) {
-            parkMenu.addChoice(LibField.ParkChoice.CORNER_PARK.toString(), LibField.ParkChoice.CORNER_PARK, delayMenu);
-            parkMenu.addChoice(LibField.ParkChoice.CENTER_PARK.toString(), LibField.ParkChoice.CENTER_PARK, delayMenu);
-            parkMenu.addChoice(LibField.ParkChoice.DEFEND_PARK.toString(), LibField.ParkChoice.DEFEND_PARK, delayMenu);
-        } else {
-            parkMenu.addChoice(LibField.ParkChoice.DEFEND_PARK.toString(), LibField.ParkChoice.DEFEND_PARK, delayMenu);
-            parkMenu.addChoice(LibField.ParkChoice.CENTER_PARK.toString(), LibField.ParkChoice.CENTER_PARK, delayMenu);
-            parkMenu.addChoice(LibField.ParkChoice.CORNER_PARK.toString(), LibField.ParkChoice.CORNER_PARK, delayMenu);
-        }
-
         delayMenu.setChildMenu(robotConfigMenu);
 
         if (robotConfig.equals(LibField.RobotConfigChoice.TileRunner2x60.toString())) {
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
         } else if (robotConfig.equals(LibField.RobotConfigChoice.TileRunner2x40.toString())) {
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
         } else if (robotConfig.equals(LibField.RobotConfigChoice.TileRunner2x20.toString())) {
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
         } else if (robotConfig.equals(LibField.RobotConfigChoice.TankTread2x40Custom.toString())) {
@@ -263,14 +230,23 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
-        }else if (robotConfig.equals(LibField.RobotConfigChoice.Custom_11231_2016.toString())) {
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
+        } else if (robotConfig.equals(LibField.RobotConfigChoice.Custom_11231_2016.toString())) {
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
             robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
+        } else if (robotConfig.equals(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString())) {
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
+            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
         }
+
 
         if (debug == 1) {
             debugConfigMenu.addChoice("1", 1);

@@ -45,41 +45,6 @@ public class LibField
         }
     }
 
-    public enum BeaconChoice
-    {
-        BOTH ("Both"),
-        NEAR ("Near"),
-        FAR ("Far"),
-        NONE ("None");
-
-        private final String value;
-
-        BeaconChoice(String value) {
-            this.value = value;
-        }
-
-        public String toString() {
-            return value;
-        }
-
-    }
-
-    public enum ParkChoice
-    {
-        CENTER_PARK ("Centre"),
-        CORNER_PARK ("Corner"),
-        DEFEND_PARK ("Defend");
-
-        private final String value;
-
-        ParkChoice(String value) {
-            this.value = value;
-        }
-
-        public String toString() {
-            return value;
-        }
-    }
 
     public enum Team
     {
@@ -103,6 +68,7 @@ public class LibField
         TileRunner2x20 ("TileRunner-2x20"),
         TileRunner2x40 ("TileRunner-2x40"),
         TileRunner2x60 ("TileRunner-2x60"),
+        TileRunnerMecanum2x40 ("TileRunnerMecanum2x40"),
         TankTread2x40Custom ("5291 Tank Tread-2x40 Custom"),
         Custom_11231_2016 ("11231 2016 Custom");
 
