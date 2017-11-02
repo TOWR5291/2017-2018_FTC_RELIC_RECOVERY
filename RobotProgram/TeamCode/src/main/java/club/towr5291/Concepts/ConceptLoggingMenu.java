@@ -35,8 +35,6 @@ public class ConceptLoggingMenu extends OpModeMasterLinear implements FtcMenu.Me
     private static HalDashboard dashboard = null;
 
     private static LibField.StartPos startPos = LibField.StartPos.START_LEFT;
-    private static LibField.BeaconChoice beaconChoice = LibField.BeaconChoice.NEAR;
-    private static LibField.ParkChoice parkChoice = LibField.ParkChoice.CENTER_PARK;
     private static LibField.Alliance alliance = LibField.Alliance.RED;
     private static LibField.Team team = LibField.Team.TOWR;
 
@@ -144,13 +142,7 @@ public class ConceptLoggingMenu extends OpModeMasterLinear implements FtcMenu.Me
         FtcChoiceMenu<LibField.StartPos> startPosMenu =
                 new FtcChoiceMenu<>("START:", allianceMenu, this);
 
-        FtcChoiceMenu<LibField.BeaconChoice> beaconMenu =
-                new FtcChoiceMenu<>("BEACONS:", startPosMenu, this);
-
-        FtcChoiceMenu<LibField.ParkChoice> parkMenu   =
-                new FtcChoiceMenu<>("PARK:", beaconMenu, this);
-
-        FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", parkMenu, this,
+        FtcValueMenu delayMenu     = new FtcValueMenu("DELAY:", startPosMenu, this,
                 0.0, 20.0, 1.0, 0.0, "%5.2f");
 
 
@@ -160,18 +152,6 @@ public class ConceptLoggingMenu extends OpModeMasterLinear implements FtcMenu.Me
         allianceMenu.addChoice("RED",  LibField.Alliance.RED, startPosMenu);
         allianceMenu.addChoice("BLUE", LibField.Alliance.BLUE, startPosMenu);
 
-        startPosMenu.addChoice(LibField.StartPos.START_LEFT.toString(), LibField.StartPos.START_LEFT, beaconMenu);
-        startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, beaconMenu);
-        startPosMenu.addChoice(LibField.StartPos.START_TEST.toString(), LibField.StartPos.START_TEST, beaconMenu);
-
-        beaconMenu.addChoice(LibField.BeaconChoice.BOTH.toString(), LibField.BeaconChoice.BOTH, parkMenu);
-        beaconMenu.addChoice(LibField.BeaconChoice.NEAR.toString(), LibField.BeaconChoice.NEAR, parkMenu);
-        beaconMenu.addChoice(LibField.BeaconChoice.FAR.toString(), LibField.BeaconChoice.FAR, parkMenu);
-        beaconMenu.addChoice(LibField.BeaconChoice.NONE.toString(), LibField.BeaconChoice.NONE, parkMenu);
-
-        parkMenu.addChoice(LibField.ParkChoice.CENTER_PARK.toString(), LibField.ParkChoice.CENTER_PARK, delayMenu);
-        parkMenu.addChoice(LibField.ParkChoice.CORNER_PARK.toString(), LibField.ParkChoice.CORNER_PARK, delayMenu);
-        parkMenu.addChoice(LibField.ParkChoice.DEFEND_PARK.toString(), LibField.ParkChoice.DEFEND_PARK, delayMenu);
 
         //
         // Walk the menu tree starting with the strategy menu as the root
@@ -184,21 +164,15 @@ public class ConceptLoggingMenu extends OpModeMasterLinear implements FtcMenu.Me
         //
 
         startPos = startPosMenu.getCurrentChoiceObject();
-        beaconChoice = beaconMenu.getCurrentChoiceObject();
-        parkChoice = parkMenu.getCurrentChoiceObject();
         alliance = allianceMenu.getCurrentChoiceObject();
         team = teamMenu.getCurrentChoiceObject();
 
         int lnum = 3;
         dashboard.displayPrintf(lnum++, "START: %s", startPos);
-        dashboard.displayPrintf(lnum++, "PUSH: %s", beaconChoice);
-        dashboard.displayPrintf(lnum++, "PARK: %s", parkChoice);
         dashboard.displayPrintf(lnum++, "ALLIANCE: %s", alliance);
         dashboard.displayPrintf(lnum++, "TEAM: %s", team);
 
         fileLogger.writeEvent("STARTPOS %s", "" + startPos);
-        fileLogger.writeEvent("PUSH     %s", "" + beaconChoice);
-        fileLogger.writeEvent("PARK     %s", "" + parkChoice);
         fileLogger.writeEvent("ALLIANCE %s", "" + alliance);
         fileLogger.writeEvent("TEAM     %s", "" + team);
     }

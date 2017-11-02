@@ -86,7 +86,7 @@ public class ConceptReadStepFile extends LinearOpMode {
             Log.d("Status", "Reading Steps : 5291RedLeft.csv");
 
         }
-        autonomousStepsMap = autonomousStepsTest.ReadStepFile("5291RedLeft.csv" , allianceParkPosition, numBeacons);
+        autonomousStepsMap = autonomousStepsTest.ReadStepFileRelicRecovery("5291RedLeft.csv" , allianceParkPosition, numBeacons);
 
         Log.d("Steplist", "Number of loaded steps " + autonomousStepsTest.getNumberLoadedSteps());
         for (int loop = 1; loop < autonomousStepsTest.getNumberLoadedSteps(); loop++) {
@@ -101,7 +101,7 @@ public class ConceptReadStepFile extends LinearOpMode {
             fileLogger.writeEvent("Status", "Reading Steps : 5291RedLeft.csv");
             Log.d("Status", "Reading Steps : 5291RedLeft.csv");
         }
-        autonomousStepsMap = autonomousStepsTest.ReadStepFile("5291RedLeft.csv" , allianceParkPosition, numBeacons);
+        autonomousStepsMap = autonomousStepsTest.ReadStepFileRelicRecovery("5291RedLeft.csv" , allianceParkPosition, numBeacons);
 
         Log.d("Steplist", "Number of loaded steps " + autonomousStepsTest.getNumberLoadedSteps());
         for (int loop = 1; loop < autonomousStepsTest.getNumberLoadedSteps(); loop++) {
@@ -116,7 +116,7 @@ public class ConceptReadStepFile extends LinearOpMode {
             fileLogger.writeEvent("Status", "Reading Steps : 5291RedRight.csv");
             Log.d("Status", "Reading Steps : 5291RedRight.csv");
         }
-        autonomousStepsMap = autonomousStepsTest.ReadStepFile("5291RedRight.csv" , allianceParkPosition, numBeacons);
+        autonomousStepsMap = autonomousStepsTest.ReadStepFileRelicRecovery("5291RedRight.csv" , allianceParkPosition, numBeacons);
 
         Log.d("Steplist", "Number of loaded steps " + autonomousStepsTest.getNumberLoadedSteps());
         for (int loop = 1; loop < autonomousStepsTest.getNumberLoadedSteps(); loop++) {
@@ -131,7 +131,7 @@ public class ConceptReadStepFile extends LinearOpMode {
             fileLogger.writeEvent("Status", "Reading Steps : 5291RedRight.csv");
             Log.d("Status", "Reading Steps : 5291RedRight.csv");
         }
-        autonomousStepsMap = autonomousStepsTest.ReadStepFile("5291RedRight.csv" , allianceParkPosition, numBeacons);
+        autonomousStepsMap = autonomousStepsTest.ReadStepFileRelicRecovery("5291RedRight.csv" , allianceParkPosition, numBeacons);
 
         Log.d("Steplist", "Number of loaded steps " + autonomousStepsTest.getNumberLoadedSteps());
         for (int loop = 1; loop < autonomousStepsTest.getNumberLoadedSteps(); loop++) {
@@ -146,7 +146,7 @@ public class ConceptReadStepFile extends LinearOpMode {
             fileLogger.writeEvent("Status", "Reading Steps : 5291BlueLeft.csv");
             Log.d("Status", "Reading Steps : 5291BlueLeft.csv");
         }
-        autonomousStepsMap = autonomousStepsTest.ReadStepFile("5291BlueLeft.csv" , allianceParkPosition, numBeacons);
+        autonomousStepsMap = autonomousStepsTest.ReadStepFileRelicRecovery("5291BlueLeft.csv" , allianceParkPosition, numBeacons);
 
         Log.d("Steplist", "Number of loaded steps " + autonomousStepsTest.getNumberLoadedSteps());
         for (int loop = 1; loop < autonomousStepsTest.getNumberLoadedSteps(); loop++)
@@ -162,7 +162,7 @@ public class ConceptReadStepFile extends LinearOpMode {
             fileLogger.writeEvent("Status", "Reading Steps : 5291BlueLeft.csv");
             Log.d("Status", "Reading Steps : 5291BlueLeft.csv");
         }
-        autonomousStepsMap = autonomousStepsTest.ReadStepFile("5291BlueLeft.csv" , allianceParkPosition, numBeacons);
+        autonomousStepsMap = autonomousStepsTest.ReadStepFileRelicRecovery("5291BlueLeft.csv" , allianceParkPosition, numBeacons);
 
         Log.d("Steplist", "Number of loaded steps " + autonomousStepsTest.getNumberLoadedSteps());
         for (int loop = 1; loop < autonomousStepsTest.getNumberLoadedSteps(); loop++)
@@ -178,7 +178,7 @@ public class ConceptReadStepFile extends LinearOpMode {
             fileLogger.writeEvent("Status", "Reading Steps : 5291BlueRight.csv");
             Log.d("Status", "Reading Steps : 5291BlueRight.csv");
         }
-        autonomousStepsMap = autonomousStepsTest.ReadStepFile("5291BlueRight.csv" , allianceParkPosition, numBeacons);
+        autonomousStepsMap = autonomousStepsTest.ReadStepFileRelicRecovery("5291BlueRight.csv" , allianceParkPosition, numBeacons);
 
         Log.d("Steplist", "Number of loaded steps " + autonomousStepsTest.getNumberLoadedSteps());
         for (int loop = 1; loop < autonomousStepsTest.getNumberLoadedSteps(); loop++)
@@ -194,7 +194,7 @@ public class ConceptReadStepFile extends LinearOpMode {
             fileLogger.writeEvent("Status", "Reading Steps : 5291BlueRight.csv");
             Log.d("Status", "Reading Steps : 5291BlueRight.csv");
         }
-        autonomousStepsMap = autonomousStepsTest.ReadStepFile("5291BlueRight.csv" , allianceParkPosition, numBeacons);
+        autonomousStepsMap = autonomousStepsTest.ReadStepFileRelicRecovery("5291BlueRight.csv" , allianceParkPosition, numBeacons);
 
         Log.d("Steplist", "Number of loaded steps " + autonomousStepsTest.getNumberLoadedSteps());
         for (int loop = 1; loop < autonomousStepsTest.getNumberLoadedSteps(); loop++)
@@ -205,7 +205,7 @@ public class ConceptReadStepFile extends LinearOpMode {
 
         Log.d("Steplist", "Number of loaded steps " + autonomousStepsTest.getNumberLoadedSteps());
 
-        autonomousStepsMap = autonomousStepsTest.ReadStepFile("5291BlueLeft.csv" , allianceParkPosition, "both");
+        autonomousStepsMap = autonomousStepsTest.ReadStepFileRelicRecovery("5291BlueLeft.csv" , allianceParkPosition, "both");
 
         for (int loop = 1; loop < autonomousStepsTest.getNumberLoadedSteps(); loop++)
         {

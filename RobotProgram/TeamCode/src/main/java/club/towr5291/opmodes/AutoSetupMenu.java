@@ -145,11 +145,10 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         teamNumber = sharedPreferences.getString("club.towr5291.Autonomous.TeamNumber", "0000");
         allianceColor = sharedPreferences.getString("club.towr5291.Autonomous.Color", "Red");
         allianceStartPosition = sharedPreferences.getString("club.towr5291.Autonomous.StartPosition", "Left");
-        allianceParkPosition = sharedPreferences.getString("club.towr5291.Autonomous.ParkPosition", "Centre");
-        numBeacons = sharedPreferences.getString("club.towr5291.Autonomous.Beacons", "Both");
         delay = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Delay", "0"));
         robotConfig = sharedPreferences.getString("club.towr5291.Autonomous.RobotConfig", "TileRunner-Mecanum-2x40");
         debug = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Debug", "1"));
+
 
         //
         // Create the menus.
@@ -157,9 +156,7 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         FtcChoiceMenu teamMenu      = new FtcChoiceMenu("Team:", null, this);
         FtcChoiceMenu allianceMenu  = new FtcChoiceMenu("Alliance:", teamMenu, this);
         FtcChoiceMenu startPosMenu  = new FtcChoiceMenu("Start:", allianceMenu, this);
-        FtcChoiceMenu parkMenu      = new FtcChoiceMenu("Park:", startPosMenu, this);
-        FtcChoiceMenu beaconMenu    = new FtcChoiceMenu("Beacons:", parkMenu, this);
-        FtcValueMenu delayMenu      = new FtcValueMenu("Delay:", beaconMenu, this, 0.0, 20.0, 1.0, 0.0, "%5.2f");
+        FtcValueMenu delayMenu      = new FtcValueMenu("Delay:", startPosMenu, this, 0.0, 20.0, 1.0, 0.0, "%5.2f");
         FtcChoiceMenu robotConfigMenu    = new FtcChoiceMenu("Robot:", delayMenu, this);
         FtcChoiceMenu debugConfigMenu    = new FtcChoiceMenu("Debug:", robotConfigMenu, this);
 
@@ -189,17 +186,17 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         }
 
         if (allianceStartPosition.equals(LibField.StartPos.START_LEFT.toString())) {
-            startPosMenu.addChoice(LibField.StartPos.START_LEFT.toString(), LibField.StartPos.START_LEFT, beaconMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, beaconMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_TEST.toString(), LibField.StartPos.START_TEST, beaconMenu);
+            startPosMenu.addChoice(LibField.StartPos.START_LEFT.toString(), LibField.StartPos.START_LEFT, delayMenu);
+            startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, delayMenu);
+            startPosMenu.addChoice(LibField.StartPos.START_TEST.toString(), LibField.StartPos.START_TEST, delayMenu);
         } else if (allianceStartPosition.equals(LibField.StartPos.START_RIGHT.toString())) {
-            startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, beaconMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_LEFT.toString(), LibField.StartPos.START_LEFT, beaconMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_TEST.toString(), LibField.StartPos.START_TEST, beaconMenu);
+            startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, delayMenu);
+            startPosMenu.addChoice(LibField.StartPos.START_LEFT.toString(), LibField.StartPos.START_LEFT, delayMenu);
+            startPosMenu.addChoice(LibField.StartPos.START_TEST.toString(), LibField.StartPos.START_TEST, delayMenu);
         } else {
-            startPosMenu.addChoice(LibField.StartPos.START_TEST.toString(), LibField.StartPos.START_TEST, beaconMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_LEFT.toString(), LibField.StartPos.START_LEFT, beaconMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, beaconMenu);
+            startPosMenu.addChoice(LibField.StartPos.START_TEST.toString(), LibField.StartPos.START_TEST, delayMenu);
+            startPosMenu.addChoice(LibField.StartPos.START_LEFT.toString(), LibField.StartPos.START_LEFT, delayMenu);
+            startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, delayMenu);
         }
 
         delayMenu.setChildMenu(robotConfigMenu);
@@ -370,8 +367,6 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         // Set choices variables.
         //
         allianceStartPosition = startPosMenu.getChoiceText(startPosMenu.getCurrentChoice());
-        numBeacons = beaconMenu.getChoiceText(beaconMenu.getCurrentChoice());
-        allianceParkPosition = parkMenu.getChoiceText(parkMenu.getCurrentChoice());
         allianceColor = allianceMenu.getChoiceText(allianceMenu.getCurrentChoice());
         teamNumber = teamMenu.getChoiceText(teamMenu.getCurrentChoice());
         robotConfig = robotConfigMenu.getChoiceText(robotConfigMenu.getCurrentChoice());
@@ -382,8 +377,6 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         editor.putString("club.towr5291.Autonomous.TeamNumber", teamNumber);
         editor.putString("club.towr5291.Autonomous.Color", allianceColor);
         editor.putString("club.towr5291.Autonomous.StartPosition", allianceStartPosition);
-        editor.putString("club.towr5291.Autonomous.ParkPosition", allianceParkPosition);
-        editor.putString("club.towr5291.Autonomous.Beacons", numBeacons);
         editor.putString("club.towr5291.Autonomous.Delay", String.valueOf(delay));
         editor.putString("club.towr5291.Autonomous.RobotConfig", robotConfig);
         editor.putString("club.towr5291.Autonomous.Debug", String.valueOf(debug));
@@ -393,8 +386,6 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         teamNumber = sharedPreferences.getString("club.towr5291.Autonomous.TeamNumber", null);
         allianceColor = sharedPreferences.getString("club.towr5291.Autonomous.Color", null);
         allianceStartPosition = sharedPreferences.getString("club.towr5291.Autonomous.StartPosition", null);
-        allianceParkPosition = sharedPreferences.getString("club.towr5291.Autonomous.ParkPosition", null);
-        numBeacons = sharedPreferences.getString("club.towr5291.Autonomous.Beacons", null);
         delay = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Delay", null));
         robotConfig = sharedPreferences.getString("club.towr5291.Autonomous.RobotConfig", null);
         debug = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Debug", null));
@@ -403,8 +394,6 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         dashboard.displayPrintf(lnum++, "Team:     " + teamNumber);
         dashboard.displayPrintf(lnum++, "Alliance: " + allianceColor);
         dashboard.displayPrintf(lnum++, "Start:    " + allianceStartPosition);
-        dashboard.displayPrintf(lnum++, "Park:     " + allianceParkPosition);
-        dashboard.displayPrintf(lnum++, "Beacons:  " + numBeacons);
         dashboard.displayPrintf(lnum++, "Delay:    " + String.valueOf(delay));
         dashboard.displayPrintf(lnum++, "Robot:    " + robotConfig);
         dashboard.displayPrintf(lnum++, "Debug:    " + debug);
@@ -412,8 +401,6 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         fileLogger.writeEvent("AutonConfig", "Team     " + teamNumber);
         fileLogger.writeEvent("AutonConfig", "Alliance " + allianceColor);
         fileLogger.writeEvent("AutonConfig", "Start    " + allianceStartPosition);
-        fileLogger.writeEvent("AutonConfig", "Park     " + allianceParkPosition);
-        fileLogger.writeEvent("AutonConfig", "Beacons  " + numBeacons);
         fileLogger.writeEvent("AutonConfig", "Delay    " + String.valueOf(delay));
         fileLogger.writeEvent("AutonConfig", "Robot    " + robotConfig);
         fileLogger.writeEvent("AutonConfig", "Debug:   " + debug);
