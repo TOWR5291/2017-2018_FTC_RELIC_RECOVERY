@@ -3,11 +3,9 @@ package club.towr5291.opmodes;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.hardware.DigitalChannelController;
 import com.qualcomm.robotcore.hardware.Servo;
@@ -16,7 +14,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import club.towr5291.robotconfig.HardwareArmMotors;
-import club.towr5291.robotconfig.HardwareDriveMotors;
+import club.towr5291.robotconfig.HardwareDriveMotorsBaseConfig;
 
 /**
  * Created by kids on 11/4/2016 at 7:54 PM.
@@ -26,7 +24,7 @@ import club.towr5291.robotconfig.HardwareDriveMotors;
 public class BaseDriveWorking extends OpMode {
 
     // Declare OpMode members.
-    private HardwareDriveMotors robotDrive   = new HardwareDriveMotors();   // Use a Pushbot's hardware
+    private HardwareDriveMotorsBaseConfig robotDrive   = new HardwareDriveMotorsBaseConfig();   // Use a Pushbot's hardware
     private HardwareArmMotors armDrive   = new HardwareArmMotors();   // Use a Pushbot's hardware
 
     private double mdblLeftPow;

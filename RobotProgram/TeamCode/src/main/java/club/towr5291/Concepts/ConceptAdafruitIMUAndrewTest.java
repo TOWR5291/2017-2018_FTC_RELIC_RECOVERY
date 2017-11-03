@@ -12,7 +12,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 
 import club.towr5291.functions.FileLogger;
 import club.towr5291.libraries.LibraryAdafruitIMU;
-import club.towr5291.robotconfig.HardwareDriveMotors;
+import club.towr5291.robotconfig.HardwareDriveMotorsBaseConfig;
 
 /**
  * Created by Owner on 8/31/2015.
@@ -30,7 +30,7 @@ public class ConceptAdafruitIMUAndrewTest extends OpMode {
     volatile double[] rollChange = new double[2], pitchChange = new double[2], yawChange = new double[2];
     long systemTime;//Relevant values of System.nanoTime
 
-    private HardwareDriveMotors robotDrive   = new HardwareDriveMotors();   // Use a Pushbot's hardware
+    private HardwareDriveMotorsBaseConfig robotDrive   = new HardwareDriveMotorsBaseConfig();   // Use a Pushbot's hardware
 
     private double mdblLeftPow;
     private double mdblRightPow;

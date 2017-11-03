@@ -23,17 +23,15 @@
 package trclib;
 
 /**
- */
-/**
  * This class implements a platform independent vision task. When enabled, it grabs a frame from the video source,
  * calls the provided object detector to process the frame and overlays rectangles on the detected objects in the
  * image. This class is to be extended by a platform dependent vision processor who will provide the video input
  * and output. 
  *
- * @param <I> specifies the type of the image frame buffer.
- * @param <O>specifies the type of the detected objects.
+ * @param <I> specifies the type of the input image.
+ * @param <O> specifies the type of the detected objects.
  */
-public class TrcVisionTask<I, O> implements Runnable
+public class TrcVisionTask<I, O> implements TrcThread.PeriodicTask
 {
     private static final String moduleName = "TrcVisionTask";
     private static final boolean debugEnabled = false;
@@ -42,14 +40,12 @@ public class TrcVisionTask<I, O> implements Runnable
     private static final TrcDbgTrace.MsgLevel msgLevel = TrcDbgTrace.MsgLevel.INFO;
     private TrcDbgTrace dbgTrace = null;
 
-    private static final boolean visionPerfEnabled = true;
-
     /**
      * This interface provides methods to grab image from the video input, render image to video output and detect
      * objects from the acquired image.
      *
-     * @param <I> specifies the type of the image frame buffer.
-     * @param <O> specifies the type of the detected objects.
+     * @param <I> specifies the type of the input image.
+     * @param <O> specifies the type of the detected object.
      */
     public interface VisionProcessor<I, O>
     {
@@ -62,163 +58,72 @@ public class TrcVisionTask<I, O> implements Runnable
         boolean grabFrame(I image);
 
         /**
-         * This method is called to render an image to the video output and overlay detected objects on top of it.
-         * 
-         * @param image specifies the frame to be rendered to the video output.
-         * @param detectedObjects specifies the detected objects.
-         */
-        void putFrame(I image, O detectedObjects);
-
-        /**
          * This method is called to detect objects in the acquired image frame.
          *
          * @param image specifies the image to be processed.
-         * @param detectedObjects specifies the object rectangle array to hold the detected objects.
-         * @return true if detected objects, false otherwise.
+         * @param detectedObjects specifies the preallocated buffer to hold the detected objects, can be null if no
+         *        preallocated buffer required.
+         * @return detected objects, null if none detected.
          */
-        boolean detectObjects(I image, O detectedObjects);
+        O detectObjects(I image, O detectedObjects);
 
     }   //interface VisionProcessor
 
-    /**
-     * This class keeps track of the state of the vision task. It also provides thread synchronization control to
-     * make sure the integrity of the task state.
-     */
-    private class TaskState
-    {
-        private boolean taskTerminated;
-        private boolean taskEnabled;
-        private boolean oneShotEnabled;
-        private O targets;
-
-        /**
-         * Constructor: Create an instance of the object.
-         */
-        public TaskState()
-        {
-            taskTerminated = false;
-            taskEnabled = false;
-            oneShotEnabled = false;
-            targets = null;
-        }   //TaskState
-
-        /**
-         * This method checks if the task has been terminated.
-         *
-         * @return true if task has been terminated, false otherwise.
-         */
-        public synchronized boolean isTaskTerminated()
-        {
-            return taskTerminated;
-        }   //isTaskTerminated
-
-        /**
-         * This method is called to terminate the vision task.
-         */
-        public synchronized void terminateTask()
-        {
-            taskTerminated = true;
-        }   //terminateTask
-
-        /**
-         * This method checks if the vision task is enabled.
-         *
-         * @return true if task is enabled, false otherwise.
-         */
-        public synchronized boolean isTaskEnabled()
-        {
-            return !taskTerminated && (taskEnabled || oneShotEnabled);
-        }   //isTaskEnabled
-
-        /**
-         * This method enables/disables the vision task. If this is called to disable the task, the task will be
-         * set to a paused state. The operation will be resumed when this is called to enable it again.
-         *
-         * @param enabled specifies true to enable vision task, false to disable.
-         */
-        public synchronized void setTaskEnabled(boolean enabled)
-        {
-            if (!taskTerminated)
-            {
-                taskEnabled = enabled;
-            }
-        }   //setTaskEnabled
-
-        /**
-         * This method returns the last detected targets. If there is no new detected targets since the last call,
-         * it will return null.
-         *
-         * @return newly detected targets if any, null if none.
-         */
-        public synchronized O getTargets()
-        {
-            O newTargets = null;
-
-            if (!taskTerminated)
-            {
-                //
-                // If task was not enabled, it must be a one-shot deal. Since we don't already have targets detected,
-                // we must unblock the task so it can process the next image frame.
-                //
-                if (!taskEnabled && targets == null)
-                {
-                    oneShotEnabled = true;
-                }
-                newTargets = targets;
-                targets = null;
-            }
-
-            return newTargets;
-        }   //getTargets
-
-        /**
-         * This method is called to set new targets after new targets have been detected.
-         *
-         * @param targets specifies newly detected targets. 
-         */
-        public synchronized void setTargets(O targets)
-        {
-            if (!taskTerminated)
-            {
-                this.targets = targets;
-                oneShotEnabled = false;
-            }
-        }   //setTargets
-
-    }   //class TaskState
-
-    private VisionProcessor<I, O> visionProcessor;
-    private I image;
-    private O[] detectedObjectsBuffers;
-    private int bufferIndex = 0;
+    private TrcDbgTrace tracer = null;
     private long totalTime = 0;
     private long totalFrames = 0;
-    private long processingInterval = 50;   // in msec
-    private TaskState taskState = new TaskState();
-    private Thread visionThread = null;
+    private double taskStartTime = 0.0;
+
+    private final String instanceName;
+    private VisionProcessor<I, O> visionProcessor;
+    private I[] imageBuffers;
+    private O[] detectedObjectBuffers;
+    private int imageIndex = 0;
+    private int bufferIndex = 0;
+    private TrcThread<O> visionTask;
 
     /**
      * Constructor: Create an instance of the object.
      *
+     * @param instanceName specifies the instance name.
      * @param visionProcessor specifies the vision processor object.
-     * @param imageBuffer specifies the buffer to hold video image.
-     * @param detectedObjectsBuffers specifies an array of buffers to hold the detected objects.
+     * @param imageBuffers specifies an array of image buffers.
+     * @param detectedObjectBuffers specifies an array of buffers to hold the detected objects.
      */
-    public TrcVisionTask(VisionProcessor<I, O> visionProcessor, I imageBuffer, O[] detectedObjectsBuffers)
+    public TrcVisionTask(
+        final String instanceName, VisionProcessor<I, O> visionProcessor, I[] imageBuffers, O[] detectedObjectBuffers)
     {
         if (debugEnabled)
         {
             dbgTrace = new TrcDbgTrace(moduleName, tracingEnabled, traceLevel, msgLevel);
         }
 
+        this.instanceName = instanceName;
         this.visionProcessor = visionProcessor;
-        this.image = imageBuffer;
-        this.detectedObjectsBuffers = detectedObjectsBuffers;
-
-        visionThread = new Thread(this, "VisionTask");
-//        visionThread.setDaemon(true);
-        visionThread.start();
+        this.imageBuffers = imageBuffers;
+        this.detectedObjectBuffers = detectedObjectBuffers;
+        visionTask = new TrcThread<>(instanceName, this);
     }   //TrcVisionTask
+
+    /**
+     * This method returns the instance name.
+     *
+     * @return instance name.
+     */
+    public String toString()
+    {
+        return instanceName;
+    }   //toString
+
+    /**
+     * This method enables/disables vision processing performance report.
+     *
+     * @param tracer specifies a tracer to enable performance report, null to disable.
+     */
+    public void setPerfReportEnabled(TrcDbgTrace tracer)
+    {
+        this.tracer = tracer;
+    }   //setPerfReportEnabled
 
     /**
      * This method is called to terminate the vision task. Once this is called, no other method in this class
@@ -226,7 +131,7 @@ public class TrcVisionTask<I, O> implements Runnable
      */
     public void terminateTask()
     {
-        taskState.terminateTask();
+        visionTask.terminateTask();
     }   //terminateTask
 
     /**
@@ -236,41 +141,47 @@ public class TrcVisionTask<I, O> implements Runnable
      */
     public boolean isTaskTerminated()
     {
-        return taskState.isTaskTerminated();
+        return visionTask.isTaskTerminated();
     }   //isTaskTerminated
 
     /**
-     * This method enables/disables the vision processing task. As long as the task is enabled, it will continue to
-     * process image frames.
+     * This method enables/disables the vision task. As long as the task is enabled, it will continue to
+     * acquire/process images.
      *
      * @param enabled specifies true to enable vision task, false to disable.
      */
-    public void setTaskEnabled(boolean enabled)
+    public void setEnabled(boolean enabled)
     {
-        final String funcName = "setTaskEnabled";
+        final String funcName = "setEnabled";
 
         if (debugEnabled)
         {
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API, "enabled=%s", Boolean.toString(enabled));
         }
 
-        taskState.setTaskEnabled(enabled);
+        visionTask.setTaskEnabled(enabled);
+        if (enabled)
+        {
+            totalTime = 0;
+            totalFrames = 0;
+            taskStartTime = TrcUtil.getCurrentTime();
+        }
 
         if (debugEnabled)
         {
             dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API);
         }
-    }   //setTaskEnabled
+    }   //setEnabled
 
     /**
      * This method returns the state of the vision task.
      *
      * @return true if the vision task is enabled, false otherwise.
      */
-    public boolean isTaskEnabled()
+    public boolean isEnabled()
     {
-        final String funcName = "isTaskEnabled";
-        boolean enabled = taskState.isTaskEnabled();
+        final String funcName = "isEnabled";
+        boolean enabled = visionTask.isTaskEnabled();
 
         if (debugEnabled)
         {
@@ -279,12 +190,12 @@ public class TrcVisionTask<I, O> implements Runnable
         }
 
         return enabled;
-    }   //isTaskEnabled
+    }   //isEnabled
 
     /**
      * This method sets the vision task processing interval.
      *
-     * @param interval specifies the processing interval in msec.
+     * @param interval specifies the processing interval in msec. If 0, process as fast as the CPU can run.
      */
     public void setProcessingInterval(long interval)
     {
@@ -296,7 +207,7 @@ public class TrcVisionTask<I, O> implements Runnable
             dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API);
         }
 
-        processingInterval = interval;
+        visionTask.setProcessingInterval(interval);
     }   //setProcessInterval
 
     /**
@@ -307,64 +218,28 @@ public class TrcVisionTask<I, O> implements Runnable
     public long getProcessingInterval()
     {
         final String funcName = "getProcessingInterval";
+        long interval = visionTask.getProcessingInterval();
 
         if (debugEnabled)
         {
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%d", processingInterval);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%d", interval);
         }
 
-        return processingInterval;
+        return interval;
     }   //getProcessingInterval
 
-    /**
-     * This method returns the detected objects. If nothing found, it returns null.
-     *
-     * @return detected objects, null if nothing found.
-     */
-    public O getTargets()
-    {
-        final String funcName = "getTargets";
-
-        if (debugEnabled)
-        {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
-            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API);
-        }
-
-        return taskState.getTargets();
-    }   //getTargets
-
     //
-    // Implements Runnable interface.
+    // Implements TrcThread.PeriodicTask interface.
     //
 
     /**
      * This method runs the vision processing task.
      */
     @Override
-    public void run()
+    public void runPeriodic()
     {
-        while (!taskState.isTaskTerminated())
-        {
-            long startTime = TrcUtil.getCurrentTimeMillis();
-
-            if (taskState.isTaskEnabled())
-            {
-                processImage();
-            }
-
-            long sleepTime = processingInterval - (TrcUtil.getCurrentTimeMillis() - startTime);
-            TrcUtil.sleep(sleepTime);
-        }
-    }   //run
-
-    /**
-     * This method grabs a new video frame and processes it.
-     */
-    private void processImage()
-    {
-        final String funcName = "processImage";
+        final String funcName = "runPeriodic";
         double startTime;
         double elapsedTime;
 
@@ -373,35 +248,42 @@ public class TrcVisionTask<I, O> implements Runnable
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.TASK);
         }
 
-        if (visionProcessor.grabFrame(image))
+        synchronized (imageBuffers[imageIndex])
         {
-            //
-            // Capture an image and subject it for object detection. The object detector produces an array of
-            // rectangles representing objects detected.
-            //
-            startTime = TrcUtil.getCurrentTimeMillis();
-            visionProcessor.detectObjects(image, detectedObjectsBuffers[bufferIndex]);
-            elapsedTime = TrcUtil.getCurrentTimeMillis() - startTime;
-            totalTime += elapsedTime;
-            totalFrames++;
-            if (visionPerfEnabled && dbgTrace != null)
+            if (visionProcessor.grabFrame(imageBuffers[imageIndex]))
             {
-                dbgTrace.traceInfo(funcName, "Average processing time = %.3f msec", (double)totalTime/totalFrames);
+                //
+                // Capture an image and subject it for object detection. The object detector produces an array of
+                // rectangles representing objects detected.
+                //
+                startTime = TrcUtil.getCurrentTimeMillis();
+                visionProcessor.detectObjects(
+                        imageBuffers[imageIndex],
+                        detectedObjectBuffers != null ? detectedObjectBuffers[bufferIndex] : null);
+                elapsedTime = TrcUtil.getCurrentTimeMillis() - startTime;
+                totalTime += elapsedTime;
+                totalFrames++;
+                if (tracer != null)
+                {
+                    tracer.traceInfo(funcName, "Average processing time = %.3f msec, Frame rate = %.1f",
+                            (double) totalTime / totalFrames, totalFrames / (TrcUtil.getCurrentTime() - taskStartTime));
+                }
+                //
+                // Switch to the next buffer so that we won't clobber the info while the client is accessing it.
+                //
+                imageIndex = (imageIndex + 1) % imageBuffers.length;
+                if (detectedObjectBuffers != null)
+                {
+                    visionTask.setData(detectedObjectBuffers[bufferIndex]);
+                    bufferIndex = (bufferIndex + 1) % detectedObjectBuffers.length;
+                }
             }
-
-            visionProcessor.putFrame(image, detectedObjectsBuffers[bufferIndex]);
-
-            taskState.setTargets(detectedObjectsBuffers[bufferIndex]);
-            //
-            // Switch to the next buffer so that we won't clobber the info while the client is accessing it.
-            //
-            bufferIndex = (bufferIndex + 1)%detectedObjectsBuffers.length;
         }
 
         if (debugEnabled)
         {
             dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.TASK);
         }
-    }   //processImage
+    }   //runPeriodic
 
 }   //class TrcVisionTask

@@ -11,8 +11,32 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 
-public class LibField
+public class robotConfigSettings
 {
+
+    public enum motors {
+        leftMotor1 ("leftmotor1", 1),
+        leftMotor2 ("leftmotor2", 2),
+        rightMotor1 ("rightmotor1", 4),
+        rightMotor2 ("rightmotor2", 8);
+
+        private final String name;
+        private final int value;
+
+        motors (String name, int value) {
+            this.name = name;
+            this.value = value;
+        }
+
+        public String toString() {
+            return name;
+        }
+
+        public int toInt() {
+            return value;
+        }
+    }
+
     public enum Alliance {
         BLUE ("Blue"),
         RED ("Red");
@@ -28,7 +52,7 @@ public class LibField
         }
     }
 
-    public enum StartPos
+    public enum robotConfigStartPos
     {
         START_LEFT ("Left"),
         START_RIGHT ("Right"),
@@ -36,7 +60,7 @@ public class LibField
 
         private final String value;
 
-        StartPos(String value) {
+        robotConfigStartPos(String value) {
             this.value = value;
         }
 
@@ -46,7 +70,7 @@ public class LibField
     }
 
 
-    public enum Team
+    public enum robotConfigTeam
     {
         TOWR ("5291"),
         ELECTCATZ ("11230"),
@@ -54,7 +78,7 @@ public class LibField
 
         private final String value;
 
-        Team(String value) {
+        robotConfigTeam(String value) {
             this.value = value;
         }
 
@@ -63,7 +87,7 @@ public class LibField
         }
     }
 
-    public enum RobotConfigChoice
+    public enum robotConfigChoice
     {
         TileRunner2x20 ("TileRunner-2x20"),
         TileRunner2x40 ("TileRunner-2x40"),
@@ -74,7 +98,7 @@ public class LibField
 
         private final String value;
 
-        RobotConfigChoice(String value) {
+        robotConfigChoice(String value) {
             this.value = value;
         }
 

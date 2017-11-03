@@ -22,157 +22,69 @@
 
 package ftclib;
 
-import com.qualcomm.hardware.modernrobotics.ModernRoboticsUsbDcMotorController;
-import com.qualcomm.robotcore.hardware.DcMotorController;
+import com.qualcomm.robotcore.hardware.HardwareMap;
+import com.qualcomm.robotcore.hardware.VoltageSensor;
 
-import trclib.TrcDbgTrace;
-import trclib.TrcRobot;
-import trclib.TrcTaskMgr;
+import trclib.TrcRobotBattery;
 
 /**
- * This class monitors the robot battery level and provides methods to get the current battery voltage as well as
- * the lowest voltage it has ever seen during the monitoring session.
+ * This class extends the TrcRobotBattery which provides a task to monitor the robot battery levels and the methods to
+ * access the highest and the lowest battery levels during the monitoring session.
  */
-public class FtcRobotBattery implements TrcTaskMgr.Task
+public class FtcRobotBattery extends TrcRobotBattery
 {
-    private static final String moduleName = "FtcRobotBattery";
-    private static final boolean debugEnabled = false;
-    private static final boolean tracingEnabled = false;
-    private static final TrcDbgTrace.TraceLevel traceLevel = TrcDbgTrace.TraceLevel.API;
-    private static final TrcDbgTrace.MsgLevel msgLevel = TrcDbgTrace.MsgLevel.INFO;
-    private TrcDbgTrace dbgTrace = null;
-
-    private ModernRoboticsUsbDcMotorController motorController;
-    private double lowestVoltage = 0.0;
-    private double highestVoltage = 0.0;
+    private VoltageSensor sensor;
 
     /**
      * Constructor: create an instance of the object.
      *
-     * @param motorController specifies the motor control that provides the voltage information.
+     * @param hardwareMap specifies the global hardware map.
      */
-    public FtcRobotBattery(DcMotorController motorController)
+    public FtcRobotBattery(HardwareMap hardwareMap)
     {
-        if (debugEnabled)
-        {
-            dbgTrace = new TrcDbgTrace(moduleName, tracingEnabled, traceLevel, msgLevel);
-        }
-
-        this.motorController = (ModernRoboticsUsbDcMotorController)motorController;
+        super();
+        sensor = hardwareMap.voltageSensor.iterator().next();
     }   //FtcRobotBattery
 
     /**
-     * This method enables/disables the battery monitoring task. When the task is enabled, it also clears the
-     * lowest voltage.
-     *
-     * @param enabled specifies true to enable the task, false to disable.
+     * Constructor: create an instance of the object.
      */
-    public void setEnabled(boolean enabled)
+    public FtcRobotBattery()
     {
-        final String funcName = "setEnabled";
-
-        if (debugEnabled)
-        {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.FUNC, "enabled=%s", Boolean.toString(enabled));
-            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.FUNC);
-        }
-
-        if (enabled)
-        {
-            lowestVoltage = highestVoltage = motorController.getVoltage();
-            TrcTaskMgr.getInstance().registerTask(moduleName, this, TrcTaskMgr.TaskType.PRECONTINUOUS_TASK);
-        }
-        else
-        {
-            TrcTaskMgr.getInstance().unregisterTask(this, TrcTaskMgr.TaskType.PRECONTINUOUS_TASK);
-        }
-    }   //setEnabled
+        this(FtcOpMode.getInstance().hardwareMap);
+    }   //FtcRobotBattery
 
     /**
-     * This method returns the current robot battery voltage.
+     * This method returns the robot battery voltage.
      *
-     * @return current battery voltage.
+     * @return current battery voltage in volts.
      */
-    public double getCurrentVoltage()
+    @Override
+    public double getVoltage()
     {
-        return motorController.getVoltage();
-    }   //getCurrentVoltage
+        return sensor.getVoltage();
+    }   //getVoltage
 
     /**
-     * This method returns the lowest voltage it has ever seen during the monitoring session.
+     * This method returns the robot battery current.
      *
-     * @return lowest battery voltage.
+     * @return current battery current in amps.
      */
-    public double getLowestVoltage()
+    @Override
+    public double getCurrent()
     {
-        return lowestVoltage;
-    }   //getLowestVoltage
+        throw new UnsupportedOperationException("The system does not support current info.");
+    }   //getCurrent
 
     /**
-     * This method returns the highest voltage it has ever seen during the monitoring session.
+     * This method returns the robot battery power.
      *
-     * @return highest battery voltage.
-     */
-    public double getHighestVoltage()
-    {
-        return highestVoltage;
-    }   //getHighestVoltage
-
-    //
-    // Implements TrcTaskMgr.Task
-    //
-
-    @Override
-    public void startTask(TrcRobot.RunMode runMode)
-    {
-    }   //startTask
-
-    @Override
-    public void stopTask(TrcRobot.RunMode runMode)
-    {
-    }   //stopTask
-
-    @Override
-    public void prePeriodicTask(TrcRobot.RunMode runMode)
-    {
-    }   //prePeriodicTask
-
-    @Override
-    public void postPeriodicTask(TrcRobot.RunMode runMode)
-    {
-    }   //postPeriodicTask
-
-    /**
-     * This method is called periodically to monitor the battery voltage and to keep track of the lowest voltage it
-     * has ever seen.
-     *
-     * @param runMode specifies the competition mode that is running.
+     * @return current battery power in watts.
      */
     @Override
-    public void preContinuousTask(TrcRobot.RunMode runMode)
+    public double getPower()
     {
-        final String funcName = "preContinuousTask";
-
-        if (debugEnabled)
-        {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.TASK, "runMode=%s", runMode.toString());
-            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.TASK);
-        }
-
-        double voltage = getCurrentVoltage();
-        if (voltage < lowestVoltage)
-        {
-            lowestVoltage = voltage;
-        }
-        else if (voltage > highestVoltage)
-        {
-            highestVoltage = voltage;
-        }
-    }   //preContinuousTask
-
-    @Override
-    public void postContinuousTask(TrcRobot.RunMode runMode)
-    {
-    }   //postContinuousTask
+        throw new UnsupportedOperationException("The system does not support power info.");
+    }   //getPower
 
 }   //class FtcRobotBattery

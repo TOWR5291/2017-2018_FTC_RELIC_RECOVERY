@@ -131,7 +131,7 @@ public class TrcEnhancedServo implements TrcTaskMgr.Task
     public TrcEnhancedServo(
             String instanceName, TrcServo servo, TrcDigitalInput lowerLimitSwitch, TrcDigitalInput upperLimitSwitch)
     {
-        if (servo1 == null)
+        if (servo == null)
         {
             throw new NullPointerException("servo cannot be null.");
         }
@@ -207,6 +207,24 @@ public class TrcEnhancedServo implements TrcTaskMgr.Task
     }   //stop
 
     /**
+     * This method returns the target position set by setPosition.
+     *
+     * @return target position.
+     */
+    public double getPosition()
+    {
+        final String funcName = "getPosition";
+
+        if (debugEnabled)
+        {
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%f", targetPosition);
+        }
+
+        return targetPosition;
+    }   //getPosition
+
+    /**
      * This method sets the servo position.
      *
      * @param position specifies the position to set.
@@ -223,6 +241,8 @@ public class TrcEnhancedServo implements TrcTaskMgr.Task
 
         if (!continuousServo)
         {
+            targetPosition = position;
+
             if (servo1 != null)
             {
                 servo1.setPosition(position);

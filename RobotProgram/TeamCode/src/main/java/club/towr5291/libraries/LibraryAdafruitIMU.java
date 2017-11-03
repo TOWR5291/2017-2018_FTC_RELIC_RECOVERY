@@ -17,8 +17,8 @@ import java.util.concurrent.locks.Lock;
 
 /**
  * Created by Owner on 8/25/2015.
- * Original author: Alan M. Gilkes, Alternate Coach of FTC Team 3734 ("imperial Robotics")
- * and Mentor of FTC Team 6832 ("Iron Reign")
+ * Original author: Alan M. Gilkes, Alternate Coach of FTC robotConfigTeam 3734 ("imperial Robotics")
+ * and Mentor of FTC robotConfigTeam 6832 ("Iron Reign")
  * Contact: Email - agilkes@alum.mit.edu, FTC Technology Forum ID - AlanG
  *
  * Overview:

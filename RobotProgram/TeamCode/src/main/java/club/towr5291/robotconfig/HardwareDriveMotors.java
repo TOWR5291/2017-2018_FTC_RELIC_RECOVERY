@@ -1,10 +1,10 @@
 package club.towr5291.robotconfig;
 
 import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.HardwareMap;
-import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
+
+import club.towr5291.libraries.robotConfigSettings;
 
 /**
  * This is NOT an opmode.
@@ -24,10 +24,10 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 public class HardwareDriveMotors
 {
     /* Public OpMode members. */
-    public DcMotor  leftMotor1   = null;
-    public DcMotor  leftMotor2   = null;
-    public DcMotor  rightMotor1  = null;
-    public DcMotor  rightMotor2  = null;
+    public DcMotor  baseMotor1  = null;
+    public DcMotor  baseMotor2  = null;
+    public DcMotor  baseMotor3  = null;
+    public DcMotor  baseMotor4  = null;
 
     /* local OpMode members. */
     HardwareMap hwMap            =  null;
@@ -39,73 +39,224 @@ public class HardwareDriveMotors
     }
 
     /* Initialize standard Hardware interfaces */
-    public void init(HardwareMap ahwMap) {
+    public void init(HardwareMap ahwMap, robotConfigSettings.robotConfigChoice baseConfig) {
         // Save reference to Hardware map
         hwMap = ahwMap;
 
         // Define and Initialize Motors
-        leftMotor1   = hwMap.dcMotor.get("leftmotor1");
-        leftMotor2   = hwMap.dcMotor.get("leftmotor2");
-        rightMotor1  = hwMap.dcMotor.get("rightmotor1");
-        rightMotor2  = hwMap.dcMotor.get("rightmotor2");
-        leftMotor1.setDirection(DcMotor.Direction.REVERSE);
-        leftMotor2.setDirection(DcMotor.Direction.REVERSE);
-        rightMotor1.setDirection(DcMotor.Direction.FORWARD);
-        rightMotor2.setDirection(DcMotor.Direction.FORWARD);
+        baseMotor1  = hwMap.dcMotor.get("leftMotor1");
+        baseMotor2  = hwMap.dcMotor.get("leftMotor2");
+        baseMotor3  = hwMap.dcMotor.get("rightMotor1");
+        baseMotor4  = hwMap.dcMotor.get("rightMotor2");
+
+        setHardwareDriveDirections(baseConfig);
 
         // Set all motors to zero power
-        leftMotor1.setPower(0);
-        leftMotor2.setPower(0);
-        rightMotor1.setPower(0);
-        rightMotor2.setPower(0);
+        setHardwareDrivePower(0);
 
         // Set all motors to run without encoders.
         // May want to use RUN_USING_ENCODERS if encoders are installed.
-        leftMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        leftMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rightMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rightMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        setHardwareDriveResetEncoders();
+
+        setHardwareDriveRunUsingEncoders();
+    }
+
+    public void setHardwareDriveDirections(robotConfigSettings.robotConfigChoice baseConfig){
+
+        switch (baseConfig) {
+            case TileRunner2x20:
+            case TileRunner2x40:
+            case TileRunner2x60:
+                baseMotor1.setDirection(DcMotor.Direction.FORWARD);
+                baseMotor2.setDirection(DcMotor.Direction.REVERSE);
+                baseMotor3.setDirection(DcMotor.Direction.FORWARD);
+                baseMotor4.setDirection(DcMotor.Direction.REVERSE);
+                break;
+            case TileRunnerMecanum2x40:
+                baseMotor1.setDirection(DcMotor.Direction.REVERSE);
+                baseMotor2.setDirection(DcMotor.Direction.REVERSE);
+                baseMotor3.setDirection(DcMotor.Direction.FORWARD);
+                baseMotor4.setDirection(DcMotor.Direction.FORWARD);
+                break;
+            default:
+                baseMotor1.setDirection(DcMotor.Direction.FORWARD);
+                baseMotor2.setDirection(DcMotor.Direction.REVERSE);
+                baseMotor3.setDirection(DcMotor.Direction.FORWARD);
+                baseMotor4.setDirection(DcMotor.Direction.REVERSE);
+                break;
+        }
+    }
+
+    public int getHardwareDriveIsBusy() {
+        //this will return a bitmapped integer,
+        // int 0  = 0000 is right2, right1, left2, left1
+        // int 1  = 0001 is right2, right1, left2, left1 (1)
+        // int 2  = 0010 is right2, right1, left2 (1), left1
+        // int 3  = 0011 is right2, right1, left2 (1), left1 (1)
+        // int 4  = 0100 is right2, right1 (1), left2, left1
+        // int 5  = 0101 is right2, right1 (1), left2, left1 (1)
+        // int 6  = 0110 is right2, right1 (1), left2 (1), left1
+        // int 7  = 0111 is right2, right1 (1), left2 (1), left1 (1)
+        // int 8  = 1000 is right2 (1), right1, left2, left1
+        // int 9  = 1001 is right2 (1), right1, left2, left1 (1)
+        // int 10 = 1010 is right2 (1), right1, left2 (1), left1
+        // int 11 = 1011 is right2 (1), right1, left2 (1), left1 (1)
+        // int 12 = 1100 is right2 (1), right1 (1), left2, left1
+        // int 13 = 1101 is right2 (1), right1 (1), left2, left1 (1)
+        // int 14 = 1101 is right2 (1), right1 (1), left2, left1 (1)
+        // int 15 = 1110 is right2 (1), right1 (1), left2 (1), left1
+        // int 16 = 1111 is right2 (1), right1 (1), left2 (1), left1 (1)
+
+        int myInt1 = (baseMotor1.isBusy()) ? 1 : 0;
+        int myInt2 = (baseMotor2.isBusy()) ? 1 : 0;
+        int myInt3 = (baseMotor3.isBusy()) ? 1 : 0;
+        int myInt4 = (baseMotor4.isBusy()) ? 1 : 0;
+
+        return (myInt1) + (2 * myInt2) + (4 * myInt3)  + (8 * myInt4);
 
     }
 
-    /***
-     *
-     * waitForTick implements a periodic delay. However, this acts like a metronome with a regular
-     * periodic tick.  This is used to compensate for varying processing times for each cycle.
-     * The function looks at the elapsed cycle time, and sleeps for the remaining time interval.
-     *
-     * @param periodMs  Length of wait cycle in mSec.
-     * @throws InterruptedException
-     */
-    public void waitForTick(long periodMs) throws InterruptedException {
+    public class motorEncoderPositions {
 
-        long  remaining = periodMs - (long)period.milliseconds();
+        private int motor1;      //is the current encoder position or motor 1
+        private int motor2;      //is the current encoder position or motor 2
+        private int motor3;      //is the current encoder position or motor 3
+        private int motor4;      //is the current encoder position or motor 4
 
-        // sleep for the remaining portion of the regular cycle period.
-        if (remaining > 0)
-            Thread.sleep(remaining);
 
-        // Reset the cycle clock for the next pass.
-        period.reset();
+        // Constructor
+        public motorEncoderPositions()
+        {
+            this.motor1 = 0;
+            this.motor2 = 0;
+            this.motor3 = 0;
+            this.motor4 = 0;
+        }
+
+        public void setMotor1EncoderValue (int value) {
+            this.motor1 = value;
+        }
+
+        public void setMotor2EncoderValue (int value) {
+            this.motor2 = value;
+        }
+
+        public void setMotor3EncoderValue (int value) {
+            this.motor3 = value;
+        }
+
+        public void setMotor4EncoderValue (int value) {
+            this.motor4 = value;
+        }
+
+        public int getMotor1EncoderValue () {
+            return this.motor1;
+        }
+
+        public int getMotor2EncoderValue () {
+            return this.motor2;
+        }
+
+        public int getMotor3EncoderValue () {
+            return this.motor3;
+        }
+
+        public int getMotor4EncoderValue () {
+            return this.motor4;
+        }
+
+    }
+
+    public motorEncoderPositions getHardwareDriveEncoderPosition() {
+
+        motorEncoderPositions positions = new motorEncoderPositions();
+        positions.setMotor1EncoderValue(baseMotor1.getCurrentPosition());
+        positions.setMotor2EncoderValue(baseMotor2.getCurrentPosition());
+        positions.setMotor3EncoderValue(baseMotor3.getCurrentPosition());
+        positions.setMotor4EncoderValue(baseMotor4.getCurrentPosition());
+
+        return positions;
+    }
+
+    public void setHardwareDriveResetEncoders() {
+        baseMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        baseMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        baseMotor3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        baseMotor4.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+    }
+
+    public void setHardwareDriveRunUsingEncoders() {
+        setHardwareDriveLeftRunUsingEncoders();
+        setHardwareDriveRightRunUsingEncoders();
+    }
+
+    public void setHardwareDriveLeftRunUsingEncoders() {
+        baseMotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        baseMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    public void setHardwareDriveRightRunUsingEncoders() {
+        baseMotor3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        baseMotor4.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    public void setHardwareDriveRunWithoutEncoders() {
+        baseMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        baseMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        baseMotor3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        baseMotor4.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void setHardwareDriveRunToPosition() {
+        setHardwareDriveLeftRunToPosition();
+        setHardwareDriveRightRunToPosition();
+    }
+
+    public void setHardwareDriveLeftRunToPosition() {
+        baseMotor1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        baseMotor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+    }
+
+    public void setHardwareDriveRightRunToPosition() {
+        baseMotor3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        baseMotor4.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
     //set the drive motors power, both left and right
-    public void setDriveMotorPower (double power) {
-        setDriveRightMotorPower(power);
-        setDriveLeftMotorPower(power);
-    }
-
-    //set the right drive motors power
-    public void setDriveRightMotorPower (double power) {
-        rightMotor1.setPower(power);
-        rightMotor2.setPower(power);
+    public void setHardwareDrivePower (double power) {
+        setHardwareDriveLeftMotorPower(power);
+        setHardwareDriveRightMotorPower(power);
     }
 
     //set the left motors drive power
-    public void setDriveLeftMotorPower (double power) {
-        leftMotor1.setPower(power);
-        leftMotor2.setPower(power);
+    public void setHardwareDriveLeftMotorPower (double power) {
+        setHardwareDriveLeft1MotorPower(power);
+        setHardwareDriveLeft2MotorPower(power);
     }
+
+    //set the right drive motors power
+    public void setHardwareDriveRightMotorPower (double power) {
+        setHardwareDriveRight1MotorPower(power);
+        setHardwareDriveRight2MotorPower(power);
+    }
+
+    public void setHardwareDriveLeft1MotorPower (double power) {
+        baseMotor1.setPower(power);
+    }
+
+    public void setHardwareDriveLeft2MotorPower (double power) {
+        baseMotor2.setPower(power);
+    }
+
+    public void setHardwareDriveRight1MotorPower (double power) {
+        baseMotor3.setPower(power);
+    }
+
+    public void setHardwareDriveRight2MotorPower (double power) {
+        baseMotor4.setPower(power);
+    }
+
+
 
 }
 

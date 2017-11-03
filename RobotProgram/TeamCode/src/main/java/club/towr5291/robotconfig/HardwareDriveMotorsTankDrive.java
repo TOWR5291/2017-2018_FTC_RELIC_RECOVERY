@@ -19,20 +19,20 @@ import com.qualcomm.robotcore.util.ElapsedTime;
  * Motor channel:  Right drive motor:        "rightmotor1"
  * Motor channel:  Right drive motor:        "rightmotor2"
  */
-public class HardwareDriveMotorsRR
+public class HardwareDriveMotorsTankDrive
 {
     /* Public OpMode members. */
-    public DcMotor  leftFront   = null;
-    public DcMotor  leftBack   = null;
-    public DcMotor  rightFront  = null;
-    public DcMotor  rightBack  = null;
+    public DcMotor  leftMotor1   = null;
+    public DcMotor  leftMotor2   = null;
+    public DcMotor  rightMotor1  = null;
+    public DcMotor  rightMotor2  = null;
 
     /* local OpMode members. */
     HardwareMap hwMap            =  null;
     private ElapsedTime period   = new ElapsedTime();
 
     /* Constructor */
-    public HardwareDriveMotorsRR(){
+    public HardwareDriveMotorsTankDrive(){
 
     }
 
@@ -42,30 +42,47 @@ public class HardwareDriveMotorsRR
         hwMap = ahwMap;
 
         // Define and Initialize Motors
-        leftFront   = hwMap.dcMotor.get("leftFront");
-        leftBack   = hwMap.dcMotor.get("leftBack");
-        rightFront  = hwMap.dcMotor.get("rightFront");
-        rightBack  = hwMap.dcMotor.get("rightBack");
-        leftFront.setDirection(DcMotor.Direction.REVERSE);
-        leftBack.setDirection(DcMotor.Direction.REVERSE);
-        rightFront.setDirection(DcMotor.Direction.FORWARD);
-        rightBack.setDirection(DcMotor.Direction.FORWARD);
+        leftMotor1   = hwMap.dcMotor.get("leftmotor1");
+        leftMotor2   = hwMap.dcMotor.get("leftmotor2");
+        rightMotor1  = hwMap.dcMotor.get("rightmotor1");
+        rightMotor2  = hwMap.dcMotor.get("rightmotor2");
+        leftMotor1.setDirection(DcMotor.Direction.REVERSE);
+        leftMotor2.setDirection(DcMotor.Direction.REVERSE);
+        rightMotor1.setDirection(DcMotor.Direction.FORWARD);
+        rightMotor2.setDirection(DcMotor.Direction.FORWARD);
 
         // Set all motors to zero power
-        leftFront.setPower(0);
-        leftBack.setPower(0);
-        rightFront.setPower(0);
-        rightBack.setPower(0);
+        leftMotor1.setPower(0);
+        leftMotor2.setPower(0);
+        rightMotor1.setPower(0);
+        rightMotor2.setPower(0);
 
         // Set all motors to run without encoders.
         // May want to use RUN_USING_ENCODERS if encoders are installed.
-        leftFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        leftBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rightFront.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        rightBack.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        leftMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        rightMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
     }
 
+    public void HardwareDriveResetEncoders() {
+
+        leftMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        leftMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        rightMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+
+    }
+
+    public void HardwareDriveRunUsingEncoders() {
+
+        leftMotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        leftMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightMotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        rightMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+
+    }
     /***
      *
      * waitForTick implements a periodic delay. However, this acts like a metronome with a regular
@@ -87,30 +104,23 @@ public class HardwareDriveMotorsRR
         period.reset();
     }
 
-    public void zeroMotors() {
-        leftFront.setPower(0);
-        leftBack.setPower(0);
-        rightFront.setPower(0);
-        rightBack.setPower(0);
+    //set the drive motors power, both left and right
+    public void setDriveMotorPower (double power) {
+        setDriveRightMotorPower(power);
+        setDriveLeftMotorPower(power);
     }
 
-    //set the drive motors power, both left and right
-//    public void setDriveMotorPower (double power) {
-//        setDriveRightMotorPower(power);
-//        setDriveLeftMotorPower(power);
-//    }
-
     //set the right drive motors power
-//    public void setDriveRightMotorPower (double power) {
-//        rightMotor1.setPower(power);
-//        rightMotor2.setPower(power);
-//    }
-//
-//    //set the left motors drive power
-//    public void setDriveLeftMotorPower (double power) {
-//        leftMotor1.setPower(power);
-//        leftMotor2.setPower(power);
-//    }
+    public void setDriveRightMotorPower (double power) {
+        rightMotor1.setPower(power);
+        rightMotor2.setPower(power);
+    }
+
+    //set the left motors drive power
+    public void setDriveLeftMotorPower (double power) {
+        leftMotor1.setPower(power);
+        leftMotor2.setPower(power);
+    }
 
 }
 

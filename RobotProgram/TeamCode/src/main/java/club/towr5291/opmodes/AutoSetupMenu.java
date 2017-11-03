@@ -11,7 +11,7 @@ import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity
 
 import club.towr5291.functions.FileLogger;
 
-import club.towr5291.libraries.LibField;
+import club.towr5291.libraries.robotConfigSettings;
 import club.towr5291.R;
 import ftclib.FtcChoiceMenu;
 import ftclib.FtcMenu;
@@ -22,7 +22,7 @@ import hallib.HalDashboard;
  * Created by Ian Haden on 11/7/2016.
  */
 
-@Autonomous(name = "Auton Config", group = "0")
+@Autonomous(name = "Auto Auton Config", group = "0")
 public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuButtons {
 
     //set up the variables for the logger
@@ -57,58 +57,6 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
     {
         super();
         instance = this;
-    }
-
-
-    public void initRobot()
-    {
-
-        dashboard = HalDashboard.createInstance(telemetry);
-
-        FtcRobotControllerActivity act = (FtcRobotControllerActivity)(hardwareMap.appContext);
-
-        dashboard.setTextView((TextView)act.findViewById(R.id.textOpMode));
-        dashboard.displayPrintf(0, "Starting Menu System");
-        setup();
-    }
-
-    @Override
-    public void runOpMode() throws InterruptedException {
-        //start the log
-        fileLogger = new FileLogger(runtime);
-        fileLogger.open();
-        fileLogger.write("Time,SysMS,Thread,Event,Desc");
-        fileLogger.writeEvent(TAG, "Log Started");
-
-        initRobot();
-
-        // Wait for the game to start (driver presses PLAY)
-        waitForStart();
-
-        while (opModeIsActive()) {
-            //this will log only when debug is at level 3 or above
-            if (debug >= 3) {
-                fileLogger.writeEvent(TAG, "In Loop # " + loop);
-            }
-            loop++;
-        }
-
-        //stop the log
-        if (fileLogger != null) {
-            fileLogger.writeEvent(TAG, "Stopped");
-            fileLogger.close();
-            fileLogger = null;
-        }
-    }
-
-
-    private void setup()
-    {
-        dashboard.displayPrintf(0, "INITIALIZING - Please wait for Menu");
-        fileLogger.writeEvent(TAG, "SETUP");
-
-        doMenus();
-        dashboard.displayPrintf(0, "COMPLETE - Settings Written");
     }
 
     //
@@ -153,7 +101,7 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         //
         // Create the menus.
         //
-        FtcChoiceMenu teamMenu      = new FtcChoiceMenu("Team:", null, this);
+        FtcChoiceMenu teamMenu      = new FtcChoiceMenu("robotConfigTeam:", null, this);
         FtcChoiceMenu allianceMenu  = new FtcChoiceMenu("Alliance:", teamMenu, this);
         FtcChoiceMenu startPosMenu  = new FtcChoiceMenu("Start:", allianceMenu, this);
         FtcValueMenu delayMenu      = new FtcValueMenu("Delay:", startPosMenu, this, 0.0, 20.0, 1.0, 0.0, "%5.2f");
@@ -163,198 +111,199 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         //
         // remember last saved settings and reorder the menu with last run settings as the defaults
         //
-        if (teamNumber.equals(LibField.Team.TOWR.toString())) {
-            teamMenu.addChoice(LibField.Team.TOWR.toString(), LibField.Team.TOWR, allianceMenu);
-            teamMenu.addChoice(LibField.Team.CYBORGCATZ.toString(), LibField.Team.CYBORGCATZ, allianceMenu);
-            teamMenu.addChoice(LibField.Team.ELECTCATZ.toString(), LibField.Team.ELECTCATZ, allianceMenu);
-        } else if (teamNumber.equals(LibField.Team.CYBORGCATZ.toString())) {
-            teamMenu.addChoice(LibField.Team.CYBORGCATZ.toString(), LibField.Team.CYBORGCATZ, allianceMenu);
-            teamMenu.addChoice(LibField.Team.TOWR.toString(), LibField.Team.TOWR, allianceMenu);
-            teamMenu.addChoice(LibField.Team.ELECTCATZ.toString(), LibField.Team.ELECTCATZ, allianceMenu);
+        if (teamNumber.equals(robotConfigSettings.robotConfigTeam.TOWR.toString())) {
+            teamMenu.addChoice(robotConfigSettings.robotConfigTeam.TOWR.toString(), robotConfigSettings.robotConfigTeam.TOWR, true, allianceMenu);
+            teamMenu.addChoice(robotConfigSettings.robotConfigTeam.CYBORGCATZ.toString(), robotConfigSettings.robotConfigTeam.CYBORGCATZ, false, allianceMenu);
+            teamMenu.addChoice(robotConfigSettings.robotConfigTeam.ELECTCATZ.toString(), robotConfigSettings.robotConfigTeam.ELECTCATZ, false, allianceMenu);
+        } else if (teamNumber.equals(robotConfigSettings.robotConfigTeam.CYBORGCATZ.toString())) {
+            teamMenu.addChoice(robotConfigSettings.robotConfigTeam.CYBORGCATZ.toString(), robotConfigSettings.robotConfigTeam.CYBORGCATZ, true, allianceMenu);
+            teamMenu.addChoice(robotConfigSettings.robotConfigTeam.TOWR.toString(), robotConfigSettings.robotConfigTeam.TOWR, false, allianceMenu);
+            teamMenu.addChoice(robotConfigSettings.robotConfigTeam.ELECTCATZ.toString(), robotConfigSettings.robotConfigTeam.ELECTCATZ, false, allianceMenu);
         } else {
-            teamMenu.addChoice(LibField.Team.ELECTCATZ.toString(), LibField.Team.ELECTCATZ, allianceMenu);
-            teamMenu.addChoice(LibField.Team.CYBORGCATZ.toString(), LibField.Team.CYBORGCATZ, allianceMenu);
-            teamMenu.addChoice(LibField.Team.TOWR.toString(), LibField.Team.TOWR, allianceMenu);
+            teamMenu.addChoice(robotConfigSettings.robotConfigTeam.ELECTCATZ.toString(), robotConfigSettings.robotConfigTeam.ELECTCATZ, true, allianceMenu);
+            teamMenu.addChoice(robotConfigSettings.robotConfigTeam.CYBORGCATZ.toString(), robotConfigSettings.robotConfigTeam.CYBORGCATZ, false, allianceMenu);
+            teamMenu.addChoice(robotConfigSettings.robotConfigTeam.TOWR.toString(), robotConfigSettings.robotConfigTeam.TOWR, false, allianceMenu);
         }
 
-        if (allianceColor.equals(LibField.Alliance.RED.toString())) {
-            allianceMenu.addChoice(LibField.Alliance.RED.toString(),  LibField.Alliance.RED, startPosMenu);
-            allianceMenu.addChoice(LibField.Alliance.BLUE.toString(), LibField.Alliance.BLUE, startPosMenu);
+        if (allianceColor.equals(robotConfigSettings.Alliance.RED.toString())) {
+            allianceMenu.addChoice(robotConfigSettings.Alliance.RED.toString(),  robotConfigSettings.Alliance.RED, true, startPosMenu);
+            allianceMenu.addChoice(robotConfigSettings.Alliance.BLUE.toString(), robotConfigSettings.Alliance.BLUE, false, startPosMenu);
         } else  {
-            allianceMenu.addChoice(LibField.Alliance.BLUE.toString(), LibField.Alliance.BLUE, startPosMenu);
-            allianceMenu.addChoice(LibField.Alliance.RED.toString(),  LibField.Alliance.RED, startPosMenu);
+            allianceMenu.addChoice(robotConfigSettings.Alliance.BLUE.toString(), robotConfigSettings.Alliance.BLUE, true, startPosMenu);
+            allianceMenu.addChoice(robotConfigSettings.Alliance.RED.toString(),  robotConfigSettings.Alliance.RED, false, startPosMenu);
         }
 
-        if (allianceStartPosition.equals(LibField.StartPos.START_LEFT.toString())) {
-            startPosMenu.addChoice(LibField.StartPos.START_LEFT.toString(), LibField.StartPos.START_LEFT, delayMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, delayMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_TEST.toString(), LibField.StartPos.START_TEST, delayMenu);
-        } else if (allianceStartPosition.equals(LibField.StartPos.START_RIGHT.toString())) {
-            startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, delayMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_LEFT.toString(), LibField.StartPos.START_LEFT, delayMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_TEST.toString(), LibField.StartPos.START_TEST, delayMenu);
+        if (allianceStartPosition.equals(robotConfigSettings.robotConfigStartPos.START_LEFT.toString())) {
+            startPosMenu.addChoice(robotConfigSettings.robotConfigStartPos.START_LEFT.toString(), robotConfigSettings.robotConfigStartPos.START_LEFT, true, delayMenu);
+            startPosMenu.addChoice(robotConfigSettings.robotConfigStartPos.START_RIGHT.toString(), robotConfigSettings.robotConfigStartPos.START_RIGHT, false, delayMenu);
+            startPosMenu.addChoice(robotConfigSettings.robotConfigStartPos.START_TEST.toString(), robotConfigSettings.robotConfigStartPos.START_TEST, false, delayMenu);
+        } else if (allianceStartPosition.equals(robotConfigSettings.robotConfigStartPos.START_RIGHT.toString())) {
+            startPosMenu.addChoice(robotConfigSettings.robotConfigStartPos.START_RIGHT.toString(), robotConfigSettings.robotConfigStartPos.START_RIGHT, true, delayMenu);
+            startPosMenu.addChoice(robotConfigSettings.robotConfigStartPos.START_LEFT.toString(), robotConfigSettings.robotConfigStartPos.START_LEFT, false, delayMenu);
+            startPosMenu.addChoice(robotConfigSettings.robotConfigStartPos.START_TEST.toString(), robotConfigSettings.robotConfigStartPos.START_TEST, false, delayMenu);
         } else {
-            startPosMenu.addChoice(LibField.StartPos.START_TEST.toString(), LibField.StartPos.START_TEST, delayMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_LEFT.toString(), LibField.StartPos.START_LEFT, delayMenu);
-            startPosMenu.addChoice(LibField.StartPos.START_RIGHT.toString(), LibField.StartPos.START_RIGHT, delayMenu);
+            startPosMenu.addChoice(robotConfigSettings.robotConfigStartPos.START_TEST.toString(), robotConfigSettings.robotConfigStartPos.START_TEST, true, delayMenu);
+            startPosMenu.addChoice(robotConfigSettings.robotConfigStartPos.START_LEFT.toString(), robotConfigSettings.robotConfigStartPos.START_LEFT, false, delayMenu);
+            startPosMenu.addChoice(robotConfigSettings.robotConfigStartPos.START_RIGHT.toString(), robotConfigSettings.robotConfigStartPos.START_RIGHT, false, delayMenu);
         }
 
         delayMenu.setChildMenu(robotConfigMenu);
 
-        if (robotConfig.equals(LibField.RobotConfigChoice.TileRunner2x60.toString())) {
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
-        } else if (robotConfig.equals(LibField.RobotConfigChoice.TileRunner2x40.toString())) {
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
-        } else if (robotConfig.equals(LibField.RobotConfigChoice.TileRunner2x20.toString())) {
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
-        } else if (robotConfig.equals(LibField.RobotConfigChoice.TankTread2x40Custom.toString())) {
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
-        } else if (robotConfig.equals(LibField.RobotConfigChoice.Custom_11231_2016.toString())) {
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
-        } else if (robotConfig.equals(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString())) {
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunnerMecanum2x40.toString(), LibField.RobotConfigChoice.TileRunnerMecanum2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x60.toString(), LibField.RobotConfigChoice.TileRunner2x60, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x40.toString(), LibField.RobotConfigChoice.TileRunner2x40, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TileRunner2x20.toString(), LibField.RobotConfigChoice.TileRunner2x20, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.Custom_11231_2016.toString(), LibField.RobotConfigChoice.Custom_11231_2016, debugConfigMenu);
-            robotConfigMenu.addChoice(LibField.RobotConfigChoice.TankTread2x40Custom.toString(), LibField.RobotConfigChoice.TankTread2x40Custom, debugConfigMenu);
+        if (robotConfig.equals(robotConfigSettings.robotConfigChoice.TileRunner2x60.toString())) {
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x60.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x60, true, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x40, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x20.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x20, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.Custom_11231_2016.toString(), robotConfigSettings.robotConfigChoice.Custom_11231_2016, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TankTread2x40Custom.toString(), robotConfigSettings.robotConfigChoice.TankTread2x40Custom, false, debugConfigMenu);
+        } else if (robotConfig.equals(robotConfigSettings.robotConfigChoice.TileRunner2x40.toString())) {
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x40, true, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x60.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x60, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x20.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x20, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.Custom_11231_2016.toString(), robotConfigSettings.robotConfigChoice.Custom_11231_2016, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TankTread2x40Custom.toString(), robotConfigSettings.robotConfigChoice.TankTread2x40Custom, false, debugConfigMenu);
+        } else if (robotConfig.equals(robotConfigSettings.robotConfigChoice.TileRunner2x20.toString())) {
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x20.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x20, true, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x40, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x60.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x60, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.Custom_11231_2016.toString(), robotConfigSettings.robotConfigChoice.Custom_11231_2016, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TankTread2x40Custom.toString(), robotConfigSettings.robotConfigChoice.TankTread2x40Custom, false, debugConfigMenu);
+        } else if (robotConfig.equals(robotConfigSettings.robotConfigChoice.TankTread2x40Custom.toString())) {
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TankTread2x40Custom.toString(), robotConfigSettings.robotConfigChoice.TankTread2x40Custom, true, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x60.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x60, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x40, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x20.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x20, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.Custom_11231_2016.toString(), robotConfigSettings.robotConfigChoice.Custom_11231_2016, false, debugConfigMenu);
+        } else if (robotConfig.equals(robotConfigSettings.robotConfigChoice.Custom_11231_2016.toString())) {
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.Custom_11231_2016.toString(), robotConfigSettings.robotConfigChoice.Custom_11231_2016, true, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TankTread2x40Custom.toString(), robotConfigSettings.robotConfigChoice.TankTread2x40Custom, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x60.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x60, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x40, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x20.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x20, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40, false, debugConfigMenu);
+        } else {
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunnerMecanum2x40, true, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x60.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x60, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x40.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x40, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TileRunner2x20.toString(), robotConfigSettings.robotConfigChoice.TileRunner2x20, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.Custom_11231_2016.toString(), robotConfigSettings.robotConfigChoice.Custom_11231_2016, false, debugConfigMenu);
+            robotConfigMenu.addChoice(robotConfigSettings.robotConfigChoice.TankTread2x40Custom.toString(), robotConfigSettings.robotConfigChoice.TankTread2x40Custom, false, debugConfigMenu);
         }
 
 
         if (debug == 1) {
-            debugConfigMenu.addChoice("1", 1);
-            debugConfigMenu.addChoice("2", 2);
-            debugConfigMenu.addChoice("3", 3);
-            debugConfigMenu.addChoice("4", 4);
-            debugConfigMenu.addChoice("5", 5);
-            debugConfigMenu.addChoice("6", 6);
-            debugConfigMenu.addChoice("7", 7);
-            debugConfigMenu.addChoice("8", 8);
-            debugConfigMenu.addChoice("9", 9);
-            debugConfigMenu.addChoice("10", 10);
+            debugConfigMenu.addChoice("1", 1, true);
+            debugConfigMenu.addChoice("2", 2, false);
+            debugConfigMenu.addChoice("3", 3, false);
+            debugConfigMenu.addChoice("4", 4, false);
+            debugConfigMenu.addChoice("5", 5, false);
+            debugConfigMenu.addChoice("6", 6, false);
+            debugConfigMenu.addChoice("7", 7, false);
+            debugConfigMenu.addChoice("8", 8, false);
+            debugConfigMenu.addChoice("9", 9, false);
+            debugConfigMenu.addChoice("10", 10, false);
         } else if (debug == 2) {
-            debugConfigMenu.addChoice("2", 2);
-            debugConfigMenu.addChoice("3", 3);
-            debugConfigMenu.addChoice("4", 4);
-            debugConfigMenu.addChoice("1", 1);
-            debugConfigMenu.addChoice("5", 5);
-            debugConfigMenu.addChoice("6", 6);
-            debugConfigMenu.addChoice("7", 7);
-            debugConfigMenu.addChoice("8", 8);
-            debugConfigMenu.addChoice("9", 9);
-            debugConfigMenu.addChoice("10", 10);
+            debugConfigMenu.addChoice("1", 1, false);
+            debugConfigMenu.addChoice("2", 2, true);
+            debugConfigMenu.addChoice("3", 3, false);
+            debugConfigMenu.addChoice("4", 4, false);
+            debugConfigMenu.addChoice("5", 5, false);
+            debugConfigMenu.addChoice("6", 6, false);
+            debugConfigMenu.addChoice("7", 7, false);
+            debugConfigMenu.addChoice("8", 8, false);
+            debugConfigMenu.addChoice("9", 9, false);
+            debugConfigMenu.addChoice("10", 10, false);
         } else if (debug == 3) {
-            debugConfigMenu.addChoice("3", 3);
-            debugConfigMenu.addChoice("4", 4);
-            debugConfigMenu.addChoice("1", 1);
-            debugConfigMenu.addChoice("2", 2);
-            debugConfigMenu.addChoice("5", 5);
-            debugConfigMenu.addChoice("6", 6);
-            debugConfigMenu.addChoice("7", 7);
-            debugConfigMenu.addChoice("8", 8);
-            debugConfigMenu.addChoice("9", 9);
-            debugConfigMenu.addChoice("10", 10);
+            debugConfigMenu.addChoice("1", 1, false);
+            debugConfigMenu.addChoice("2", 2, false);
+            debugConfigMenu.addChoice("3", 3, true);
+            debugConfigMenu.addChoice("4", 4, false);
+            debugConfigMenu.addChoice("5", 5, false);
+            debugConfigMenu.addChoice("6", 6, false);
+            debugConfigMenu.addChoice("7", 7, false);
+            debugConfigMenu.addChoice("8", 8, false);
+            debugConfigMenu.addChoice("9", 9, false);
+            debugConfigMenu.addChoice("10", 10, false);
         } else if (debug == 4) {
-            debugConfigMenu.addChoice("4", 4);
-            debugConfigMenu.addChoice("1", 1);
-            debugConfigMenu.addChoice("2", 2);
-            debugConfigMenu.addChoice("3", 3);
-            debugConfigMenu.addChoice("5", 5);
-            debugConfigMenu.addChoice("6", 6);
-            debugConfigMenu.addChoice("7", 7);
-            debugConfigMenu.addChoice("8", 8);
-            debugConfigMenu.addChoice("9", 9);
-            debugConfigMenu.addChoice("10", 10);
+            debugConfigMenu.addChoice("1", 1, true);
+            debugConfigMenu.addChoice("2", 2, false);
+            debugConfigMenu.addChoice("3", 3, false);
+            debugConfigMenu.addChoice("4", 4, true);
+            debugConfigMenu.addChoice("5", 5, false);
+            debugConfigMenu.addChoice("6", 6, false);
+            debugConfigMenu.addChoice("7", 7, false);
+            debugConfigMenu.addChoice("8", 8, false);
+            debugConfigMenu.addChoice("9", 9, false);
+            debugConfigMenu.addChoice("10", 10, false);
         } else if (debug == 5) {
-            debugConfigMenu.addChoice("5", 5);
-            debugConfigMenu.addChoice("1", 1);
-            debugConfigMenu.addChoice("2", 2);
-            debugConfigMenu.addChoice("3", 3);
-            debugConfigMenu.addChoice("4", 4);
-            debugConfigMenu.addChoice("6", 6);
-            debugConfigMenu.addChoice("7", 7);
-            debugConfigMenu.addChoice("8", 8);
-            debugConfigMenu.addChoice("9", 9);
-            debugConfigMenu.addChoice("10", 10);
+            debugConfigMenu.addChoice("1", 1, false);
+            debugConfigMenu.addChoice("2", 2, false);
+            debugConfigMenu.addChoice("3", 3, false);
+            debugConfigMenu.addChoice("4", 4, false);
+            debugConfigMenu.addChoice("5", 5, true);
+            debugConfigMenu.addChoice("6", 6, false);
+            debugConfigMenu.addChoice("7", 7, false);
+            debugConfigMenu.addChoice("8", 8, false);
+            debugConfigMenu.addChoice("9", 9, false);
+            debugConfigMenu.addChoice("10", 10, false);
         } else if (debug == 6) {
-            debugConfigMenu.addChoice("6", 6);
-            debugConfigMenu.addChoice("1", 1);
-            debugConfigMenu.addChoice("2", 2);
-            debugConfigMenu.addChoice("3", 3);
-            debugConfigMenu.addChoice("4", 4);
-            debugConfigMenu.addChoice("5", 5);
-            debugConfigMenu.addChoice("7", 7);
-            debugConfigMenu.addChoice("8", 8);
-            debugConfigMenu.addChoice("9", 9);
-            debugConfigMenu.addChoice("10", 10);
+            debugConfigMenu.addChoice("1", 1, false);
+            debugConfigMenu.addChoice("2", 2, false);
+            debugConfigMenu.addChoice("3", 3, false);
+            debugConfigMenu.addChoice("4", 4, false);
+            debugConfigMenu.addChoice("5", 5, false);
+            debugConfigMenu.addChoice("6", 6, true);
+            debugConfigMenu.addChoice("7", 7, false);
+            debugConfigMenu.addChoice("8", 8, false);
+            debugConfigMenu.addChoice("9", 9, false);
+            debugConfigMenu.addChoice("10", 10, false);
         }  else if (debug == 7) {
-            debugConfigMenu.addChoice("7", 7);
-            debugConfigMenu.addChoice("1", 1);
-            debugConfigMenu.addChoice("2", 2);
-            debugConfigMenu.addChoice("3", 3);
-            debugConfigMenu.addChoice("4", 4);
-            debugConfigMenu.addChoice("5", 5);
-            debugConfigMenu.addChoice("6", 6);
-            debugConfigMenu.addChoice("8", 8);
-            debugConfigMenu.addChoice("9", 9);
-            debugConfigMenu.addChoice("10", 10);
+            debugConfigMenu.addChoice("1", 1, false);
+            debugConfigMenu.addChoice("2", 2, false);
+            debugConfigMenu.addChoice("3", 3, false);
+            debugConfigMenu.addChoice("4", 4, false);
+            debugConfigMenu.addChoice("5", 5, false);
+            debugConfigMenu.addChoice("6", 6, false);
+            debugConfigMenu.addChoice("7", 7, true);
+            debugConfigMenu.addChoice("8", 8, false);
+            debugConfigMenu.addChoice("9", 9, false);
+            debugConfigMenu.addChoice("10", 10, false);
         } else if (debug == 8) {
-            debugConfigMenu.addChoice("8", 8);
-            debugConfigMenu.addChoice("1", 1);
-            debugConfigMenu.addChoice("2", 2);
-            debugConfigMenu.addChoice("3", 3);
-            debugConfigMenu.addChoice("4", 4);
-            debugConfigMenu.addChoice("5", 5);
-            debugConfigMenu.addChoice("6", 6);
-            debugConfigMenu.addChoice("7", 7);
-            debugConfigMenu.addChoice("9", 9);
-            debugConfigMenu.addChoice("10", 10);
+            debugConfigMenu.addChoice("1", 1, false);
+            debugConfigMenu.addChoice("2", 2, false);
+            debugConfigMenu.addChoice("3", 3, false);
+            debugConfigMenu.addChoice("4", 4, false);
+            debugConfigMenu.addChoice("5", 5, false);
+            debugConfigMenu.addChoice("6", 6, false);
+            debugConfigMenu.addChoice("7", 7, false);
+            debugConfigMenu.addChoice("8", 8, true);
+            debugConfigMenu.addChoice("9", 9, false);
+            debugConfigMenu.addChoice("10", 10, false);
         } else if (debug == 9) {
-            debugConfigMenu.addChoice("9", 9);
-            debugConfigMenu.addChoice("1", 1);
-            debugConfigMenu.addChoice("2", 2);
-            debugConfigMenu.addChoice("3", 3);
-            debugConfigMenu.addChoice("4", 4);
-            debugConfigMenu.addChoice("5", 5);
-            debugConfigMenu.addChoice("6", 6);
-            debugConfigMenu.addChoice("7", 7);
-            debugConfigMenu.addChoice("8", 8);
-            debugConfigMenu.addChoice("10", 10);
+            debugConfigMenu.addChoice("1", 1, false);
+            debugConfigMenu.addChoice("2", 2, false);
+            debugConfigMenu.addChoice("3", 3, false);
+            debugConfigMenu.addChoice("4", 4, false);
+            debugConfigMenu.addChoice("5", 5, false);
+            debugConfigMenu.addChoice("6", 6, false);
+            debugConfigMenu.addChoice("7", 7, false);
+            debugConfigMenu.addChoice("8", 8, false);
+            debugConfigMenu.addChoice("9", 9, true);
+            debugConfigMenu.addChoice("10", 10, false);
         }  else {
-            debugConfigMenu.addChoice("10", 10);
-            debugConfigMenu.addChoice("1", 1);
-            debugConfigMenu.addChoice("2", 2);
-            debugConfigMenu.addChoice("3", 3);
-            debugConfigMenu.addChoice("4", 4);
-            debugConfigMenu.addChoice("5", 5);
-            debugConfigMenu.addChoice("6", 6);
-            debugConfigMenu.addChoice("7", 7);
-            debugConfigMenu.addChoice("8", 8);
-            debugConfigMenu.addChoice("9", 9);
+            debugConfigMenu.addChoice("1", 1, false);
+            debugConfigMenu.addChoice("2", 2, false);
+            debugConfigMenu.addChoice("3", 3, false);
+            debugConfigMenu.addChoice("4", 4, false);
+            debugConfigMenu.addChoice("5", 5, false);
+            debugConfigMenu.addChoice("6", 6, false);
+            debugConfigMenu.addChoice("7", 7, false);
+            debugConfigMenu.addChoice("8", 8, false);
+            debugConfigMenu.addChoice("9", 9, false);
+            debugConfigMenu.addChoice("10", 10, true);
         }
 
         //
@@ -366,12 +315,12 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         //
         // Set choices variables.
         //
-        allianceStartPosition = startPosMenu.getChoiceText(startPosMenu.getCurrentChoice());
-        allianceColor = allianceMenu.getChoiceText(allianceMenu.getCurrentChoice());
-        teamNumber = teamMenu.getChoiceText(teamMenu.getCurrentChoice());
-        robotConfig = robotConfigMenu.getChoiceText(robotConfigMenu.getCurrentChoice());
-        delay = (int)delayMenu.getCurrentValue();
-        debug = Integer.parseInt(debugConfigMenu.getChoiceText(debugConfigMenu.getCurrentChoice()));
+        allianceStartPosition = startPosMenu.getCurrentChoiceText();
+        //allianceColor = allianceMenu.getCurrentChoiceText();
+        //teamNumber = teamMenu.getCurrentChoiceText();
+        //robotConfig = robotConfigMenu.getCurrentChoiceText();
+        //delay = (int)delayMenu.getCurrentValue();
+        //debug = Integer.parseInt(debugConfigMenu.getCurrentChoiceText());
 
         //write the options to sharedpreferences
         editor.putString("club.towr5291.Autonomous.TeamNumber", teamNumber);
@@ -391,14 +340,14 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         debug = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Debug", null));
 
         int lnum = 1;
-        dashboard.displayPrintf(lnum++, "Team:     " + teamNumber);
+        dashboard.displayPrintf(lnum++, "robotConfigTeam:     " + teamNumber);
         dashboard.displayPrintf(lnum++, "Alliance: " + allianceColor);
         dashboard.displayPrintf(lnum++, "Start:    " + allianceStartPosition);
         dashboard.displayPrintf(lnum++, "Delay:    " + String.valueOf(delay));
         dashboard.displayPrintf(lnum++, "Robot:    " + robotConfig);
         dashboard.displayPrintf(lnum++, "Debug:    " + debug);
 
-        fileLogger.writeEvent("AutonConfig", "Team     " + teamNumber);
+        fileLogger.writeEvent("AutonConfig", "robotConfigTeam     " + teamNumber);
         fileLogger.writeEvent("AutonConfig", "Alliance " + allianceColor);
         fileLogger.writeEvent("AutonConfig", "Start    " + allianceStartPosition);
         fileLogger.writeEvent("AutonConfig", "Delay    " + String.valueOf(delay));
@@ -406,6 +355,74 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         fileLogger.writeEvent("AutonConfig", "Debug:   " + debug);
 
     }
+
+    @Override
+    public void initRobot()
+    {
+        //start the log
+        fileLogger = new FileLogger(runtime);
+        fileLogger.open();
+        fileLogger.write("Time,SysMS,Thread,Event,Desc");
+        fileLogger.writeEvent(TAG, "Log Started");
+
+    }   //initRobot
+
+    @Override
+    public void startMode() {
+
+        initRobot();
+
+        dashboard = HalDashboard.createInstance(telemetry);
+
+        FtcRobotControllerActivity act = (FtcRobotControllerActivity)(hardwareMap.appContext);
+
+        dashboard.setTextView((TextView)act.findViewById(R.id.textOpMode));
+        dashboard.displayPrintf(0, "Starting Menu System");
+
+        dashboard.displayPrintf(0, "INITIALIZING - Please wait for Menu");
+        fileLogger.writeEvent(TAG, "SETUP");
+
+        doMenus();
+        dashboard.displayPrintf(0, "COMPLETE - Settings Written");
+
+
+    }
+
+
+    @Override
+    public void stopMode()
+    {
+
+        //stop the log
+        if (fileLogger != null) {
+            fileLogger.writeEvent(TAG, "Stopped");
+            fileLogger.close();
+            fileLogger = null;
+        }
+
+    }   //stopMode
+
+
+    @Override
+    public void runPeriodic(double elapsedTime)
+    {
+
+
+
+
+        // Wait for the game to start (driver presses PLAY)
+        waitForStart();
+
+        while (opModeIsActive()) {
+            //this will log only when debug is at level 3 or above
+            if (debug >= 3) {
+                fileLogger.writeEvent(TAG, "In Loop # " + loop);
+            }
+            loop++;
+        }
+
+
+    }   //runPeriodic
 
 }
 

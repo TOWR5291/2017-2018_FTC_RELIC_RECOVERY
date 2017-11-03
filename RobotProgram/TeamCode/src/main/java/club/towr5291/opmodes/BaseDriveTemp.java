@@ -1,26 +1,14 @@
 package club.towr5291.opmodes;
 
-import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
-import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
-import com.qualcomm.robotcore.hardware.DcMotor;
-import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
 import com.qualcomm.robotcore.hardware.I2cAddr;
 import com.qualcomm.robotcore.hardware.I2cDevice;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynch;
 import com.qualcomm.robotcore.hardware.I2cDeviceSynchImpl;
-import com.qualcomm.robotcore.util.ElapsedTime;
 
-import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
-
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import club.towr5291.functions.FileLogger;
-import club.towr5291.robotconfig.HardwareDriveMotors;
-import club.towr5291.robotconfig.HardwareSensors;
+import club.towr5291.robotconfig.HardwareDriveMotorsBaseConfig;
 
 /**
  * Created by Andrew Haselton on 10/15/2016 at 9:53 AM.
@@ -29,7 +17,7 @@ import club.towr5291.robotconfig.HardwareSensors;
 @Disabled
 public class BaseDriveTemp extends OpMode{
 
-    HardwareDriveMotors robotDrive   = new HardwareDriveMotors();   // Use base drive hardware configuration
+    HardwareDriveMotorsBaseConfig robotDrive   = new HardwareDriveMotorsBaseConfig();   // Use base drive hardware configuration
 //    DcMotor leftMotor1;
 //    DcMotor leftMotor2;
 //    DcMotor rightMotor1;

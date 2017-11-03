@@ -105,35 +105,41 @@ public class FtcChoiceMenu<T> extends FtcMenu
     public FtcChoiceMenu(String menuTitle, FtcMenu parent, MenuButtons menuButtons)
     {
         super(menuTitle, parent, menuButtons);
-    }   //FtcMenu
+    }   //FtcChoiceMenu
 
     /**
      * This method adds a choice to the menu. The choices will be displayed in the order of them being added.
      *
      * @param choiceText specifies the choice text that will be displayed on the dashboard.
      * @param choiceObject specifies the object to be returned if the choice is selected.
+     * @param defChoice specifies true to set it the default choice, false otherwise.
      * @param childMenu specifies the next menu to go to when this choice is selected. If this is the last menu
      *                  (a leaf node in the tree), it can be set to null.
      */
-    public void addChoice(String choiceText, T choiceObject, FtcMenu childMenu)
+    public void addChoice(String choiceText, T choiceObject, boolean defChoice, FtcMenu childMenu)
     {
         final String funcName = "addChoice";
 
         if (debugEnabled)
         {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API,
-                                "text=%s,obj=%s,child=%s",
-                                choiceText, choiceObject.toString(), childMenu == null? "null": childMenu.getTitle());
-            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API);
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API, "text=%s,obj=%s,default=%s,child=%s",
+                                choiceText, choiceObject.toString(), Boolean.toString(defChoice),
+                                childMenu == null? "null": childMenu.getTitle());
         }
 
         choiceItems.add(new ChoiceItem(choiceText, choiceObject, childMenu));
-        if (currChoice == -1)
+        if (defChoice || currChoice == -1)
         {
             //
-            // This is the first added choice in the menu. Make it the default choice by highlighting it.
+            // Either this is the first added choice or the specified default choice in the menu, make it the current
+            // choice.
             //
-            currChoice = 0;
+            currChoice = choiceItems.size() - 1;
+        }
+
+        if (debugEnabled)
+        {
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API);
         }
     }   //addChoice
 
@@ -142,73 +148,21 @@ public class FtcChoiceMenu<T> extends FtcMenu
      *
      * @param choiceText specifies the choice text that will be displayed on the dashboard.
      * @param choiceObj specifies the object to be returned if the choice is selected.
+     * @param defChoice specifies true to set it the default choice, false otherwise.
      */
-    public void addChoice(String choiceText, T choiceObj)
+    public void addChoice(String choiceText, T choiceObj, boolean defChoice)
     {
-        addChoice(choiceText, choiceObj, null);
+        addChoice(choiceText, choiceObj, defChoice, null);
     }   //addChoice
 
     /**
-     * This method returns the choice text of the given choice index.
+     * This method returns the current selected choice item. Every menu has a current choice even if the menu hasn't
+     * been displayed and the user hasn't picked a choice. In that case, the current choice is the default selection
+     * of the menu which is the first choice in the menu. If the menu is empty, the current choice is null.
      *
-     * @param choice specifies the choice index in the menu.
-     * @return text of the choice if choice index is valid, null otherwise.
+     * @return current selected choice, null if menu is empty.
      */
-    public String getChoiceText(int choice)
-    {
-        final String funcName = "getChoiceText";
-        String text = null;
-        int tableSize = choiceItems.size();
-
-        if (tableSize > 0 && choice >= 0 && choice < tableSize)
-        {
-            text = choiceItems.get(choice).getText();
-        }
-
-        if (debugEnabled)
-        {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API, "choice=%d", choice);
-            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%s", text != null? text: "null");
-        }
-
-        return text;
-    }   //getChoiceText
-
-    /**
-     * This method returns the choice object of the given choice index.
-     *
-     * @param choice specifies the choice index in the menu.
-     * @return object of the given choice if choice index is valid, null otherwise.
-     */
-    public T getChoiceObject(int choice)
-    {
-        final String funcName = "getChoiceObject";
-        T obj = null;
-        int tableSize = choiceItems.size();
-
-        if (tableSize > 0 && choice >= 0 && choice < tableSize)
-        {
-            obj = choiceItems.get(choice).getObject();
-        }
-
-        if (debugEnabled)
-        {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API, "choice=%d", choice);
-            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%s", obj != null? obj.toString(): "null");
-        }
-
-        return obj;
-    }   //getChoiceObject
-
-    /**
-     * This method returns the index of the current choice. Every menu has a current choice even if the menu hasn't
-     * been displayed and the user hasn't picked a choice. In that case, the current choice is the highlighted
-     * selection of the menu which is the first choice in the menu. If the menu is empty, the current choice index
-     * is -1.
-     *
-     * @return current choice index, -1 if menu is empty.
-     */
-    public int getCurrentChoice()
+    public ChoiceItem getCurrentChoice()
     {
         final String funcName = "getCurrentChoice";
 
@@ -218,33 +172,33 @@ public class FtcChoiceMenu<T> extends FtcMenu
             dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%d", currChoice);
         }
 
-        return currChoice;
+        return currChoice >= 0 && currChoice < choiceItems.size()? choiceItems.get(currChoice): null;
     }   //getCurrentChoice
 
     /**
      * This method returns the text of the current choice. Every menu has a current choice even if the menu hasn't
-     * been displayed and the user hasn't picked a choice. In that case, the current choice is the highlighted
-     * selection of the menu which is the first choice in the menu. If the menu is empty, the current choice index
-     * is -1.
+     * been displayed and the user hasn't picked a choice. In that case, the current choice is the default selection
+     * of the menu which is the first choice in the menu. If the menu is empty, the current choice is null.
      *
-     * @return current choice text, null if menu is empty.
+     * @return current selected choice text, null if menu is empty.
      */
     public String getCurrentChoiceText()
     {
-        return getChoiceText(currChoice);
+        ChoiceItem choiceItem = getCurrentChoice();
+        return choiceItem != null? choiceItem.getText(): null;
     }   //getCurrentChoiceText
 
     /**
      * This method returns the object of the current choice. Every menu has a current choice even if the menu hasn't
-     * been displayed and the user hasn't picked a choice. In that case, the current choice is the highlighted
-     * selection of the menu which is the first choice in the menu. If the menu is empty, the current choice index
-     * is -1.
+     * been displayed and the user hasn't picked a choice. In that case, the current choice is the default selection
+     * of the menu which is the first choice in the menu. If the menu is empty, the current choice is null.
      *
      * @return current choice object, null if menu is empty.
      */
     public T getCurrentChoiceObject()
     {
-        return getChoiceObject(currChoice);
+        ChoiceItem choiceItem = getCurrentChoice();
+        return choiceItem != null? choiceItem.getObject(): null;
     }   //getCurrentChoiceObject
 
     //
@@ -258,6 +212,11 @@ public class FtcChoiceMenu<T> extends FtcMenu
     public void menuUp()
     {
         final String funcName = "menuUp";
+
+        if (debugEnabled)
+        {
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
+        }
 
         if (choiceItems.size() == 0)
         {
@@ -282,7 +241,6 @@ public class FtcChoiceMenu<T> extends FtcMenu
 
         if (debugEnabled)
         {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
             dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "! (choice=%d)", currChoice);
         }
     }   //menuUp
@@ -294,6 +252,11 @@ public class FtcChoiceMenu<T> extends FtcMenu
     public void menuDown()
     {
         final String funcName = "menuDown";
+
+        if (debugEnabled)
+        {
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
+        }
 
         if (choiceItems.size() == 0)
         {
@@ -321,7 +284,6 @@ public class FtcChoiceMenu<T> extends FtcMenu
 
         if (debugEnabled)
         {
-            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
             dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "! (choice=%d)", currChoice);
         }
     }   //menuDown
@@ -334,7 +296,8 @@ public class FtcChoiceMenu<T> extends FtcMenu
     public FtcMenu getChildMenu()
     {
         final String funcName = "getChildMenu";
-        FtcMenu childMenu = choiceItems.get(currChoice).childMenu;
+        ChoiceItem choiceItem = getCurrentChoice();
+        FtcMenu childMenu = choiceItem != null? choiceItem.getChildMenu(): null;
 
         if (debugEnabled)
         {

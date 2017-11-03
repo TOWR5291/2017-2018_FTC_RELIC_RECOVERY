@@ -1,14 +1,10 @@
 package club.towr5291.opmodes;
 
 import android.content.SharedPreferences;
-import android.graphics.Bitmap;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
-import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cGyro;
-import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
-import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
 import com.qualcomm.robotcore.hardware.DeviceInterfaceModule;
@@ -16,13 +12,8 @@ import com.qualcomm.robotcore.hardware.DigitalChannelController;
 
 import com.qualcomm.robotcore.util.ElapsedTime;
 
-import java.util.HashMap;
-
 import club.towr5291.functions.Constants;
 import club.towr5291.functions.FileLogger;
-import club.towr5291.libraries.LibraryStateSegAuto;
-import club.towr5291.robotconfig.HardwareArmMotors;
-import club.towr5291.robotconfig.HardwareDriveMotors;
 
 
 @TeleOp(name = "LED Show", group = "5291")
@@ -127,7 +118,7 @@ public class BaseDriveLEDDisplay extends LinearOpMode {
 
         //show options on the driver station phone
         telemetry.addData("Init11     ",  "Complete");
-        telemetry.addData("Team #     ",  teamNumber);
+        telemetry.addData("robotConfigTeam #     ",  teamNumber);
         telemetry.addData("Alliance   ",  allianceColor);
         telemetry.addData("Start Pos  ",  alliancePosition);
         telemetry.addData("Start Del  ",  delay);

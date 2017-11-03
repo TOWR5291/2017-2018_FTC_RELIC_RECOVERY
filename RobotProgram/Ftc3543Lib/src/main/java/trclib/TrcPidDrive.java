@@ -40,6 +40,16 @@ public class TrcPidDrive implements TrcTaskMgr.Task
     private static final TrcDbgTrace.MsgLevel msgLevel = TrcDbgTrace.MsgLevel.INFO;
     private TrcDbgTrace dbgTrace = null;
 
+    /**
+     * Turn mode specifies how PID controlled drive is turning the robot.
+     */
+    public enum TurnMode
+    {
+        IN_PLACE,
+        PIVOT,
+        CURVE
+    }   //enum TurnMode
+
     private static final double DEF_BEEP_FREQUENCY      = 880.0;        //in Hz
     private static final double DEF_BEEP_DURATION       = 0.2;          //in seconds
 
@@ -48,6 +58,7 @@ public class TrcPidDrive implements TrcTaskMgr.Task
     private TrcPidController xPidCtrl;
     private TrcPidController yPidCtrl;
     private TrcPidController turnPidCtrl;
+    private TurnMode turnMode = TurnMode.IN_PLACE;
     private TrcTone beepDevice = null;
     private double beepFrequency = DEF_BEEP_FREQUENCY;
     private double beepDuration = DEF_BEEP_DURATION;
@@ -61,6 +72,7 @@ public class TrcPidDrive implements TrcTaskMgr.Task
     private boolean turnOnly = false;
     private boolean maintainHeading = false;
     private boolean canceled = false;
+    private boolean pidDriveStarted = false;
 
     /**
      * Constructor: Create an instance of the object.
@@ -96,6 +108,42 @@ public class TrcPidDrive implements TrcTaskMgr.Task
     {
         return instanceName;
     }   //toString
+
+    /**
+     * This methods sets the turn mode. Supported modes are in-place (default), pivot and curve.
+     *
+     * @param turnMode specifies the turn mode to set to.
+     */
+    public void setTurnMode(TurnMode turnMode)
+    {
+        final String funcName = "setTurnMode";
+
+        if (debugEnabled)
+        {
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API, "turnMode=%s", turnMode);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API);
+        }
+
+        this.turnMode = turnMode;
+    }   //setTurnMode
+
+    /**
+     * This method returns the current turn mode.
+     *
+     * @return current turn mode.
+     */
+    public TurnMode getTurnMode()
+    {
+        final String funcName = "getTurnMode";
+
+        if (debugEnabled)
+        {
+            dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.API);
+            dbgTrace.traceExit(funcName, TrcDbgTrace.TraceLevel.API, "=%s", turnMode);
+        }
+
+        return turnMode;
+    }   //getTurnMode
 
     /**
      * This method sets the beep device and the beep tones so that it can play beeps when motor stalled or if the
@@ -231,6 +279,7 @@ public class TrcPidDrive implements TrcTaskMgr.Task
 
         this.holdTarget = holdTarget;
         this.turnOnly = xTarget == 0.0 && yTarget == 0.0 && turnTarget != 0.0;
+        this.pidDriveStarted = false;
 
         setTaskEnabled(true);
 
@@ -519,12 +568,18 @@ public class TrcPidDrive implements TrcTaskMgr.Task
             dbgTrace.traceEnter(funcName, TrcDbgTrace.TraceLevel.TASK, "mode=%s", runMode.toString());
         }
 
+        if (!pidDriveStarted &&
+            (driveBase.getXSpeed() != 0.0 || driveBase.getYSpeed() != 0.0 || driveBase.getTurnSpeed() != 0))
+        {
+            pidDriveStarted = true;
+        }
+
         double xPower = turnOnly || xPidCtrl == null? 0.0: xPidCtrl.getOutput();
         double yPower = turnOnly || yPidCtrl == null? 0.0: yPidCtrl.getOutput();
         double turnPower = turnPidCtrl == null? 0.0: turnPidCtrl.getOutput();
 
         boolean expired = expiredTime != 0.0 && TrcUtil.getCurrentTime() >= expiredTime;
-        boolean stalled = stallTimeout != 0.0 && driveBase.isStalled(stallTimeout);
+        boolean stalled = pidDriveStarted && stallTimeout != 0.0 && driveBase.isStalled(stallTimeout);
         boolean xOnTarget = xPidCtrl == null || xPidCtrl.isOnTarget();
         boolean yOnTarget = yPidCtrl == null || yPidCtrl.isOnTarget();
         boolean turnOnTarget = turnPidCtrl == null || turnPidCtrl.isOnTarget();
@@ -558,13 +613,38 @@ public class TrcPidDrive implements TrcTaskMgr.Task
                 driveBase.drive(0.0, 0.0);
             }
         }
+        else if (turnOnly)
+        {
+            switch (turnMode)
+            {
+                case IN_PLACE:
+                    driveBase.arcadeDrive(0.0, turnPower);
+                    break;
+
+                case PIVOT:
+                case CURVE:
+                    if (turnPower < 0.0)
+                    {
+                        driveBase.tankDrive(0.0, -turnPower);
+                    }
+                    else
+                    {
+                        driveBase.tankDrive(turnPower, 0.0);
+                    }
+                    break;
+            }
+        }
         else if (xPidCtrl != null)
         {
             driveBase.mecanumDrive_Cartesian(xPower, yPower, turnPower, false, 0.0);
         }
-        else
+        else if (turnMode == TurnMode.IN_PLACE)
         {
             driveBase.arcadeDrive(yPower, turnPower);
+        }
+        else
+        {
+           driveBase.drive(yPower, turnPower);
         }
 
         if (debugEnabled)
