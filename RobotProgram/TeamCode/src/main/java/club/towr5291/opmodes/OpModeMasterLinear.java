@@ -28,7 +28,6 @@ public abstract class OpModeMasterLinear extends LinearOpMode implements TrcRobo
     private static OpModeMasterLinear instance = null;
     private static String opModeName = null;
     private static final boolean debugEnabled = false;
-    private TrcDbgTrace dbgTrace = null;
 
     private final static String OPMODE_AUTO     = "Auto";
     private final static String OPMODE_TELEOP   = "TeleOp";
@@ -41,6 +40,9 @@ public abstract class OpModeMasterLinear extends LinearOpMode implements TrcRobo
     private static long loopCounter = 0;
 
     boolean initialized = false;
+    private TrcDbgTrace dbgTrace = null;
+
+    private static TrcDbgTrace globalTracer = null;
 
     private TrcTaskMgr taskMgr;
 
@@ -87,8 +89,51 @@ public abstract class OpModeMasterLinear extends LinearOpMode implements TrcRobo
     public OpModeMasterLinear()
     {
         super();
+
+        if (debugEnabled)
+        {
+            dbgTrace = new TrcDbgTrace("OpModeMasterLinear", false,  TrcDbgTrace.TraceLevel.API, TrcDbgTrace.MsgLevel.INFO);
+        }
+
         instance = this;
+        //
+        // Create task manager. There is only one global instance of task manager.
+        //
+        taskMgr = new TrcTaskMgr();
     }
+
+
+    /**
+     * This method returns the saved instance. This is a static method. So other class can get to this class instance
+     * by calling getInstance(). This is very useful for other classes that need to access the public fields and
+     * methods.
+     *
+     * @return save instance of this class.
+     */
+    public static OpModeMasterLinear getInstance()
+    {
+        if (instance == null) throw new NullPointerException("You are not using OpModeMasterLinear!");
+        return instance;
+    }   //getInstance
+
+
+    /**
+     * This method returns a global debug trace object for tracing OpMode code. If it doesn't exist yet, one is
+     * created. This is an easy way to quickly get some debug output without a whole lot of setup overhead as the
+     * full module-based debug tracing.
+     *
+     * @return global opMode trace object.
+     */
+    public static TrcDbgTrace getGlobalTracer()
+    {
+        if (globalTracer == null)
+        {
+            globalTracer = new TrcDbgTrace(opModeName != null? opModeName: "globalTracer", false,
+                    TrcDbgTrace.TraceLevel.API, TrcDbgTrace.MsgLevel.INFO);
+        }
+
+        return globalTracer;
+    }   //getGlobalTracer
 
     /**
      * This method is called to initialize the robot. In FTC, this is called when the "Init" button on the Driver
