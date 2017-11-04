@@ -22,7 +22,7 @@ import hallib.HalDashboard;
  * Created by Ian Haden on 11/7/2016.
  */
 
-@Autonomous(name = "Auto Auton Config", group = "0")
+@Autonomous(name = "Auto: Auton Config", group = "0")
 public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuButtons {
 
     //set up the variables for the logger
@@ -101,10 +101,10 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         //
         // Create the menus.
         //
-        FtcChoiceMenu teamMenu      = new FtcChoiceMenu("robotConfigTeam:", null, this);
-        FtcChoiceMenu allianceMenu  = new FtcChoiceMenu("Alliance:", teamMenu, this);
-        FtcChoiceMenu startPosMenu  = new FtcChoiceMenu("Start:", allianceMenu, this);
-        FtcValueMenu delayMenu      = new FtcValueMenu("Delay:", startPosMenu, this, 0.0, 20.0, 1.0, 0.0, "%5.2f");
+        FtcChoiceMenu teamMenu           = new FtcChoiceMenu("robotConfigTeam:", null, this);
+        FtcChoiceMenu allianceMenu       = new FtcChoiceMenu("Alliance:", teamMenu, this);
+        FtcChoiceMenu startPosMenu       = new FtcChoiceMenu("Start:", allianceMenu, this);
+        FtcValueMenu delayMenu           = new FtcValueMenu("Delay:", startPosMenu, this, 0.0, 20.0, 1.0, delay, "%1f");
         FtcChoiceMenu robotConfigMenu    = new FtcChoiceMenu("Robot:", delayMenu, this);
         FtcChoiceMenu debugConfigMenu    = new FtcChoiceMenu("Debug:", robotConfigMenu, this);
 
@@ -316,11 +316,11 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         // Set choices variables.
         //
         allianceStartPosition = startPosMenu.getCurrentChoiceText();
-        //allianceColor = allianceMenu.getCurrentChoiceText();
-        //teamNumber = teamMenu.getCurrentChoiceText();
-        //robotConfig = robotConfigMenu.getCurrentChoiceText();
-        //delay = (int)delayMenu.getCurrentValue();
-        //debug = Integer.parseInt(debugConfigMenu.getCurrentChoiceText());
+        allianceColor = allianceMenu.getCurrentChoiceText();
+        teamNumber = teamMenu.getCurrentChoiceText();
+        robotConfig = robotConfigMenu.getCurrentChoiceText();
+        delay = (int)delayMenu.getCurrentValue();
+        debug = Integer.parseInt(debugConfigMenu.getCurrentChoiceText());
 
         //write the options to sharedpreferences
         editor.putString("club.towr5291.Autonomous.TeamNumber", teamNumber);
@@ -370,7 +370,7 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
     @Override
     public void startMode() {
 
-        initRobot();
+        //initRobot();
 
         dashboard = HalDashboard.createInstance(telemetry);
 
