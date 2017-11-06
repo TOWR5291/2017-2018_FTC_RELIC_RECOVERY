@@ -37,7 +37,8 @@ import club.towr5291.robotconfig.HardwareDriveMotors;
 
 @TeleOp(name="RR Mecanum Test IAN", group="RRTest")
 //@Disabled
-public class RRMecanumTestIan extends OpMode {
+public class RRMecanumTestIan extends OpModeMasterLinear
+{
 
     //set up TAG for logging prefic, this info will appear first in every log statemend
     private static final String TAG = "BaseDriveTest";
@@ -47,7 +48,6 @@ public class RRMecanumTestIan extends OpMode {
     private HardwareDriveMotors robotDrive      = new HardwareDriveMotors();   // Use a Pushbot's hardware
 
     //mode selection stuff
-    public boolean activated = false;
     public int mode = 0;
 
     //general variables
@@ -57,11 +57,10 @@ public class RRMecanumTestIan extends OpMode {
     public float strafe = 0;
 
     //all modes variables
-    public double leftFrontSpeed = 0;
-    public double leftBackSpeed = 0;
-    public double rightFrontSpeed = 0;
-    public double rightBackSpeed = 0;
-
+    public double dblLeftMotor1;
+    public double dblLeftMotor2;
+    public double dblRightMotor1;
+    public double dblRightMotor2;
 
     //gyro assisted and field-centric driving variables
     public int quadrant = 1;
@@ -69,8 +68,6 @@ public class RRMecanumTestIan extends OpMode {
     public double heading = 0;
     public float ajustedHeading = 0;
     public float revHeading = 0;
-    public float driftCorrectionHeadingStart = 0;
-    public boolean enableDriftCorrection = false;
 
     //The autonomous menu settings from the sharepreferences
     private SharedPreferences sharedPreferences;
@@ -93,7 +90,8 @@ public class RRMecanumTestIan extends OpMode {
     Acceleration gravity;
 
     @Override
-    public void init() {
+    public void runOpMode() throws InterruptedException
+    {
 
         if (debug >= 1)
         {
@@ -143,39 +141,27 @@ public class RRMecanumTestIan extends OpMode {
             Log.d(TAG, "Set setHardwareDriveRunWithoutEncoders");
             fileLogger.writeEvent(TAG, "Set setHardwareDriveRunWithoutEncoders");
         }
+
+        // Wait for the game to start (driver presses PLAY)
+        waitForStart();
+
+        while (opModeIsActive()) {
+            dblLeftMotor1 = Range.clip(+gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -1.0, 1.0);
+            dblLeftMotor2 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -1.0, 1.0);
+            dblRightMotor1 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -1.0, 1.0);
+            dblRightMotor2 = Range.clip(+gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -1.0, 1.0);
+
+            robotDrive.setHardwareDrivePower(dblLeftMotor1, dblLeftMotor2, dblRightMotor1, dblRightMotor2);
+
+
+        }
     }
 
-    @Override
-    public void init_loop() {
+    public static double scaleRange(double value, double lowSrcRange, double highSrcRange, double lowDstRange, double highDstRange)
+    {
+        return lowDstRange + (value - lowSrcRange)*(highDstRange - lowDstRange)/(highSrcRange - lowSrcRange);
+    }   //scaleRange
 
-    }
-
-    /*
-     * Code to run ONCE when the driver hits PLAY
-     */
-    @Override
-    public void start() {
-
-    }
-
-
-    @Override
-    public void loop() {
-
-        leftFrontSpeed = -gamepad1.left_stick_y;
-        leftBackSpeed = gamepad2.left_stick_y;
-        rightFrontSpeed = gamepad1.right_stick_y;
-        rightBackSpeed = -gamepad2.right_stick_y;
-        setMotorPowers(leftFrontSpeed,leftBackSpeed,rightFrontSpeed,rightBackSpeed);
-
-    }
-
-    public void setMotorPowers(double leftFront, double leftBack, double rightFront, double rightBack) {
-        robotDrive.setHardwareDriveLeft1MotorPower(-leftFront);
-        robotDrive.setHardwareDriveLeft2MotorPower(leftBack);
-        robotDrive.setHardwareDriveRight1MotorPower(rightFront);
-        robotDrive.setHardwareDriveRight2MotorPower(-rightBack);
-    }
 
     public double determineHeading(float x) {
         return Math.asin(x/radius);
@@ -185,7 +171,7 @@ public class RRMecanumTestIan extends OpMode {
         // ajustedHeading = heading from driver - robot heading relative to driver
         ajustedHeading = (float) (heading - revHeading);
         return ajustedHeading;
-    };
+    }
 
     public float determineSpeed(float angle, float distance) {
         speed = (float) (distance/(-Math.sin(angle)));
@@ -198,20 +184,29 @@ public class RRMecanumTestIan extends OpMode {
     }
 
     public void strafe(handed direction, double speed) {
+
         switch (direction.toString()) {
             case "Left":
-                robotDrive.setHardwareDrivePower(speed);
+                dblLeftMotor1  =  speed;
+                dblLeftMotor2  =  -speed;
+                dblRightMotor1 =  -speed;
+                dblRightMotor2 =  speed;
+                robotDrive.setHardwareDrivePower(dblLeftMotor1, dblLeftMotor2, dblRightMotor1, dblRightMotor2);
                 break;
             case "Right":
-                robotDrive.setHardwareDrivePower(-speed);
+                dblLeftMotor1  =  -speed;
+                dblLeftMotor2  =  speed;
+                dblRightMotor1 =  speed;
+                dblRightMotor2 =  -speed;
+                robotDrive.setHardwareDrivePower(dblLeftMotor1, dblLeftMotor2, dblRightMotor1, dblRightMotor2);
                 break;
         }
     }
 
-    public enum handed {
+    enum handed {
 
-        LEFT ("Left"),
-        RIGHT ("Right");
+        LEFT("Left"),
+        RIGHT("Right");
         private final String value;
 
         handed(String value) {
@@ -222,6 +217,5 @@ public class RRMecanumTestIan extends OpMode {
             return value;
         }
     }
-
 }
 

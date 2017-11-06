@@ -3,9 +3,9 @@ package club.towr5291.robotconfig;
 import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
-import com.qualcomm.robotcore.util.Range;
 
-import org.firstinspires.ftc.robotcore.external.navigation.Position;
+
+import club.towr5291.libraries.robotConfigSettings;
 
 /**
  * This is NOT an opmode.
@@ -21,10 +21,10 @@ import org.firstinspires.ftc.robotcore.external.navigation.Position;
 public class HardwareArmMotors
 {
     /* Public OpMode members. */
-    public DcMotor  flicker   = null;
-    public DcMotor  sweeper   = null;
-    public DcMotor  lifter   = null;
-    public DcMotor  lifter2   = null;
+    public DcMotor  armMotor1  = null;
+    public DcMotor  armMotor2  = null;
+    //public DcMotor  armMotor3  = null;
+    //public DcMotor  armMotor4  = null;
 
     /* local OpMode members. */
     HardwareMap hwMap           =  null;
@@ -36,55 +36,207 @@ public class HardwareArmMotors
     }
 
     /* Initialize standard Hardware interfaces */
-    public void init(HardwareMap ahwMap) {
+    public void init(HardwareMap ahwMap, robotConfigSettings.robotConfigChoice baseConfig) {
         // Save reference to Hardware map
         hwMap = ahwMap;
 
         // Define and Initialize Motors
-        flicker   = hwMap.dcMotor.get("flicker");
-        sweeper   = hwMap.dcMotor.get("sweeper");
-        lifter   = hwMap.dcMotor.get("lifter");
-        lifter2   = hwMap.dcMotor.get("lifter2");
+        armMotor1  = hwMap.dcMotor.get("lifttop");
+        armMotor2  = hwMap.dcMotor.get("liftbot");
+        //armMotor3  = hwMap.dcMotor.get("relicslide");
+        //armMotor4  = hwMap.dcMotor.get("rightMotor2");
 
-        flicker.setDirection(DcMotor.Direction.REVERSE);
-        sweeper.setDirection(DcMotor.Direction.REVERSE);
-        lifter.setDirection(DcMotor.Direction.REVERSE);
-        lifter2.setDirection(DcMotor.Direction.REVERSE);
+        setHardwareArmDirections();
 
         // Set all motors to zero power
-        flicker.setPower(0);
-        sweeper.setPower(0);
-        lifter.setPower(0);
-        lifter2.setPower(0);
+        setHardwareArmPower(0);
 
         // Set all motors to run without encoders.
         // May want to use RUN_USING_ENCODERS if encoders are installed.
-        flicker.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        sweeper.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        lifter.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        lifter2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        setHardwareArmResetEncoders();
+
+        setHardwareArmRunWithoutEncoders();
+
+        setHardwareArmLiftRunUsingEncoders();
+    }
+
+    public void setHardwareArmDirections(){
+
+        armMotor1.setDirection(DcMotor.Direction.FORWARD);
+        armMotor2.setDirection(DcMotor.Direction.REVERSE);
+        //armMotor3.setDirection(DcMotor.Direction.FORWARD);
+        //armMotor4.setDirection(DcMotor.Direction.REVERSE);
+    }
+
+    public int getHardwareArmIsBusy() {
+        //this will return a bitmapped integer,
+        // int 0  = 0000 is right2, right1, left2, left1
+        // int 1  = 0001 is right2, right1, left2, left1 (1)
+        // int 2  = 0010 is right2, right1, left2 (1), left1
+        // int 3  = 0011 is right2, right1, left2 (1), left1 (1)
+        // int 4  = 0100 is right2, right1 (1), left2, left1
+        // int 5  = 0101 is right2, right1 (1), left2, left1 (1)
+        // int 6  = 0110 is right2, right1 (1), left2 (1), left1
+        // int 7  = 0111 is right2, right1 (1), left2 (1), left1 (1)
+        // int 8  = 1000 is right2 (1), right1, left2, left1
+        // int 9  = 1001 is right2 (1), right1, left2, left1 (1)
+        // int 10 = 1010 is right2 (1), right1, left2 (1), left1
+        // int 11 = 1011 is right2 (1), right1, left2 (1), left1 (1)
+        // int 12 = 1100 is right2 (1), right1 (1), left2, left1
+        // int 13 = 1101 is right2 (1), right1 (1), left2, left1 (1)
+        // int 14 = 1101 is right2 (1), right1 (1), left2, left1 (1)
+        // int 15 = 1110 is right2 (1), right1 (1), left2 (1), left1
+        // int 16 = 1111 is right2 (1), right1 (1), left2 (1), left1 (1)
+
+        int myInt1 = (armMotor1.isBusy()) ? 1 : 0;
+        int myInt2 = (armMotor2.isBusy()) ? 1 : 0;
+        int myInt3 = 0;//(armMotor3.isBusy()) ? 1 : 0;
+        int myInt4 = 0;//(armMotor4.isBusy()) ? 1 : 0;
+
+        return (myInt1) + (2 * myInt2) + (4 * myInt3)  + (8 * myInt4);
 
     }
 
-    /***
-     *
-     * waitForTick implements a periodic delay. However, this acts like a metronome with a regular
-     * periodic tick.  This is used to compensate for varying processing times for each cycle.
-     * The function looks at the elapsed cycle time, and sleeps for the remaining time interval.
-     *
-     * @param periodMs  Length of wait cycle in mSec.
-     * @throws InterruptedException
-     */
-    public void waitForTick(long periodMs) throws InterruptedException {
-
-        long  remaining = periodMs - (long)period.milliseconds();
-
-        // sleep for the remaining portion of the regular cycle period.
-        if (remaining > 0)
-            Thread.sleep(remaining);
-
-        // Reset the cycle clock for the next pass.
-        period.reset();
+    public void setHardwareArmResetEncoders() {
+        armMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //armMotor3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        //armMotor4.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
+
+    public void setHardwareArmRunUsingEncoders() {
+        setHardwareArmLiftRunUsingEncoders();
+        setHardwareArmRelicRunUsingEncoders();
+    }
+
+    public void setHardwareArmLiftRunUsingEncoders() {
+        setHardwareArmLift1RunUsingEncoders();
+        setHardwareArmLift2RunUsingEncoders();
+    }
+
+    public void setHardwareArmRelicRunUsingEncoders() {
+        setHardwareArmRelic1RunUsingEncoders();
+        setHardwareArmRelic2RunUsingEncoders();
+    }
+
+    public void setHardwareArmLift1RunUsingEncoders() {
+        armMotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    public void setHardwareArmLift2RunUsingEncoders() {
+        armMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    public void setHardwareArmRelic1RunUsingEncoders() {
+        //armMotor3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    public void setHardwareArmRelic2RunUsingEncoders() {
+        //armMotor4.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+    }
+
+    public void setHardwareArmRunWithoutEncoders() {
+        setHardwareArmLiftRunWithoutEncoders();
+        setHardwareArmRelicRunWithoutEncoders();
+    }
+
+    public void setHardwareArmLiftRunWithoutEncoders() {
+        setHardwareArmLift1RunWithoutEncoders();
+        setHardwareArmLift2RunWithoutEncoders();
+    }
+
+    public void setHardwareArmRelicRunWithoutEncoders() {
+        setHardwareArmRelic1RunWithoutEncoders();
+        setHardwareArmRelic2RunWithoutEncoders();
+    }
+
+    public void setHardwareArmLift1RunWithoutEncoders() {
+        armMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void setHardwareArmLift2RunWithoutEncoders() {
+        armMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void setHardwareArmRelic1RunWithoutEncoders() {
+        //armMotor3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void setHardwareArmRelic2RunWithoutEncoders() {
+        //armMotor4.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+    }
+
+    public void setHardwareArmRunToPosition() {
+        setHardwareArmLiftRunToPosition();
+        setHardwareArmRelicRunToPosition();
+    }
+
+    public void setHardwareArmLiftRunToPosition() {
+        setHardwareArmLift1RunToPosition();
+        setHardwareArmLift2RunToPosition();
+    }
+
+    public void setHardwareArmRelicRunToPosition() {
+        setHardwareArmRelic1RunToPosition();
+        setHardwareArmRelic2RunToPosition();
+    }
+
+    public void setHardwareArmLift1RunToPosition() {
+        armMotor1.setMode(DcMotor.RunMode.RUN_TO_POSITION);;
+    }
+
+    public void setHardwareArmLift2RunToPosition() {
+        armMotor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);;
+    }
+
+    public void setHardwareArmRelic1RunToPosition() {
+        //armMotor3.setMode(DcMotor.RunMode.RUN_TO_POSITION);;
+    }
+
+    public void setHardwareArmRelic2RunToPosition() {
+        //armMotor4.setMode(DcMotor.RunMode.RUN_TO_POSITION);;
+    }
+
+    public void setHardwareArmPower (double lift1, double lift2, double relic1, double relic2) {
+        armMotor1.setPower(lift1);
+        armMotor2.setPower(lift2);
+        //armMotor3.setPower(relic1);
+        //armMotor4.setPower(relic2);
+    }
+
+    //set the drive motors power, both left and right
+    public void setHardwareArmPower (double power) {
+        setHardwareArmLiftMotorPower(power);
+        setHardwareArmRelicMotorPower(power);
+    }
+
+    //set the left motors drive power
+    public void setHardwareArmLiftMotorPower (double power) {
+        setHardwareArmLift1MotorPower(power);
+        setHardwareArmLift2MotorPower(power);
+    }
+
+    //set the right drive motors power
+    public void setHardwareArmRelicMotorPower (double power) {
+        setHardwareArmRelic1MotorPower(power);
+        setHardwareArmRelic2MotorPower(power);
+    }
+
+    public void setHardwareArmLift1MotorPower (double power) {
+        armMotor1.setPower(power);
+    }
+
+    public void setHardwareArmLift2MotorPower (double power) {
+        armMotor2.setPower(power);
+    }
+
+    public void setHardwareArmRelic1MotorPower (double power) {
+        //armMotor3.setPower(power);
+    }
+
+    public void setHardwareArmRelic2MotorPower (double power) {
+        //armMotor4.setPower(power);
+    }
+
 
 }

@@ -6,6 +6,7 @@ import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
 
 import club.towr5291.robotconfig.HardwareArmMotors;
+import club.towr5291.robotconfig.HardwareArmMotorsVelocityVortex;
 
 /**
  * Created by Andrew Haselton on 10/15/2016 at 9:53 AM.
@@ -14,7 +15,7 @@ import club.towr5291.robotconfig.HardwareArmMotors;
 @Disabled
 public class BaseDriveFlicker extends OpMode{
 
-    HardwareArmMotors attachments   = new HardwareArmMotors();   // Use base drive hardware configuration
+    HardwareArmMotorsVelocityVortex attachments   = new HardwareArmMotorsVelocityVortex();   // Use base drive hardware configuration
     DcMotor flicker;
 
 

@@ -356,7 +356,6 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
 
     }
 
-    @Override
     public void initRobot()
     {
         //start the log
@@ -364,13 +363,12 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         fileLogger.open();
         fileLogger.write("Time,SysMS,Thread,Event,Desc");
         fileLogger.writeEvent(TAG, "Log Started");
-
     }   //initRobot
 
     @Override
-    public void startMode() {
+    public void runOpMode() throws InterruptedException {
 
-        //initRobot();
+        initRobot();
 
         dashboard = HalDashboard.createInstance(telemetry);
 
@@ -382,47 +380,24 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         dashboard.displayPrintf(0, "INITIALIZING - Please wait for Menu");
         fileLogger.writeEvent(TAG, "SETUP");
 
+        // Wait for the game to start (driver presses PLAY)
+        waitForStart();
+
         doMenus();
         dashboard.displayPrintf(0, "COMPLETE - Settings Written");
 
-
+        stopMode();
     }
 
-
-    @Override
     public void stopMode()
     {
-
         //stop the log
         if (fileLogger != null) {
             fileLogger.writeEvent(TAG, "Stopped");
             fileLogger.close();
             fileLogger = null;
         }
-
     }   //stopMode
-
-
-    @Override
-    public void runPeriodic(double elapsedTime)
-    {
-
-
-
-
-        // Wait for the game to start (driver presses PLAY)
-        waitForStart();
-
-        while (opModeIsActive()) {
-            //this will log only when debug is at level 3 or above
-            if (debug >= 3) {
-                fileLogger.writeEvent(TAG, "In Loop # " + loop);
-            }
-            loop++;
-        }
-
-
-    }   //runPeriodic
 
 }
 

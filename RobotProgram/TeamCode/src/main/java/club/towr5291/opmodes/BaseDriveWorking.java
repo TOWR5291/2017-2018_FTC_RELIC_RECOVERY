@@ -14,6 +14,7 @@ import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
 import club.towr5291.robotconfig.HardwareArmMotors;
+import club.towr5291.robotconfig.HardwareArmMotorsVelocityVortex;
 import club.towr5291.robotconfig.HardwareDriveMotorsBaseConfig;
 
 /**
@@ -25,7 +26,7 @@ public class BaseDriveWorking extends OpMode {
 
     // Declare OpMode members.
     private HardwareDriveMotorsBaseConfig robotDrive   = new HardwareDriveMotorsBaseConfig();   // Use a Pushbot's hardware
-    private HardwareArmMotors armDrive   = new HardwareArmMotors();   // Use a Pushbot's hardware
+    private HardwareArmMotorsVelocityVortex armDrive   = new HardwareArmMotorsVelocityVortex();   // Use a Pushbot's hardware
 
     private double mdblLeftPow;
     private double mdblRightPow;

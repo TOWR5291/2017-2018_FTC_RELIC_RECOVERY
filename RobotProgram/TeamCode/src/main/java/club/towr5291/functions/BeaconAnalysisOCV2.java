@@ -48,7 +48,7 @@ public class BeaconAnalysisOCV2 {
     private Mat tmp1Img;
     private Mat tmp2Img;
     private Mat maskImg;
-    private Mat showImg = new Mat();
+    private Mat showImg;
     private Mat cvImage;
     private Mat colorDiff;
     private Mat onesImg;

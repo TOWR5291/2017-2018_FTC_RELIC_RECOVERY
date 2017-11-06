@@ -36,6 +36,7 @@ import android.content.SharedPreferences;
 import android.graphics.Bitmap;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
@@ -64,6 +65,7 @@ import com.vuforia.Vec2F;
 import com.vuforia.Vec3F;
 import com.vuforia.Vuforia;
 
+import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.MatrixF;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
@@ -91,6 +93,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 
+import club.towr5291.R;
 import club.towr5291.astarpathfinder.A0Star;
 import club.towr5291.astarpathfinder.sixValues;
 import club.towr5291.functions.AStarGetPathVer2;
@@ -100,8 +103,9 @@ import club.towr5291.functions.FileLogger;
 import club.towr5291.functions.ReadStepFile;
 import club.towr5291.libraries.robotConfigSettings;
 import club.towr5291.libraries.LibraryStateSegAuto;
-import club.towr5291.robotconfig.HardwareArmMotors;
 import club.towr5291.robotconfig.HardwareDriveMotors;
+import hallib.HalDashboard;
+
 
 /*
 TOWR 5291 Autonomous
@@ -133,8 +137,10 @@ Written by Ian Haden October 2016
 2017-03-19 - Ian Haden - Updated Beacon Viewing Area (Crop whole picture to just beacon)
 */
 @Autonomous(name="5291 Autonomous Drive", group="5291")
-public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
+public class AutoDriveTeam5291 extends OpModeMasterLinear
 {
+    final int LABEL_WIDTH = 200;
+
     //set up TAG for logging prefic, this info will appear first in every log statemend
     private static final String TAG = "AutoDriveTeam5291";
 
@@ -174,40 +180,18 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
     private I2cDeviceSynch RANGE2Reader;
     private double mdblRangeSensor2;
 
-    //set up colour sensor variables
-    private ColorSensor colorSensor;    // Hardware Device Object
-    private boolean colourError = false;
+    //adafruit IMU
+    // The IMU sensor object
+    private BNO055IMU imu;
+    // State used for updating telemetry
+    private boolean useAdafruitIMU = false;
 
-    // Line Sensors
-    // Analogue Inputs from the DIM
-    private double mdblInputLineSensor1;     // Input State
-    private double mdblInputLineSensor2;     // Input State
-    private double mdblInputLineSensor3;     // Input State
-    private double mdblInputLineSensor4;     // Input State
-    private double mdblInputLineSensor5;     // Input State
-    private double mdblWhiteThreshold = 0.4; //  anything below 1.5 is white, anything above 3 is grey tile
-    private AnalogInput LineSensor1;          // Device Object
-    private AnalogInput LineSensor2;          // Device Object
-    private AnalogInput LineSensor3;          // Device Object
-    private AnalogInput LineSensor4;          // Device Object
-    private AnalogInput LineSensor5;          // Device Object
-
-    //set up Gyro variables
-    private boolean gyroError = false;
-    private ModernRoboticsI2cGyro gyro;                 // Hardware Device Object
-    private final double GYRO_CORRECTION_MULTIPLIER = 0.9833;
     private double mdblTurnAbsoluteGyro;
     private double mdblGyrozAccumulated;
     private int mintStableCount;
     private String mstrWiggleDir;
     private double mdblPowerBoost;
     private int mintPowerBoostCount;
-
-    //adafruit IMU
-    // The IMU sensor object
-    private BNO055IMU imu;
-    // State used for updating telemetry
-    private boolean useAdafruitIMU = false;
 
     //set up robot variables
     private double     COUNTS_PER_MOTOR_REV;            // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
@@ -231,30 +215,28 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
 
     //define each state for the step.  Each step should go through some of the states below
     // set up the variables for the state engine
-    private int mintCurrentStep = 1;                                                       // Current Step in State Machine.
-    private int mintCurrentStepAStar = 1;                                                  // Current Step in AStar State Machine.
-    private stepState mintCurrentStateStep;                                                // Current State Machine State.
-    private stepState mintCurrentStateDrive;                                               // Current State of Drive.
-    private stepState mintCurrentStateDriveHeading;                                        // Current State of Drive Heading.
-    private stepState mintCurrentStateTankTurn;                                            // Current State of Tank Turn.
-    private stepState mintCurrentStatePivotTurn;                                           // Current State of Pivot Turn.
-    private stepState mintCurrentStateRadiusTurn;                                          // Current State of Radius Turn.
-    private stepState mintCurrentStateVuforiaLocalise5291;                                      // Current State of Vuforia Localisation
-    private stepState mintCurStVuforiaMove5291;                                     // Current State of Vuforia Move
-    private stepState mintCurStVuforiaTurn5291;                                     // Current State of Vuforia Turn
-    private stepState mintCurStBeaconColour5291;                                    // Current State of Beacon Colour
-    private stepState mintCurStAttackBeacon5291;                                    // Current State of Attack Beacon
-    private stepState mintCurrentStateGyroTurnEncoder5291;                                 // Current State of the Turn function that take the Gyro as an initial heading
-    private stepState mintCurrentStateEyes5291;                                         // Current State of the Eyelids
-    private stepState mintCurrentStateTankTurnGyroHeading;                                 // Current State of Tank Turn using Gyro
-    private stepState mintCurrentStepDelay;                                               // Current State of Delay (robot doing nothing)
-    //private ArrayList<LibraryStateTrack> mValueSteps    = new ArrayList<>();       // Current State of the Step
+    private int mintCurrentStep = 1;                                                        // Current Step in State Machine.
+    private int mintCurrentStepAStar = 1;                                                   // Current Step in AStar State Machine.
+    private stepState mintCurrentStateStep;                                                 // Current State Machine State.
+    private stepState mintCurrentStateDrive;                                                // Current State of Drive.
+    private stepState mintCurrentStateDriveHeading;                                         // Current State of Drive Heading.
+    private stepState mintCurrentStateTankTurn;                                             // Current State of Tank Turn.
+    private stepState mintCurrentStatePivotTurn;                                            // Current State of Pivot Turn.
+    private stepState mintCurrentStateRadiusTurn;                                           // Current State of Radius Turn.
+    private stepState mintCurrentStateVuforiaLocalise5291;                                  // Current State of Vuforia Localisation
+    private stepState mintCurStVuforiaMove5291;                                             // Current State of Vuforia Move
+    private stepState mintCurStVuforiaTurn5291;                                             // Current State of Vuforia Turn
+    private stepState mintCurrentStateGyroTurnEncoder5291;                                  // Current State of the Turn function that take the Gyro as an initial heading
+    private stepState mintCurrentStateEyes5291;                                             // Current State of the Eyelids
+    private stepState mintCurrentStateTankTurnGyroHeading;                                  // Current State of Tank Turn using Gyro
+    private stepState mintCurrentStateMecanumStrafe;                                        // Current State of mecanum strafe
+    private stepState mintCurrentStepDelay;                                                 // Current State of Delay (robot doing nothing)
+    //private ArrayList<LibraryStateTrack> mValueSteps    = new ArrayList<>();              // Current State of the Step
     private HashMap<String,Integer> mintActiveSteps = new HashMap<>();
     private HashMap<String,Integer> mintActiveStepsCopy = new HashMap<>();
 
     // Declare OpMode members.
     private HardwareDriveMotors robotDrive      = new HardwareDriveMotors();   // Use a Pushbot's hardware
-    private HardwareArmMotors   armDrive        = new HardwareArmMotors();   // Use a Pushbot's hardware
 
     //variable for the state engine, declared here so they are accessible throughout the entire opmode with having to pass them through each function
     private boolean mblnReadyToCapture = false;              //Ready to get the camera for capturing images
@@ -306,22 +288,26 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
 
     //servos
     // the servos are on the servo controller
-    private final static double SERVOLIFTRIGHT_MIN_RANGE  = 0;
-    private final static double SERVOLIFTRIGHT_MAX_RANGE  = 1.0;
-    private final static double SERVOLIFTLEFT_MIN_RANGE  = 0;
-    private final static double SERVOLIFTLEFT_MAX_RANGE  = 1.0;
+    private final static double SERVOLIFTLEFTTOP_MIN_RANGE  = 0;
+    private final static double SERVOLIFTLEFTTOP_MAX_RANGE  = 1.0;
+    private final static double SERVOLIFTRIGHTTOP_MIN_RANGE  = 0;
+    private final static double SERVOLIFTRIGHTTOP_MAX_RANGE  = 1.0;
+    private final static double SERVOLIFTLEFTBOT_MIN_RANGE  = 0;
+    private final static double SERVOLIFTLEFTBOT_MAX_RANGE  = 1.0;
+    private final static double SERVOLIFTRIGHTBOT_MIN_RANGE  = 0;
+    private final static double SERVOLIFTRIGHTBOT_MAX_RANGE  = 1.0;
 
-    private final static double SERVOBEACONRIGHT_MIN_RANGE  = 0;
-    private final static double SERVOBEACONRIGHT_MAX_RANGE  = 1.0;
-    private final static double SERVOBEACONLEFT_MIN_RANGE  = 0;
-    private final static double SERVOBEACONLEFT_MAX_RANGE  = 1.0;
-    private final static int SERVOBEACONLEFT_HOME = 7;
-    private final static int SERVOBEACONRIGHT_HOME = 2;
+    private final static double SERVOJEWELLEFT_MIN_RANGE  = 0;
+    private final static double SERVOJEWELLEFT_MAX_RANGE  = 1.0;
+    private final static double SERVOJEWELRIGHT_MIN_RANGE  = 0;
+    private final static double SERVOJEWELRIGHT_MAX_RANGE  = 1.0;
 
-    private Servo servoLifterRight;
-    private Servo servoLifterLeft;
-    private Servo servoBeaconLeft;
-    private Servo servoBeaconRight;
+    private Servo servoGlyphGripTopLeft;
+    private Servo servoGlyphGripBotLeft;
+    private Servo servoGlyphGripTopRight;
+    private Servo servoGlyphGripBotRight;
+    private Servo servoJewelLeft;
+    private Servo servoJewelRight;
 
     //LED Strips
     private DeviceInterfaceModule dim;                  // Device Object
@@ -332,12 +318,31 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
     DigitalChannel  red2LedChannel;
     DigitalChannel  blue2LedChannel;
 
+    //Limit Switches
+    DigitalChannel limitswitch1;  // Hardware Device Object
+    DigitalChannel limitswitch2;  // Hardware Device Object
+
     private double mdblLastOn;
     private double mdblLastOff;
     private boolean mblnLEDON;
     private int mintCounts = 0;
 
     private LEDState mint5291LEDStatus;                                                   // Flash the LED based on the status
+    private final boolean LedOn = false;
+    private boolean LedOff = true;
+
+    //load variables
+    LibraryStateSegAuto processingSteps = new LibraryStateSegAuto(0,0,"",false,false,0,0,0,0,0,0,0);
+    sixValues[] pathValues = new sixValues[1000];
+    A0Star a0Star = new A0Star();
+    String fieldOutput;
+    HashMap<String,LibraryStateSegAuto> autonomousStepsAStar = new HashMap<>();
+
+    private static HalDashboard dashboard = null;
+    public static HalDashboard getDashboard()
+    {
+        return dashboard;
+    }
 
     private enum LEDState {
         STATE_ERROR,
@@ -396,6 +401,14 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
     @Override
     public void runOpMode() throws InterruptedException
     {
+        dashboard = HalDashboard.createInstance(telemetry);
+        dashboard = HalDashboard.getInstance();
+
+        FtcRobotControllerActivity activity = (FtcRobotControllerActivity)hardwareMap.appContext;
+
+        dashboard.setTextView((TextView)activity.findViewById(R.id.textOpMode));
+        dashboard.displayPrintf(0, LABEL_WIDTH, "Text: ", "*** Robot Data ***");
+        //start the logging
         if (debug >= 1)
         {
             fileLogger = new FileLogger(runtime);
@@ -408,23 +421,15 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
             telemetry.addData("FileLogger Op Out File: ", fileLogger.getFilename());
         }
 
-        final boolean LedOn = false;
-        final boolean LedOff = true;
-
         //init openCV
-        //initOpenCv();
+        initOpenCv();
+        dashboard.displayPrintf(1, "initRobot OpenCV!");
+
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "OpenCV Started");
             Log.d(TAG, "OpenCV Started");
         }
-
-        //load variables
-        LibraryStateSegAuto processingSteps = new LibraryStateSegAuto(0,0,"",false,false,0,0,0,0,0,0,0);
-        sixValues[] pathValues = new sixValues[1000];
-        A0Star a0Star = new A0Star();
-        String fieldOutput;
-        HashMap<String,LibraryStateSegAuto> autonomousStepsAStar = new HashMap<>();
 
         //load menu settings and setup robot and debug level
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(hardwareMap.appContext);
@@ -435,26 +440,335 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
         robotConfig = sharedPreferences.getString("club.towr5291.Autonomous.RobotConfig", "TileRunnerMecanum2x40");
         debug = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Debug", "1"));
 
-        telemetry.addData("Init1     ",  "Starting!");
-        telemetry.update();
+        dashboard.displayPrintf(2, "robotConfigTeam # " + teamNumber);
+        dashboard.displayPrintf(3, "Alliance          " + allianceColor);
+        dashboard.displayPrintf(4, "Start Pos         " + allianceStartPosition);
+        dashboard.displayPrintf(5, "Start Del         " + delay);
+        dashboard.displayPrintf(6, "Robot             " + robotConfig);
 
-        //
+        dashboard.displayPrintf(1, "initRobot SharePreferences!");
+
         // get a reference to a Modern Robotics DIM, and IO channels.
         dim = hardwareMap.get(DeviceInterfaceModule.class, "dim");   //  Use generic form of device mapping
         green1LedChannel = hardwareMap.get(DigitalChannel.class, "green1");    //  Use generic form of device mapping
-        red1LedChannel = hardwareMap.get(DigitalChannel.class, "green1");    //  Use generic form of device mapping
-        blue1LedChannel = hardwareMap.get(DigitalChannel.class, "green1");    //  Use generic form of device mapping
-        green2LedChannel = hardwareMap.get(DigitalChannel.class, "green1");    //  Use generic form of device mapping
-        red2LedChannel = hardwareMap.get(DigitalChannel.class, "green1");    //  Use generic form of device mapping
-        blue2LedChannel = hardwareMap.get(DigitalChannel.class, "green1");    //  Use generic form of device mapping
+        red1LedChannel = hardwareMap.get(DigitalChannel.class, "red1");    //  Use generic form of device mapping
+        blue1LedChannel = hardwareMap.get(DigitalChannel.class, "blue1");    //  Use generic form of device mapping
+        green2LedChannel = hardwareMap.get(DigitalChannel.class, "green2");    //  Use generic form of device mapping
+        red2LedChannel = hardwareMap.get(DigitalChannel.class, "red2");    //  Use generic form of device mapping
+        blue2LedChannel = hardwareMap.get(DigitalChannel.class, "blue2");    //  Use generic form of device mapping
         green1LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
         red1LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
         blue1LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
         green2LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
         red2LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
         blue2LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
-        
+
         LedState(LedOn, LedOn, LedOn, LedOn, LedOn, LedOn);
+
+        dashboard.displayPrintf(1, "initRobot LED Initiated!");
+
+        // get a reference to our digitalTouch object.
+        limitswitch1 = hardwareMap.get(DigitalChannel.class, "limittop");
+        limitswitch2 = hardwareMap.get(DigitalChannel.class, "limitbot");
+        // set the digital channel to input.
+        limitswitch1.setMode(DigitalChannel.Mode.INPUT);
+        limitswitch2.setMode(DigitalChannel.Mode.INPUT);
+
+        dashboard.displayPrintf(1, "initRobot Limit Switch Initiated!");
+
+        //to add more config options edit strings.xml and AutonomousConfiguration.java
+        switch (robotConfig) {
+            case "TileRunner-2x40":   //Velocity Vortex Competition Base
+                REVERSE_DIRECTION       = 1;                                                       // Reverse the direction without significant code changes, (using motor FORWARD REVERSE will affect the driver station as we use same robotconfig file
+                COUNTS_PER_MOTOR_REV    = 1120 ;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+                DRIVE_GEAR_REDUCTION    = 0.7 ;                                                    // This is < 1.0 if geared UP, Tilerunner is geared up
+                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
+                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
+                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
+                ROBOT_TRACK             = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+                WHEEL_TURN_FUDGE        = 1.0;                                                        // Fine tuning amount
+                COUNTS_PER_DEGREE       = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
+                loadPowerTableTileRunner();                                                         //load the power table
+                break;
+            case "5291 Tank Tread-2x40 Custom":   //for tank tread base
+                REVERSE_DIRECTION       = 1;
+                COUNTS_PER_MOTOR_REV    = 1120 ;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+                DRIVE_GEAR_REDUCTION    = 1.0 ;                                                     // Tank Tread is 1:1 ration
+                WHEEL_DIAMETER_INCHES   = 3.75 ;                                                     // For figuring circumference
+                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
+                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION ;
+                ROBOT_TRACK             = 18;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+                WHEEL_TURN_FUDGE        = 1.12;                                                        // Fine tuning amount
+                COUNTS_PER_DEGREE       = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
+                loadPowerTableTankTread();                                                          //load the power table
+                break;
+            case "TileRunnerMecanum2x40":
+                REVERSE_DIRECTION       = 1;                                                        // Reverse the direction without significant code changes, (using motor FORWARD REVERSE will affect the driver station as we use same robotconfig file
+                COUNTS_PER_MOTOR_REV    = 1120 ;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+                DRIVE_GEAR_REDUCTION    = 1.0 ;                                                     // This is < 1.0 if geared UP, Tilerunner is geared up
+                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
+                WHEEL_ACTUAL_FUDGE      = 1.02;                                                     // Fine tuning amount
+                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
+                ROBOT_TRACK             = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+                WHEEL_TURN_FUDGE        = 1.0;                                                        // Fine tuning amount
+                COUNTS_PER_DEGREE       = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
+                break;
+            case "11231 2016 Custom": //2016 - 11231 Drivetrain
+                COUNTS_PER_MOTOR_REV    = 1120;                                                     // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+                DRIVE_GEAR_REDUCTION    = .667;                                                   // (.665) UP INCREASES THE DISTANCE This is < 1.0 if geared UP, Tilerunner is geared up
+                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
+                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
+                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415926535)) * WHEEL_ACTUAL_FUDGE ;
+                ROBOT_TRACK             = 18;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+                COUNTS_PER_DEGREE       = ((2 * 3.1415926535 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360;
+                //loadPowerTableTileRunner();                                                         //load the power table
+                break;
+            default:  //default for competition TileRunner-2x40
+                REVERSE_DIRECTION       = 1;
+                COUNTS_PER_MOTOR_REV    = 1120 ;                                                     // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+                DRIVE_GEAR_REDUCTION    = 1.28 ;                                                    // This is < 1.0 if geared UP, Tilerunner is geared up
+                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
+                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
+                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION ;
+                ROBOT_TRACK             = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+                COUNTS_PER_DEGREE       = ((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360;
+                loadPowerTableTileRunner();                                                         //load the power table
+                break;
+        }
+
+        dashboard.displayPrintf(1, "initRobot Robot Settings Loaded" + robotConfig);
+
+        if (debug >= 1)
+        {
+            fileLogger.writeEvent(TAG, "robotConfigTeam #             " +  teamNumber);
+            fileLogger.writeEvent(TAG, "Alliance Colour    " +  allianceColor);
+            fileLogger.writeEvent(TAG, "Alliance Start Pos " +  allianceStartPosition);
+            fileLogger.writeEvent(TAG, "Alliance Delay     " +  delay);
+            fileLogger.writeEvent(TAG, "Robot Config       " +  robotConfig);
+            Log.d(TAG, "robotConfigTeam #             " +  teamNumber);
+            Log.d(TAG, "Alliance Colour    " +  allianceColor);
+            Log.d(TAG, "Alliance Start Pos " +  allianceStartPosition);
+            Log.d(TAG, "Alliance Delay     " +  delay);
+            Log.d(TAG, "Robot Config       " +  robotConfig);
+        }
+
+        if (debug >= 3)
+        {
+            fileLogger.writeEvent(TAG, "Configuring Robot Parameters - Finished");
+            Log.d(TAG, "Configuring Robot Parameters - Finished");
+            fileLogger.writeEvent(TAG, "Loading Autonomous Steps - Start");
+            Log.d(TAG, "Loading Autonomous Steps - Start");
+        }
+
+        dashboard.displayPrintf(1, "initRobot Loading Steps " + allianceColor + " Team " + teamNumber);
+
+        //load the sequence based on alliance colour and team
+        switch (teamNumber) {
+            case "5291":
+                switch (allianceColor) {
+                    case "Red":
+                        LedState(LedOff, LedOn, LedOff, LedOff, LedOn, LedOff);
+                        switch (allianceStartPosition) {
+                            case "Left":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291RedLeft.csv" , "none", "none");
+                                break;
+                            case "Right":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291RedRight.csv" , "none", "none");
+                                break;
+                        }
+                        break;
+                    case "Blue":
+                        LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
+                        switch (allianceStartPosition) {
+                            case "Left":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueLeft.csv" , "none", "none");
+                                break;
+                            case "Right":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv" , "none", "none");
+                                break;
+                        }
+                        break;
+                    case "Test":
+                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291Test.csv" , "none", "none");
+                        break;
+                }
+                break;
+
+            case "11230":
+                switch (allianceColor) {
+                    case "Red":
+                        switch (allianceStartPosition) {
+                            case "Left":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230RedLeft.csv" , "none", "none");
+                                break;
+                            case "Right":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230RedRight.csv" , "none", "none");
+                                break;
+                        }
+                        break;
+                    case "Blue":
+                        switch (allianceStartPosition) {
+                            case "Left":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv" , "none", "none");
+                                break;
+                            case "Right":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv" , "none", "none");
+                                break;
+                        }
+                        break;
+                    case "Test":
+                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230Test.csv" , "none", "none");
+                        break;
+                }
+                break;
+
+            case "11231":
+                switch (allianceColor) {
+                    case "Red":
+                        switch (allianceStartPosition) {
+                            case "Left":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231RedLeft.csv" , "none", "none");
+                                break;
+                            case "Right":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231RedRight.csv" , "none", "none");
+                                break;
+                        }
+                        break;
+                    case "Blue":
+                        switch (allianceStartPosition) {
+                            case "Left":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231BleLeft.csv" , "none", "none");
+                                break;
+                            case "Right":
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231BlueRight.csv" , "none", "none");
+                                break;
+                        }
+                        break;
+                    case "Test":
+                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231Test.csv" , "none", "none");
+                        break;
+                }
+                break;
+        }
+
+        //need to load initial step of a delay based on user input
+        autonomousStepsFile.insertSteps(delay + 1, "DEL" + (delay * 1000), false, false, 0, 0, 0, 0, 0, 0, 0, 1);
+
+        dashboard.displayPrintf(1, "initRobot STEPS LOADED");
+
+        if (debug >= 3)
+        {
+            fileLogger.writeEvent(TAG, "Loading Autonomous Steps - Finished");
+            Log.d(TAG, "Loading Autonomous Steps - Finished");
+            fileLogger.writeEvent(TAG, "Configuring Adafruit IMU - Start");
+            Log.d(TAG, "Configuring Adafruit IMU - Start");
+        }
+
+        dashboard.displayPrintf(1, "initRobot IMU Loading");
+
+        // Set up the parameters with which we will use our IMU. Note that integration
+        // algorithm here just reports accelerations to the logcat log; it doesn't actually
+        // provide positional information.
+        BNO055IMU.Parameters parametersAdafruitImu  = new BNO055IMU.Parameters();
+        parametersAdafruitImu.angleUnit             = BNO055IMU.AngleUnit.DEGREES;
+        parametersAdafruitImu.accelUnit             = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parametersAdafruitImu.calibrationDataFile   = "AdafruitIMUCalibration.json"; // see the calibration sample opmode
+        parametersAdafruitImu.loggingEnabled        = true;
+        parametersAdafruitImu.loggingTag            = "IMU";
+        parametersAdafruitImu.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
+
+        // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
+        // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
+        // and named "imu".
+        imu = hardwareMap.get(BNO055IMU.class, "imu");
+        imu.initialize(parametersAdafruitImu);
+
+        dashboard.displayPrintf(1, "initRobot IMU Configured");
+
+        if (debug >= 3)
+        {
+            fileLogger.writeEvent(TAG, "Configuring Adafruit IMU - Finished");
+            Log.d(TAG, "Configuring Adafruit IMU - Finished");
+            fileLogger.writeEvent(TAG, "Configuring Motors Base - Start");
+            Log.d(TAG, "Configuring Motors Base - Start");
+        }
+
+        dashboard.displayPrintf(1, "initRobot BaseDrive Loading");
+
+        robotDrive.init(hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig));
+        robotDrive.setHardwareDriveResetEncoders();
+        robotDrive.setHardwareDriveRunUsingEncoders();
+
+        dashboard.displayPrintf(1, "initRobot BaseDrive Loaded");
+
+        if (debug >= 3)
+        {
+            fileLogger.writeEvent(TAG, "Configuring Motors Base - Finish");
+            Log.d(TAG, "Configuring Motors Base - Finish");
+            fileLogger.writeEvent(TAG, "Configuring Motors Arms - Start");
+            Log.d(TAG, "Configuring Motors Arms - Start");
+        }
+
+        if (debug >= 3)
+        {
+            fileLogger.writeEvent(TAG, "Configuring Motors Arms - Finish");
+            Log.d(TAG, "Configuring Motors Arms - Finish");
+            fileLogger.writeEvent(TAG, "Configuring Range Sensors - Start");
+            Log.d(TAG, "Configuring Range Sensors - Start");
+        }
+
+        dashboard.displayPrintf(1, "initRobot Range Sensors Loading");
+
+        RANGE1 = hardwareMap.i2cDevice.get("range1");
+        RANGE1Reader = new I2cDeviceSynchImpl(RANGE1, RANGE1ADDRESS, false);
+        RANGE1Reader.engage();
+        RANGE2 = hardwareMap.i2cDevice.get("range2");
+        RANGE2Reader = new I2cDeviceSynchImpl(RANGE2, RANGE2ADDRESS, false);
+        RANGE2Reader.engage();
+
+        dashboard.displayPrintf(1, "initRobot Range Sensors Loaded");
+
+        if (debug >= 3)
+        {
+            fileLogger.writeEvent(TAG, "Configuring Range Sensors - Finish");
+            Log.d(TAG, "Configuring Range Sensors - Finish");
+            fileLogger.writeEvent(TAG, "Configuring Servos - Start");
+            Log.d(TAG, "Configuring Servos - Start");
+        }
+
+        if (debug >= 3)
+        {
+            fileLogger.writeEvent(TAG, "Configuring Servos - Finish");
+            Log.d(TAG, "Configuring Servos - Finish");
+            fileLogger.writeEvent(TAG, "Resetting State Engine - Start");
+            Log.d(TAG, "Resetting State Engine - Start");
+        }
+
+        mintCurrentStateStep = stepState.STATE_INIT;
+        mintCurrentStateTankTurn = stepState.STATE_COMPLETE;
+        mintCurrentStateDrive = stepState.STATE_COMPLETE;
+        mintCurrentStateDriveHeading = stepState.STATE_COMPLETE;
+        mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
+        mintCurrentStateRadiusTurn = stepState.STATE_COMPLETE;
+        mintCurrentStepDelay = stepState.STATE_COMPLETE;
+        mintCurrentStateVuforiaLocalise5291 = stepState.STATE_COMPLETE;
+        mintCurStVuforiaMove5291 = stepState.STATE_COMPLETE;
+        mintCurStVuforiaTurn5291 = stepState.STATE_COMPLETE;
+        mintCurrentStateEyes5291 = stepState.STATE_COMPLETE;
+        mintCurrentStateTankTurnGyroHeading = stepState.STATE_COMPLETE;
+        mintCurrentStateMecanumStrafe = stepState.STATE_COMPLETE;
+        mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_COMPLETE;
+
+        mint5291LEDStatus = LEDState.STATE_TEAM;
+        mblnNextStepLastPos = false;
+
+        if (debug >= 3)
+        {
+            fileLogger.writeEvent(TAG, "Resetting State Engine - Finish");
+            Log.d(TAG, "Resetting State Engine - Finish");
+            fileLogger.writeEvent(TAG, "Vuforia Activate - Start");
+            Log.d(TAG, "Vuforia Activate - Start");
+        }
 
         if (debug >= 3)
         {
@@ -463,6 +777,9 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
             fileLogger.writeEvent(TAG, "Configuring Vuforia - Start");
             Log.d(TAG, "Configuring Vuforia - Start");
         }
+
+        dashboard.displayPrintf(1, "initRobot VUFORIA Loading");
+
         //load all the vuforia stuff
 
         /*
@@ -588,20 +905,20 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
         Point3 Red2PhoneCoord   = new Point3 (0,0,200);
         Point3 Red2PhoneAngle   = new Point3 (-90,0,90);
 
-        Point3 Blue1Coord = new Point3 (15.25, FTCFieldWidth/2, 0);
-        Point3 Blue1Angle = new Point3 (90, 0, 0);
-        Point3 Blue1PhoneCoord   = new Point3 (0,0,200);
-        Point3 Blue1PhoneAngle   = new Point3 (-90,0,-90);
+        Point3 Blue1Coord       = new Point3 (15.25, FTCFieldWidth/2, 0);
+        Point3 Blue1Angle       = new Point3 (90, 0, 0);
+        Point3 Blue1PhoneCoord  = new Point3 (0,0,200);
+        Point3 Blue1PhoneAngle  = new Point3 (-90,0,-90);
 
-        Point3 Blue2Coord = new Point3 (-56, FTCFieldWidth/2, 0);
-        Point3 Blue2Angle = new Point3 (90, 0, 0);
-        Point3 Blue2PhoneCoord   = new Point3 (0,0,200);
-        Point3 Blue2PhoneAngle   = new Point3 (-90,0,-90);
+        Point3 Blue2Coord       = new Point3 (-56, FTCFieldWidth/2, 0);
+        Point3 Blue2Angle       = new Point3 (90, 0, 0);
+        Point3 Blue2PhoneCoord  = new Point3 (0,0,200);
+        Point3 Blue2PhoneAngle  = new Point3 (-90,0,-90);
 
-        Point3 targetPoint =  new Point3 (0,0,0);
-        Point3 targetAngle =  new Point3 (0,0,0);
-        Point3 phonePoint =  new Point3 (0,0,200);
-        Point3 phoneAngle =  new Point3 (-90,0,0);
+        Point3 targetPoint      = new Point3 (0,0,0);
+        Point3 targetAngle      = new Point3 (0,0,0);
+        Point3 phonePoint       = new Point3 (0,0,200);
+        Point3 phoneAngle       = new Point3 (-90,0,0);
 
         if ((allianceColor == "Red") && (allianceStartPosition == "Left")) {
             targetPoint = Red1Coord;
@@ -679,6 +996,13 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
          *
          * @see VuforiaTrackableDefaultListener#getRobotLocation()
          */
+        //activate vuforia
+        RelicRecovery.activate();
+
+        //set up variable for our capturedimage
+        Image rgb = null;
+
+        dashboard.displayPrintf(1, "initRobot VUFORIA Loaded");
 
         if (debug >= 3)
         {
@@ -688,397 +1012,15 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
             Log.d(TAG, "Configuring Robot Parameters - Start");
         }
 
-        telemetry.addData("Init2     ",  "Vuforia Options Loaded!");
-        telemetry.update();
+        dashboard.displayPrintf(1, "Init - Complete, Wait for Start");
 
-
-
-        //to add more config options edit strings.xml and AutonomousConfiguration.java
-        switch (robotConfig) {
-            case "TileRunner-2x40":   //Velocity Vortex Competition Base
-                REVERSE_DIRECTION       = 1;                                                       // Reverse the direction without significant code changes, (using motor FORWARD REVERSE will affect the driver station as we use same robotconfig file
-                COUNTS_PER_MOTOR_REV    = 1120 ;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-                DRIVE_GEAR_REDUCTION    = 0.7 ;                                                    // This is < 1.0 if geared UP, Tilerunner is geared up
-                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
-                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
-                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
-                ROBOT_TRACK             = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-                WHEEL_TURN_FUDGE        = 1.0;                                                        // Fine tuning amount
-                COUNTS_PER_DEGREE       = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
-                loadPowerTableTileRunner();                                                         //load the power table
-
-                break;
-            case "5291 Tank Tread-2x40 Custom":   //for tank tread base
-                REVERSE_DIRECTION       = 1;
-                COUNTS_PER_MOTOR_REV    = 1120 ;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-                DRIVE_GEAR_REDUCTION    = 1.0 ;                                                     // Tank Tread is 1:1 ration
-                WHEEL_DIAMETER_INCHES   = 3.75 ;                                                     // For figuring circumference
-                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
-                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION ;
-                ROBOT_TRACK             = 18;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-                WHEEL_TURN_FUDGE        = 1.12;                                                        // Fine tuning amount
-                COUNTS_PER_DEGREE       = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
-                loadPowerTableTankTread();                                                          //load the power table
-                break;
-            case "TileRunnerMecanum2x40":
-                REVERSE_DIRECTION       = 1;                                                       // Reverse the direction without significant code changes, (using motor FORWARD REVERSE will affect the driver station as we use same robotconfig file
-                COUNTS_PER_MOTOR_REV    = 1120 ;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-                DRIVE_GEAR_REDUCTION    = 1.0 ;                                                    // This is < 1.0 if geared UP, Tilerunner is geared up
-                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
-                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
-                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
-                ROBOT_TRACK             = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-                WHEEL_TURN_FUDGE        = 1.0;                                                        // Fine tuning amount
-                COUNTS_PER_DEGREE       = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
-                break;
-            case "11231 2016 Custom": //2016 - 11231 Drivetrain
-                COUNTS_PER_MOTOR_REV    = 1120;                                                     // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-                DRIVE_GEAR_REDUCTION    = .667;                                                   // (.665) UP INCREASES THE DISTANCE This is < 1.0 if geared UP, Tilerunner is geared up
-                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
-                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
-                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415926535)) * WHEEL_ACTUAL_FUDGE ;
-                ROBOT_TRACK             = 18;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-                COUNTS_PER_DEGREE       = ((2 * 3.1415926535 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360;
-                //loadPowerTableTileRunner();                                                         //load the power table
-                break;
-            default:  //default for competition TileRunner-2x40
-                REVERSE_DIRECTION       = 1;
-                COUNTS_PER_MOTOR_REV    = 1120 ;                                                     // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-                DRIVE_GEAR_REDUCTION    = 1.28 ;                                                    // This is < 1.0 if geared UP, Tilerunner is geared up
-                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
-                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
-                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION ;
-                ROBOT_TRACK             = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-                COUNTS_PER_DEGREE       = ((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360;
-                loadPowerTableTileRunner();                                                         //load the power table
-                break;
-        }
-
-
-
-
-        if (debug >= 1)
-        {
-            fileLogger.writeEvent(TAG, "robotConfigTeam #             " +  teamNumber);
-            fileLogger.writeEvent(TAG, "Alliance Colour    " +  allianceColor);
-            fileLogger.writeEvent(TAG, "Alliance Start Pos " +  allianceStartPosition);
-            fileLogger.writeEvent(TAG, "Alliance Delay     " +  delay);
-            fileLogger.writeEvent(TAG, "Robot Config       " +  robotConfig);
-            Log.d(TAG, "robotConfigTeam #             " +  teamNumber);
-            Log.d(TAG, "Alliance Colour    " +  allianceColor);
-            Log.d(TAG, "Alliance Start Pos " +  allianceStartPosition);
-            Log.d(TAG, "Alliance Delay     " +  delay);
-            Log.d(TAG, "Robot Config       " +  robotConfig);
-        }
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Robot Parameters - Finished");
-            Log.d(TAG, "Configuring Robot Parameters - Finished");
-            fileLogger.writeEvent(TAG, "Loading Autonomous Steps - Start");
-            Log.d(TAG, "Loading Autonomous Steps - Start");
-        }
-
-        telemetry.addData("Init3       ",  "Loading Steps");
-        telemetry.update();
-
-        //load the sequence based on alliance colour and team
-        switch (teamNumber) {
-            case "5291":
-                switch (allianceColor) {
-                    case "Red":
-                        LedState(LedOff, LedOn, LedOff, LedOff, LedOn, LedOff);
-                        switch (allianceStartPosition) {
-                            case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291RedLeft.csv" , "none", "none");
-                                break;
-                            case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291RedRight.csv" , "none", "none");
-                                break;
-                        }
-                        break;
-                    case "Blue":
-                        LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
-                        switch (allianceStartPosition) {
-                            case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueLeft.csv" , "none", "none");
-                                break;
-                            case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv" , "none", "none");
-                                break;
-                        }
-                        break;
-                    case "Test":
-                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291Test.csv" , "none", "none");
-                        break;
-                }
-                break;
-
-            case "11230":
-                switch (allianceColor) {
-                    case "Red":
-                        switch (allianceStartPosition) {
-                            case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230RedLeft.csv" , "none", "none");
-                                break;
-                            case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230RedRight.csv" , "none", "none");
-                                break;
-                        }
-                        break;
-                    case "Blue":
-                        switch (allianceStartPosition) {
-                            case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv" , "none", "none");
-                                break;
-                            case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv" , "none", "none");
-                                break;
-                        }
-                        break;
-                    case "Test":
-                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230Test.csv" , "none", "none");
-                        break;
-                }
-                break;
-
-            case "11231":
-                switch (allianceColor) {
-                    case "Red":
-                        switch (allianceStartPosition) {
-                            case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231RedLeft.csv" , "none", "none");
-                                break;
-                            case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231RedRight.csv" , "none", "none");
-                                break;
-                        }
-                        break;
-                    case "Blue":
-                        switch (allianceStartPosition) {
-                            case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231BleLeft.csv" , "none", "none");
-                                break;
-                            case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231BlueRight.csv" , "none", "none");
-                                break;
-                        }
-                        break;
-                    case "Test":
-                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231Test.csv" , "none", "none");
-                        break;
-                }
-                break;
-        }
-
-        //need to load initial step of a delay based on user input
-        autonomousStepsFile.insertSteps(delay + 1, "DEL" + (delay * 1000), false, false, 0, 0, 0, 0, 0, 0, 0, 1);
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Loading Autonomous Steps - Finished");
-            Log.d(TAG, "Loading Autonomous Steps - Finished");
-            fileLogger.writeEvent(TAG, "Configuring Adafruit IMU - Start");
-            Log.d(TAG, "Configuring Adafruit IMU - Start");
-        }
-        // Set up the parameters with which we will use our IMU. Note that integration
-        // algorithm here just reports accelerations to the logcat log; it doesn't actually
-        // provide positional information.
-        BNO055IMU.Parameters parametersAdafruitImu  = new BNO055IMU.Parameters();
-        parametersAdafruitImu.angleUnit             = BNO055IMU.AngleUnit.DEGREES;
-        parametersAdafruitImu.accelUnit             = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parametersAdafruitImu.calibrationDataFile   = "AdafruitIMUCalibration.json"; // see the calibration sample opmode
-        parametersAdafruitImu.loggingEnabled        = true;
-        parametersAdafruitImu.loggingTag            = "IMU";
-        parametersAdafruitImu.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
-
-        //don't crash the program if the GRYO is faulty, just bypass it
-        try {
-            // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
-            // on a Core Device Interface Module, configured to be a sensor of type "AdaFruit IMU",
-            // and named "imu".
-            imu = hardwareMap.get(BNO055IMU.class, "imu");
-            imu.initialize(parametersAdafruitImu);
-
-            // get a reference to a Modern Robotics GyroSensor object.
-            gyro = (ModernRoboticsI2cGyro)hardwareMap.gyroSensor.get("gyro");
-            // calibrate the gyro, this takes a few seconds
-            gyro.calibrate();
-            telemetry.addData("Init4       ",  "Calibrating Gyro");
-            telemetry.update();
-        } catch (Exception e) {
-            if (debug >= 1) {
-                fileLogger.writeEvent(TAG, "Gyro Error " +  e.getMessage());
-                Log.d(TAG, "Gyro Error " +  e.getMessage());
-            }
-            gyroError = true;
-        }
-        if (!gyroError) {
-            if (debug >= 1) {
-                fileLogger.writeEvent(TAG, "Gyro Calibrate Start");
-                Log.d(TAG, "Gyro Calibrate Start");
-            }
-            while (!isStopRequested() && gyro.isCalibrating()) {
-                sleep(50);
-                idle();
-            }
-            if (debug >= 1) {
-                fileLogger.writeEvent(TAG, "Gyro Calibrate Complete");
-                Log.d(TAG, "Gyro Calibrate Complete");
-            }
-        }
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Adafruit IMU - Finished");
-            Log.d(TAG, "Configuring Adafruit IMU - Finished");
-            fileLogger.writeEvent(TAG, "Configuring Motors Base - Start");
-            Log.d(TAG, "Configuring Motors Base - Start");
-        }
-
-        robotDrive.init(hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig));
-        robotDrive.setHardwareDriveResetEncoders();
-        robotDrive.setHardwareDriveRunUsingEncoders();
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Motors Base - Finish");
-            Log.d(TAG, "Configuring Motors Base - Finish");
-            fileLogger.writeEvent(TAG, "Configuring Motors Arms - Start");
-            Log.d(TAG, "Configuring Motors Arms - Start");
-        }
-
-        armDrive.init(hardwareMap);
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Motors Arms - Finish");
-            Log.d(TAG, "Configuring Motors Arms - Finish");
-            fileLogger.writeEvent(TAG, "Configuring Range Sensors - Start");
-            Log.d(TAG, "Configuring Range Sensors - Start");
-        }
-
-        telemetry.addData("Init7       ",  "Range Sensors");
-        telemetry.update();
-
-        RANGE1 = hardwareMap.i2cDevice.get("range1");
-        RANGE1Reader = new I2cDeviceSynchImpl(RANGE1, RANGE1ADDRESS, false);
-        RANGE1Reader.engage();
-        RANGE2 = hardwareMap.i2cDevice.get("range2");
-        RANGE2Reader = new I2cDeviceSynchImpl(RANGE2, RANGE2ADDRESS, false);
-        RANGE2Reader.engage();
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Range Sensors - Finish");
-            Log.d(TAG, "Configuring Range Sensors - Finish");
-            fileLogger.writeEvent(TAG, "Configuring Colour Sensors - Start");
-            Log.d(TAG, "Configuring Colour Sensors - Start");
-        }
-
-        // get a reference to our ColorSensor object.
-        try {
-            telemetry.addData("Init8       ",  "Colour Sensor");
-            telemetry.update();
-            colorSensor = hardwareMap.colorSensor.get("sensorcolor");
-        } catch (Exception e) {
-            if (debug >= 1) {
-                fileLogger.writeEvent(TAG, "colour Error " +  e.getMessage());
-                Log.d(TAG, "colour Error " +  e.getMessage());
-            }
-            colourError = true;
-        }
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Colour Sensors - Finish");
-            Log.d(TAG, "Configuring Colour Sensors - Finish");
-            fileLogger.writeEvent(TAG, "Configuring Servos - Start");
-            Log.d(TAG, "Configuring Servos - Start");
-        }
-
-        //config the servos
-        servoBeaconRight = hardwareMap.servo.get("servobeaconright");
-        servoBeaconLeft = hardwareMap.servo.get("servobeaconleft");
-        servoBeaconRight.setDirection(Servo.Direction.REVERSE);
-        servoLifterRight = hardwareMap.servo.get("servoliftright");
-        servoLifterLeft = hardwareMap.servo.get("servoliftleft");
-        servoLifterRight.setDirection(Servo.Direction.REVERSE);
-        //lock the arms up
-        moveServo(servoLifterRight, 135, SERVOLIFTRIGHT_MIN_RANGE, SERVOLIFTRIGHT_MAX_RANGE);
-        moveServo(servoLifterLeft, 135, SERVOLIFTLEFT_MIN_RANGE, SERVOLIFTLEFT_MAX_RANGE);
-
-        // Move the beacon pushers to home
-        moveServo(servoBeaconRight, SERVOBEACONRIGHT_HOME, SERVOBEACONRIGHT_MIN_RANGE, SERVOBEACONRIGHT_MAX_RANGE);
-        moveServo(servoBeaconLeft, SERVOBEACONLEFT_HOME, SERVOBEACONLEFT_MIN_RANGE, SERVOBEACONLEFT_MAX_RANGE);
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Servos - Finish");
-            Log.d(TAG, "Configuring Servos - Finish");
-            fileLogger.writeEvent(TAG, "Resetting State Engine - Start");
-            Log.d(TAG, "Resetting State Engine - Start");
-        }
-
-        mintCurrentStateStep = stepState.STATE_INIT;
-        mintCurrentStateTankTurn = stepState.STATE_COMPLETE;
-        mintCurrentStateDrive = stepState.STATE_COMPLETE;
-        mintCurrentStateDriveHeading = stepState.STATE_COMPLETE;
-        mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
-        mintCurrentStateRadiusTurn = stepState.STATE_COMPLETE;
-        mintCurrentStepDelay = stepState.STATE_COMPLETE;
-        mintCurrentStateVuforiaLocalise5291 = stepState.STATE_COMPLETE;
-        mintCurStVuforiaMove5291 = stepState.STATE_COMPLETE;
-        mintCurStVuforiaTurn5291 = stepState.STATE_COMPLETE;
-        mintCurStAttackBeacon5291 = stepState.STATE_COMPLETE;
-        mintCurStBeaconColour5291 = stepState.STATE_COMPLETE;
-        mintCurrentStateEyes5291 = stepState.STATE_COMPLETE;
-        mintCurrentStateTankTurnGyroHeading = stepState.STATE_COMPLETE;
-        mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_COMPLETE;
-
-        mint5291LEDStatus = LEDState.STATE_TEAM;
-        mblnNextStepLastPos = false;
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Resetting State Engine - Finish");
-            Log.d(TAG, "Resetting State Engine - Finish");
-            fileLogger.writeEvent(TAG, "Vuforia Activate - Start");
-            Log.d(TAG, "Vuforia Activate - Start");
-        }
-
-        //set up variable for our capturedimage
-        Image rgb = null;
-
-        //activate vuforia
-        RelicRecovery.activate();
-
-        if (debug >= 1)
-        {
-            fileLogger.writeEvent(TAG, "Vuforia Activate - Finished");
-            Log.d(TAG, "Vuforia Activate - Finished");
-            fileLogger.writeEvent(TAG, "Wait For Start");
-            Log.d(TAG, "Wait For Start");
-        }
-
-        //show options on the driver station phone
-        telemetry.addData("Init11     ",  "Complete");
-        telemetry.addData("robotConfigTeam #     ",  teamNumber);
-        telemetry.addData("Alliance   ",  allianceColor);
-        telemetry.addData("Start Pos  ",  allianceStartPosition);
-        telemetry.addData("Start Del  ",  delay);
-        telemetry.addData("Robot      ",  robotConfig);
-        telemetry.update();
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
-        if (debug >= 1) {
-            fileLogger.writeEvent(TAG, "Value of Gyro Before Reset " + gyro.getIntegratedZValue());
-            Log.d(TAG, "Value of Gyro Before Reset " + gyro.getIntegratedZValue());
-        }
+
+        dashboard.clearDisplay();
 
         imu.startAccelerationIntegration(new Position(), new Velocity(), 1000);
-        gyro.resetZAxisIntegrator();
 
         //the main loop.  this is where the action happens
         while (opModeIsActive()) {
@@ -1177,22 +1119,33 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
                     }
 
                     if (gotBeacomDims) {
-                        VuforiaLocalizer.CloseableFrame frame = vuforia.getFrameQueue().take(); //takes the frame at the head of the queue
-                        long numImages = frame.getNumImages();
+                        Mat tmp = new Mat();
+                        try {
+                            VuforiaLocalizer.CloseableFrame frame = vuforia.getFrameQueue().take(); //takes the frame at the head of the queue
+                            long numImages = frame.getNumImages();
 
-                        for (int i = 0; i < numImages; i++) {
-                            if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
-                                rgb = frame.getImage(i);
-                                break;
+                            for (int i = 0; i < numImages; i++) {
+                                if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
+                                    rgb = frame.getImage(i);
+                                    break;
+                                }
                             }
-                        }
-                        /*rgb is now the Image object that we’ve used in the video*/
-                        Bitmap bm = Bitmap.createBitmap(rgb.getWidth(), rgb.getHeight(), Bitmap.Config.RGB_565);
-                        bm.copyPixelsFromBuffer(rgb.getPixels());
 
-                        //put the image into a MAT for OpenCV
-                        Mat tmp = new Mat(rgb.getWidth(), rgb.getHeight(), CvType.CV_8UC4);
-                        Utils.bitmapToMat(bm, tmp);
+                            /*rgb is now the Image object that we’ve used in the video*/
+                            Bitmap bm = Bitmap.createBitmap(rgb.getWidth(), rgb.getHeight(), Bitmap.Config.RGB_565);
+                            bm.copyPixelsFromBuffer(rgb.getPixels());
+
+                            //put the image into a MAT for OpenCV
+                            tmp = new Mat(rgb.getWidth(), rgb.getHeight(), CvType.CV_8UC4);
+                            Utils.bitmapToMat(bm, tmp);
+                            //close the frame, prevents memory leaks and crashing
+                            frame.close();
+                        }
+                            catch (InterruptedException e)
+                        {
+                            Thread.currentThread().interrupt();
+                        }
+
 
                         if (beaconTopLeft.x < 0)
                             beaconTopLeft.x = 0;
@@ -1202,9 +1155,6 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
                             beaconBotRight.x = rgb.getWidth();
                         if (beaconBotRight.y > rgb.getHeight())
                             beaconBotRight.y = rgb.getHeight();
-
-                        //close the frame, prevents memory leaks and crashing
-                        frame.close();
 
                         //analyse the beacons
                         //Constants.BeaconColours Colour = beaconColour.beaconAnalysisOCV(tmp, loop));
@@ -1313,8 +1263,6 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
                     }
 
                     if ((mintCurrentStepDelay == stepState.STATE_COMPLETE) &&
-                            (mintCurStBeaconColour5291 == stepState.STATE_COMPLETE) &&
-                            (mintCurStAttackBeacon5291 == stepState.STATE_COMPLETE) &&
                             (mintCurStVuforiaTurn5291 == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateVuforiaLocalise5291 == stepState.STATE_COMPLETE) &&
                             (mintCurStVuforiaMove5291 == stepState.STATE_COMPLETE)  &&
@@ -1325,6 +1273,7 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
                             (mintCurrentStateEyes5291 == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateGyroTurnEncoder5291 == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateTankTurnGyroHeading == stepState.STATE_COMPLETE) &&
+                            (mintCurrentStateMecanumStrafe == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateRadiusTurn == stepState.STATE_COMPLETE))
                     {
                         mintCurrentStateStep = stepState.STATE_COMPLETE;
@@ -1370,11 +1319,7 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
                 break;
                 case STATE_FINISHED:
                     robotDrive.setHardwareDrivePower(0);
-
-                    //deactivate vuforia
-                    RelicRecovery.deactivate();
-
-                    telemetry.addData("STATE", "FINISHED " + mintCurrentStep);
+                    //stop the logging
                     if (debug >= 1)
                     {
                         if (fileLogger != null)
@@ -1386,6 +1331,11 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
                             fileLogger = null;
                         }
                     }
+                    //deactivate vuforia
+                    RelicRecovery.deactivate();
+
+                    telemetry.addData("STATE", "FINISHED " + mintCurrentStep);
+
                 break;
                 case STATE_ASTAR_PRE_INIT:
                     mintCurrentStepAStar = 1;                                          //init the Step for AStar
@@ -1878,15 +1828,7 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
             case "VTE":  // Turn the Robot using information from Vuforia and Pythag
                 VuforiaTurn();
                 break;
-            case "ATB":  // Press the beacon button robot to press the button
-                AttackBeacon5291();
-                break;
-            case "BCL":  // Get the beacon colour and move the robot to press the button
-                BeaconColour();
-                break;
-            case "EYE":  // Special Function, 5291 Move forward until line is found
-                setEyelids5291();
-                break;
+
         }
     }
 
@@ -1924,6 +1866,9 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
             case "GTH":
                 mintCurrentStateTankTurnGyroHeading = stepState.STATE_INIT;
                 break;
+            case "MST":
+                mintCurrentStateMecanumStrafe = stepState.STATE_INIT;
+                break;
             case "LTE":
                 mintCurrentStateTankTurn = stepState.STATE_INIT;
                 break;
@@ -1956,12 +1901,6 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
                 break;
             case "VTE":  // Turn the Robot using information from Vuforia and Pythag
                 mintCurStVuforiaTurn5291 = stepState.STATE_INIT;
-                break;
-            case "BCL":  // Get the beacon colour and move the robot to press the button
-                mintCurStBeaconColour5291 = stepState.STATE_INIT;
-                break;
-            case "ATB":  // Press the beacon button robot to press the button
-                mintCurStAttackBeacon5291 = stepState.STATE_INIT;
                 break;
             case "GTE":  // Special Function, 5291 Move forward until line is found
                 mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_INIT;
@@ -2118,7 +2057,6 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
         double  dblLeftSpeed;
         double  dblRightSpeed;
 
-
         switch (mintCurrentStateDriveHeading)
         {
             case STATE_INIT:
@@ -2219,6 +2157,10 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
                 //if getting close ramp down speed
                 dblDistanceToEnd = (dblDistanceToEndLeft1 + dblDistanceToEndRight1 + dblDistanceToEndLeft2 + dblDistanceToEndRight2) / 4;
 
+                //parameter 1 or 4 is use gyro for direction,  setting either of these to 1 will get gyro correction
+                // if parameter 1 is true
+                // parameter 2 is the error
+                // parameter 3 is the gain coefficient
                 if ((mdblRobotParm1 == 1) || (mdblRobotParm4 == 1)) {
                     dblLeftSpeed = dblStepSpeedTemp;
                     dblRightSpeed = dblStepSpeedTemp;
@@ -2254,27 +2196,6 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
                 } else {
                     dblLeftSpeed = dblStepSpeedTemp;
                     dblRightSpeed = dblStepSpeedTemp;
-                }
-
-                if ((mdblRobotParm1 == 2) || (mdblRobotParm4 == 2)) {
-                    //use line sensor to stop robot when detected.
-                    mdblInputLineSensor1 = LineSensor1.getVoltage();    //  Read the input pin
-                    mdblInputLineSensor2 = LineSensor2.getVoltage();    //  Read the input pin
-                    mdblInputLineSensor3 = LineSensor3.getVoltage();    //  Read the input pin
-                    mdblInputLineSensor4 = LineSensor4.getVoltage();    //  Read the input pin
-                    mdblInputLineSensor5 = LineSensor5.getVoltage();    //  Read the input pin
-
-                    if ((mdblInputLineSensor1 < mdblWhiteThreshold) ||
-                            (mdblInputLineSensor2 < mdblWhiteThreshold) ||
-                            (mdblInputLineSensor3 < mdblWhiteThreshold) ||
-                            (mdblInputLineSensor4 < mdblWhiteThreshold) ||
-                            (mdblInputLineSensor5 < mdblWhiteThreshold))
-                    {
-                        //stop the motors we are complete
-                        robotDrive.setHardwareDrivePower(0);
-                        mintCurrentStateDriveHeading = stepState.STATE_COMPLETE;
-                        deleteParallelStep();
-                    }
                 }
 
                 if (debug >= 2) {
@@ -2944,23 +2865,170 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
         }
     }
 
+
+
+    private void MecanumStrafe()
+    {
+        switch (mintCurrentStateMecanumStrafe){
+            case STATE_INIT:
+            {
+                double adafruitIMUHeading;
+                double currentHeading;
+
+                adafruitIMUHeading = getAdafruitHeading();
+
+                currentHeading = adafruitIMUHeading;
+
+
+                mdblPowerBoost = 0;
+                mintStableCount = 0;
+                mstrWiggleDir = "";
+                mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
+                if (debug >= 3) {
+                    fileLogger.writeEvent("MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
+                    Log.d("MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
+                    fileLogger.writeEvent("MecanumStrafe()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " currentHeading " + currentHeading);
+                    Log.d("MecanumStrafe()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " currentHeading " + currentHeading);
+                }
+                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection ((int)currentHeading, (int)mdblRobotTurnAngle).substring(3));
+                robotDrive.setHardwareDriveRunWithoutEncoders();
+
+                mintCurrentStateMecanumStrafe = stepState.STATE_RUNNING;
+            }
+            break;
+            case STATE_RUNNING: {
+                double adafruitIMUHeading;
+
+                adafruitIMUHeading = getAdafruitHeading();
+
+                mdblGyrozAccumulated = adafruitIMUHeading;
+                mdblGyrozAccumulated = teamAngleAdjust(mdblGyrozAccumulated);//Set variables to MRgyro readings
+                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(3));
+                String mstrDirection = (newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(0, 3));
+                if (debug >= 3) {
+                    fileLogger.writeEvent("MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
+                    Log.d("MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
+                    fileLogger.writeEvent("MecanumStrafe()", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
+                    fileLogger.writeEvent("MecanumStrafe()", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
+                    fileLogger.writeEvent("MecanumStrafe()", "Running, mstrDirection        = " + mstrDirection);
+                    fileLogger.writeEvent("MecanumStrafe()", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
+                    Log.d("MecanumStrafe()", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
+                    Log.d("MecanumStrafe()", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
+                    Log.d("MecanumStrafe()", "Running, mstrDirection        = " + mstrDirection);
+                    Log.d("MecanumStrafe()", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
+                }
+
+                if (Math.abs(mdblTurnAbsoluteGyro) > 21) {  //Continue while the robot direction is further than three degrees from the target
+                    mintStableCount = 0;
+                    if (debug >= 3) {
+                        fileLogger.writeEvent("MecanumStrafe()","High Speed.....");
+                        Log.d("MecanumStrafe()","High Speed.....");
+                    }
+                    if (mstrDirection.equals("LTE")) {
+                        //want to turn left
+                        if (debug >= 3) {
+                            fileLogger.writeEvent("MecanumStrafe()","Left Turn.....");
+                            Log.d("MecanumStrafe()","Left Turn.....");
+                        }
+                        if (mstrWiggleDir.equals("RTE")) {
+                            mdblPowerBoost = mdblPowerBoost - 0.01;
+                            mintPowerBoostCount = 0;
+                        }
+                        mstrWiggleDir = "LTE";
+                        robotDrive.setHardwareDriveLeftMotorPower(mdblStepSpeed);
+                        robotDrive.setHardwareDriveRightMotorPower(-mdblStepSpeed);
+                    }
+                    else if (mstrDirection.equals("RTE")) {
+                        //want to turn left
+                        if (mstrWiggleDir.equals("LTE")) {
+                            mdblPowerBoost = mdblPowerBoost - 0.01;
+                            mintPowerBoostCount = 0;
+                        }
+                        mstrWiggleDir = "RTE";
+                        if (debug >= 3) {
+                            fileLogger.writeEvent("MecanumStrafe()","Right Turn.....");
+                            Log.d("MecanumStrafe()","Right Turn.....");
+                        }
+                        robotDrive.setHardwareDriveLeftMotorPower(-mdblStepSpeed);
+                        robotDrive.setHardwareDriveRightMotorPower(mdblStepSpeed);
+                    }
+                }
+                else if (Math.abs(mdblTurnAbsoluteGyro) > mdblRobotParm1) {  //Continue while the robot direction is further than three degrees from the target
+                    mintStableCount = 0;
+                    mintPowerBoostCount++;
+                    if (mintPowerBoostCount > 50) {
+                        mdblPowerBoost = mdblPowerBoost + 0.01;
+                        mintPowerBoostCount = 0;
+                    }
+                    if (debug >= 3) {
+                        fileLogger.writeEvent("MecanumStrafe()","Slow Speed Nearing final angle.....");
+                        Log.d("MecanumStrafe()","Slow Speed Nearing final angle.....");
+                    }
+                    if (mstrDirection.equals("LTE") ) {
+                        //want to turn left
+                        if (mstrWiggleDir.equals("RTE")) {
+                            mdblPowerBoost = mdblPowerBoost - 0.01;
+                            mintPowerBoostCount = 0;
+                        }
+                        mstrWiggleDir = "LTE";
+
+                        if (debug >= 3) {
+                            fileLogger.writeEvent("TankTurnGyro()","Left Turn.....");
+                            Log.d("TankTurnGyro()","Left Turn.....");
+                        }
+                        robotDrive.setHardwareDriveLeftMotorPower(.12 + mdblPowerBoost);
+                        robotDrive.setHardwareDriveRightMotorPower(-(0.12 + mdblPowerBoost));
+                    } else if (mstrDirection.equals("RTE") ) {
+                        //want to turn left
+                        if (mstrWiggleDir.equals("LTE")) {
+                            mdblPowerBoost = mdblPowerBoost - 0.01;
+                            mintPowerBoostCount = 0;
+                        }
+                        mstrWiggleDir = "RTE";
+                        if (debug >= 3)
+                        {
+                            fileLogger.writeEvent("TankTurnGyro()","Right Turn.....");
+                            Log.d("TankTurnGyro()","Right Turn.....");
+                        }
+                        robotDrive.setHardwareDriveLeftMotorPower(-(0.12 + mdblPowerBoost));
+                        robotDrive.setHardwareDriveRightMotorPower(0.12 + mdblPowerBoost);
+                    }
+                } else {
+                    mintStableCount++;
+                    if (mintStableCount > 20) {
+                        if (debug >= 3) {
+                            fileLogger.writeEvent("TankTurnGyro()", "Complete.....");
+                        }
+                        robotDrive.setHardwareDriveRunUsingEncoders();
+                        robotDrive.setHardwareDrivePower(0);
+                        mintCurrentStateMecanumStrafe = stepState.STATE_COMPLETE;
+                        deleteParallelStep();
+                    }
+                }
+            } //end Case Running
+            //check timeout value
+            if (mStateTime.seconds() > mdblStepTimeout) {
+                if (debug >= 1) {
+                    fileLogger.writeEvent("TankTurnGyro()", "Timeout:- ");
+                    Log.d("TankTurnGyro()", "Timeout:- ");
+                }
+                //  Transition to a new state.
+                mintCurrentStateMecanumStrafe = stepState.STATE_COMPLETE;
+                deleteParallelStep();
+            }
+            break;
+        }
+    }
+
+
     private void TankTurnGyroHeading()
     {
         switch (mintCurrentStateTankTurnGyroHeading){
             case STATE_INIT:
             {
-                double gyroHeading;
                 double adafruitIMUHeading;
-                double currentHeading;
 
-                gyroHeading = gyro.getHeading();
                 adafruitIMUHeading = getAdafruitHeading();
-
-                if (useAdafruitIMU) {
-                    currentHeading = adafruitIMUHeading;
-                } else {
-                    currentHeading = gyroHeading;
-                }
 
                 mdblPowerBoost = 0;
                 mintStableCount = 0;
@@ -2969,33 +3037,22 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
                 if (debug >= 3) {
                     fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USING HEADING FROM IMU=" + useAdafruitIMU);
                     Log.d("TankTurnGyroHeadingEnc", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    fileLogger.writeEvent("TankTurnGyro()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " gyro.getHeading() " + gyroHeading);
-                    Log.d("TankTurnGyro()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " gyro.getHeading() " + gyroHeading);
                     fileLogger.writeEvent("TankTurnGyro()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
-                    Log.d("TankTurnGyro()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " gadafruitIMUHeading " + adafruitIMUHeading);
+                    Log.d("TankTurnGyro()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
                 }
-                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection ((int)currentHeading, (int)mdblRobotTurnAngle).substring(3));
+                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection ((int)adafruitIMUHeading, (int)mdblRobotTurnAngle).substring(3));
                 robotDrive.setHardwareDriveRunWithoutEncoders();
 
                 mintCurrentStateTankTurnGyroHeading = stepState.STATE_RUNNING;
             }
             break;
             case STATE_RUNNING: {
-                double gyroHeading;
                 double adafruitIMUHeading;
-                double currentHeading;
 
-                gyroHeading = gyro.getHeading();
                 adafruitIMUHeading = getAdafruitHeading();
 
-                if (useAdafruitIMU) {
-                    currentHeading = adafruitIMUHeading;
-                } else {
-                    currentHeading = gyroHeading;
-                }
-
-                mdblGyrozAccumulated = currentHeading;
-                mdblGyrozAccumulated = teamAngleAdjust(mdblGyrozAccumulated);//Set variables to gyro readings
+                mdblGyrozAccumulated = adafruitIMUHeading;
+                mdblGyrozAccumulated = teamAngleAdjust(mdblGyrozAccumulated);//Set variables to MRgyro readings
                 mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(3));
                 String mstrDirection = (newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(0, 3));
                 if (debug >= 3) {
@@ -3118,53 +3175,28 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
         switch (mintCurrentStateGyroTurnEncoder5291){
             case STATE_INIT:
             {
-                int gyroDelay;
-
-                double gyroHeading;
                 double adafruitIMUHeading;
-                double currentHeading;
-                gyroHeading = gyro.getHeading();
                 adafruitIMUHeading = getAdafruitHeading();
-
-                if (useAdafruitIMU) {
-                    currentHeading = adafruitIMUHeading;
-                    gyroDelay = 0;
-                } else {
-                    currentHeading = gyroHeading;
-                    gyroDelay = 300;
-                }
 
                 mdblPowerBoost = 0;
                 mintStableCount = 0;
                 mstrWiggleDir = "";
 
-                if ((mStateTime.milliseconds() > gyroDelay )) {
-                    mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
-                    if (debug >= 3) {
-                        fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USE ADAFRUIT IMU = " + useAdafruitIMU + ",mdblRobotTurnAngle " + mdblRobotTurnAngle + " currentHeading " + currentHeading);
-                        Log.d("TankTurnGyroHeadingEnc", "USE ADAFRUIT IMU = " + useAdafruitIMU + ",mdblRobotTurnAngle " + mdblRobotTurnAngle + " currentHeading " + currentHeading);
-                    }
-                    mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection((int)currentHeading, (int) mdblRobotTurnAngle).substring(3));
-                    mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_RUNNING;
+                mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
+                if (debug >= 3) {
+                    fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USE ADAFRUIT IMU = " + useAdafruitIMU + ",mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
+                    Log.d("TankTurnGyroHeadingEnc", "USE ADAFRUIT IMU = " + useAdafruitIMU + ",mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
                 }
+                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection((int)adafruitIMUHeading, (int) mdblRobotTurnAngle).substring(3));
+                mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_RUNNING;
             }
             break;
             case STATE_RUNNING: {
 
-                double gyroHeading;
                 double adafruitIMUHeading;
-                double currentHeading;
-                gyroHeading = gyro.getHeading();
                 adafruitIMUHeading = getAdafruitHeading();
 
-                if (useAdafruitIMU) {
-                    currentHeading = adafruitIMUHeading;
-                } else {
-                    currentHeading = gyroHeading;
-                }
-
-                mdblGyrozAccumulated = currentHeading;
-                mdblGyrozAccumulated = teamAngleAdjust(mdblGyrozAccumulated);//Set variables to gyro readings
+                mdblGyrozAccumulated = teamAngleAdjust(mdblGyrozAccumulated); //Set variables to MRgyro readings
                 mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(3));
                 String mstrDirection = (newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(0, 3));
                 if (debug >= 3) {
@@ -3461,256 +3493,6 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
         }
     }
 
-    private void BeaconColour() {
-
-        switch (mintCurStBeaconColour5291) {
-            case STATE_INIT: {
-                //ensure vision processing is enable
-                mblnDisableVisionProcessing = false;  //enable vision processing
-                mblnReadyToCapture = true;               //let OpenCV start doing its thing
-                mintNumberColourTries = 0;
-                mintCaptureLoop = 0;
-                mintCurStBeaconColour5291 = stepState.STATE_RUNNING;
-                if (debug >= 2) {
-                    fileLogger.writeEvent("BeaconColour()", "Initialised");
-                    Log.d("BeaconColour()", "Initialised");
-                }
-            }
-            break;
-            case STATE_RUNNING:
-            {
-                mblnDisableVisionProcessing = false;  //enable vision processing
-                mblnReadyToCapture = true;               //let OpenCV start doing its thing
-                if (debug >= 2) {
-                    fileLogger.writeEvent("BeaconColour()", "Running" );
-                    Log.d("BeaconColour()", "Running" );
-                }
-
-                mintNumberColourTries ++;
-                if (debug >= 2) {
-                    fileLogger.writeEvent("BeaconColour()", "Returned " + mColour + " mintNumberColourTries" + mintNumberColourTries);
-                    Log.d("BeaconColour()", "Returned " + mColour + " mintNumberColourTries" + mintNumberColourTries);
-                }
-
-                if (mintCaptureLoop >= 1) {
-                    mblnReadyToCapture = false;
-                    mintCurStBeaconColour5291 = stepState.STATE_COMPLETE;
-                    deleteParallelStep();
-                }
-
-                mint5291LEDStatus = LEDState.STATE_BEACON;
-            }
-            //check timeout value
-            if (mStateTime.seconds() > mdblStepTimeout)
-            {
-                if (debug >= 1)
-                {
-                    fileLogger.writeEvent("BeaconColour()", "Timeout:- ");
-                    Log.d("BeaconColour()", "Timeout:- ");
-                }
-                //  Transition to a new state.
-                mintCurStBeaconColour5291 = stepState.STATE_COMPLETE;
-                deleteParallelStep();
-            }
-            break;
-        }
-    }
-
-    private void AttackBeacon5291() {
-
-        double dblMaxDistance = 0;
-        double dblMinDistance;
-        boolean blnColourOK = false;
-
-        switch (mintCurStAttackBeacon5291) {
-            case STATE_INIT: {
-                //ensure vision processing is enable
-                mblnDisableVisionProcessing = true;  //disable vision processing
-                mblnReadyToCapture = false;               //stop OpenCV from doing its thing
-                mintNumberColourTries = 0;
-                mintCurStAttackBeacon5291 = stepState.STATE_RUNNING;
-                if (debug >= 2) {
-                    fileLogger.writeEvent("AttackBeacon5291()", "Initialised");
-                    Log.d("AttackBeacon5291()", "Initialised");
-                }
-            }
-            break;
-            case STATE_RUNNING:
-            {
-                if (debug >= 2) {
-                    fileLogger.writeEvent("AttackBeacon5291()", "Running" );
-                    Log.d("AttackBeacon5291()", "Running" );
-                }
-
-                if (allianceColor.equals("Red")) {
-                    if (mColour == Constants.BeaconColours.BEACON_BLUE_RED) {    //means red is to the right
-                        blnColourOK = true;
-                    } else if (mColour == Constants.BeaconColours.BEACON_RED_BLUE) {
-                        blnColourOK = true;
-                    } else if (mColour == Constants.BeaconColours.BEACON_RED) {
-                        blnColourOK = false;
-                    } else if (mColour == Constants.BeaconColours.BEACON_BLUE) {
-                        blnColourOK = false;
-                    }
-                } else if (allianceColor.equals("Blue")) {
-                    if (mColour == Constants.BeaconColours.BEACON_BLUE_RED) {    //means red is to the right
-                        blnColourOK = true;
-                    } else if (mColour == Constants.BeaconColours.BEACON_RED_BLUE) {
-                        blnColourOK = true;
-                    }  else if (mColour == Constants.BeaconColours.BEACON_RED) {
-                        blnColourOK = false;
-                    } else if (mColour == Constants.BeaconColours.BEACON_BLUE) {
-                        blnColourOK = false;
-                    }
-                }
-                if (blnColourOK) {
-                    mint5291LEDStatus = LEDState.STATE_BEACON;
-                    int loops = 0;
-                    do {
-                        readRangeSensors();  // This takes 100ms so use it wisely
-                        dblMaxDistance = Math.max(Math.abs(mdblRangeSensor1), Math.abs(mdblRangeSensor2));  //get the maximum distance from wall
-                        dblMinDistance = Math.min(Math.abs(mdblRangeSensor1), Math.abs(mdblRangeSensor2));
-                        loops++;
-                    } while ((dblMaxDistance > 50) && (loops < 3));
-
-                    //once sensor gave a bad reading, so use the other one, and add a little just in case its short
-                    if (dblMaxDistance > 50) {
-                        dblMaxDistance = dblMinDistance + 2;
-                    }
-
-                    if (!(dblMaxDistance == 0)) {
-                        autonomousStepsFile.insertSteps(3, "FWE-12", false, false, 0, 0, 0, 0, 0, 0, 0.4, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(2, "EYE",   false, false,  9,     0,    0,    0,    0,    0,    0,mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "FWE" + (((dblMaxDistance + 1)/ 2.54) * 1.05), true, true, 0, 0, 0, 0, 0, 0, 0.4, mintCurrentStep + 1);
-                    }
-                    
-                } else {
-                    mint5291LEDStatus = LEDState.STATE_ERROR;
-                    if (mintStepRetries < 1) {  //only1 retry
-                        mintStepRetries++;
-                        int loops = 0;
-                        do {
-                            readRangeSensors();  // This takes 100ms so use it wisely
-                            dblMaxDistance = Math.max(Math.abs(mdblRangeSensor1), Math.abs(mdblRangeSensor2));  //get the maximum distance from wall
-                            dblMinDistance = Math.min(Math.abs(mdblRangeSensor1), Math.abs(mdblRangeSensor2));
-                            loops++;
-                        } while ((dblMaxDistance > 50) && (loops < 3));
-                        
-                        //jut in case we get some weird error, make something up
-                        //once sensor gave a bad reading, so use the other one, and add a little just in case its short
-                        if (dblMaxDistance > 50) {
-                            dblMaxDistance = dblMinDistance + 2;
-                        }
-
-                        autonomousStepsFile.insertSteps(3, "ATB",  false, false,   0,    0,    0,    0,    0,    0,    0,    mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3,  "BCL",  false, false,   0,    0,    0,    0,    0,    0,    0,    mintCurrentStep + 1);
-                        if (allianceColor.equals("Red"))
-                            autonomousStepsFile.insertSteps(2, "GTE180",false, false,   0,    0,    0,    0,    0,    0,    0.47, mintCurrentStep + 1);
-                        else if (allianceColor.equals("Blue"))
-                            autonomousStepsFile.insertSteps(2, "GTE270",false, false,   0,    0,    0,    0,    0,    0,    0.47, mintCurrentStep + 1);
-                        if ((16 - (dblMaxDistance / 2.54)) >= 0) {
-                            autonomousStepsFile.insertSteps(2, "FWE-" + (16 - (dblMaxDistance / 2.54)), false, true, 0, 0, 0, 0, 0, 0, 0.4, mintCurrentStep + 1);  //we want to be 18 inches from wall
-                        }
-                    } else {
-                        mintStepRetries = 0;  //reset the counter in case another step needs it
-                    }
-
-                }
-                if (debug >= 2) {
-                    fileLogger.writeEvent("AttackBeacon5291()", "Returned mColour " + mColour);
-                    fileLogger.writeEvent("AttackBeacon5291()", "dblMaxDistance " + dblMaxDistance);
-                    Log.d("AttackBeacon5291()", "Returned mColour " + mColour);
-                    Log.d("AttackBeacon5291()", "dblMaxDistance " + dblMaxDistance);
-                }
-
-                mintCurStAttackBeacon5291 = stepState.STATE_COMPLETE;
-                deleteParallelStep();
-            }
-            //check timeout value
-            if (mStateTime.seconds() > mdblStepTimeout)
-            {
-                if (debug >= 1)
-                {
-                    fileLogger.writeEvent("AttackBeacon5291()", "Timeout:- ");
-                    Log.d("AttackBeacon5291()", "Timeout:- ");
-                }
-                //  Transition to a new state.
-                mintCurStAttackBeacon5291 = stepState.STATE_COMPLETE;
-                deleteParallelStep();
-            }
-            break;
-        }
-    }
-
-    private void setEyelids5291()
-    {
-        switch (mintCurrentStateEyes5291) {
-            case STATE_INIT: {
-                mintCurrentStateEyes5291 = stepState.STATE_RUNNING;
-                if (debug >= 2) {
-                    fileLogger.writeEvent("setEyelids5291()", "Init");
-                    Log.d("setEyelids5291()", "Init");
-                }
-            }
-            break;
-            case STATE_RUNNING:
-            {
-                if ((int)mdblRobotParm1 == 9) {
-                    //set the beacon pushers to the beacon colour
-                    if (allianceColor.equals("Red")) {
-                        if (mColour == Constants.BeaconColours.BEACON_BLUE_RED) {    //means red is to the right
-                            moveServo(servoBeaconRight, SERVOBEACONRIGHT_HOME + 100, SERVOBEACONRIGHT_MIN_RANGE, SERVOBEACONRIGHT_MAX_RANGE);
-                            moveServo(servoBeaconLeft, SERVOBEACONLEFT_HOME + 7, SERVOBEACONLEFT_MIN_RANGE, SERVOBEACONLEFT_MAX_RANGE);
-                        } else if (mColour == Constants.BeaconColours.BEACON_RED_BLUE) {
-                            moveServo(servoBeaconRight, SERVOBEACONRIGHT_HOME, SERVOBEACONRIGHT_MIN_RANGE, SERVOBEACONRIGHT_MAX_RANGE);
-                            moveServo(servoBeaconLeft, SERVOBEACONLEFT_HOME + 100, SERVOBEACONLEFT_MIN_RANGE, SERVOBEACONLEFT_MAX_RANGE);
-                        }
-                    } else if (allianceColor.equals("Blue")) {
-                        if (mColour == Constants.BeaconColours.BEACON_BLUE_RED) {    //means red is to the right
-                            moveServo(servoBeaconRight, SERVOBEACONRIGHT_HOME , SERVOBEACONRIGHT_MIN_RANGE, SERVOBEACONRIGHT_MAX_RANGE);
-                            moveServo(servoBeaconLeft, SERVOBEACONLEFT_HOME + 100, SERVOBEACONLEFT_MIN_RANGE, SERVOBEACONLEFT_MAX_RANGE);
-                        } else if (mColour == Constants.BeaconColours.BEACON_RED_BLUE) {
-                            moveServo(servoBeaconRight, SERVOBEACONRIGHT_HOME + 100, SERVOBEACONRIGHT_MIN_RANGE, SERVOBEACONRIGHT_MAX_RANGE);
-                            moveServo(servoBeaconLeft, SERVOBEACONLEFT_HOME, SERVOBEACONLEFT_MIN_RANGE, SERVOBEACONLEFT_MAX_RANGE);
-                        }
-                    }
-                }
-                else if ((int)mdblRobotParm1 == 1) {
-                    // Move the beacon pushers to home
-                    moveServo(servoBeaconRight, SERVOBEACONRIGHT_HOME, SERVOBEACONRIGHT_MIN_RANGE, SERVOBEACONRIGHT_MAX_RANGE);
-                    moveServo(servoBeaconLeft, SERVOBEACONLEFT_HOME, SERVOBEACONLEFT_MIN_RANGE, SERVOBEACONLEFT_MAX_RANGE);
-                } else if ((int)mdblRobotParm1 == 2) {
-                    // Move the beacon pushers to home
-                    moveServo(servoBeaconRight, SERVOBEACONRIGHT_HOME + 45, SERVOBEACONRIGHT_MIN_RANGE, SERVOBEACONRIGHT_MAX_RANGE);
-                    moveServo(servoBeaconLeft, SERVOBEACONLEFT_HOME + 45, SERVOBEACONLEFT_MIN_RANGE, SERVOBEACONLEFT_MAX_RANGE);
-                } else if ((int)mdblRobotParm1 == 3) {
-                    // Move the beacon pushers to home
-                    moveServo(servoBeaconRight, SERVOBEACONRIGHT_HOME + 90, SERVOBEACONRIGHT_MIN_RANGE, SERVOBEACONRIGHT_MAX_RANGE);
-                    moveServo(servoBeaconLeft, SERVOBEACONLEFT_HOME + 90, SERVOBEACONLEFT_MIN_RANGE, SERVOBEACONLEFT_MAX_RANGE);
-                } else if ((int)mdblRobotParm1 == 4) {
-                    // Move the beacon pushers to home
-                    moveServo(servoBeaconRight, SERVOBEACONRIGHT_HOME, SERVOBEACONRIGHT_MIN_RANGE, SERVOBEACONRIGHT_MAX_RANGE);
-                    moveServo(servoBeaconLeft, SERVOBEACONLEFT_HOME + 90, SERVOBEACONLEFT_MIN_RANGE, SERVOBEACONLEFT_MAX_RANGE);
-                }
-                mintCurrentStateEyes5291 = stepState.STATE_COMPLETE;
-                deleteParallelStep();
-            }
-            //check timeout value
-            if (mStateTime.seconds() > mdblStepTimeout)
-            {
-                if (debug >= 1)
-                {
-                    fileLogger.writeEvent("setEyelids5291()", "Timeout:- ");
-                    Log.d("setEyelids5291()", "Timeout:- ");
-                }
-                //  Transition to a new state.
-                mintCurrentStateEyes5291 = stepState.STATE_COMPLETE;
-                deleteParallelStep();
-            }
-            break;
-        }
-    }
-
     private void DelayStep ()
     {
         switch (mintCurrentStepDelay) {
@@ -3995,15 +3777,6 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
         return transformationMatrix.formatAsTransform();
     }
 
-    private boolean moveServo (Servo Servo, double Position, double RangeMin, double RangeMax ) {
-        //set right position
-        if ((Range.scale(Position, 0, 180, 0, 1) < RangeMin ) || (Range.scale(Position, 0, 180, 0, 1) > RangeMax )) {
-            return false;
-        }
-        Servo.setPosition(Range.scale(Position, 0, 180, 0, 1));
-        return true;
-    }
-
     /**
      * Converts a reading of the optical sensor into centimeters. This computation
      * could be adjusted by altering the numeric parameters, or by providing an alternate
@@ -4063,36 +3836,26 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
         double robotError;
         double robotErrorIMU;
         double robotErrorGyro;
-        double gyroHeading;
+        double MRgyroHeading;
         double adafruitIMUHeading;
 
-        gyroHeading = gyro.getHeading() * GYRO_CORRECTION_MULTIPLIER;
         adafruitIMUHeading = getAdafruitHeading();
 
         if (debug >= 2) {
             fileLogger.writeEvent("getDriveError()", "targetAngle " + targetAngle);
             Log.d("getDriveError()", "targetAngle " + targetAngle);
-            fileLogger.writeEvent("getDriveError()", "Gyro Reading " + gyroHeading);
-            Log.d("getDriveError()", "Gyro Reading " + gyroHeading);
             fileLogger.writeEvent("getDriveError()", "Adafruit IMU Reading " + adafruitIMUHeading);
             Log.d("getDriveError()", "Adafruit IMU Reading " + adafruitIMUHeading);
         }
 
         // calculate error in -179 to +180 range  (
-        robotErrorGyro = targetAngle - teamAngleAdjust(gyroHeading);
         robotErrorIMU = targetAngle - teamAngleAdjust(adafruitIMUHeading);
 
-        if (useAdafruitIMU) {
-            robotError = robotErrorIMU;
-        } else {
-            robotError = robotErrorGyro;
-        }
+        robotError = robotErrorIMU;
 
         if (debug >= 3) {
             fileLogger.writeEvent("getDriveError()", "USING HEADING FROM IMU=" + useAdafruitIMU);
             Log.d("getDriveError()", "USING HEADING FROM IMU=" + useAdafruitIMU);
-            fileLogger.writeEvent("getDriveError()", "robotErrorGyro " + robotErrorGyro + ", gyro.getHeading() " + gyroHeading + " teamAngleAdjust(gyro.getHeading()) "  + teamAngleAdjust(gyroHeading));
-            Log.d("getDriveError()", "robotError " + robotErrorGyro + ", gyro.getHeading() " + gyroHeading + " teamAngleAdjust(gyro.getHeading()) "  + teamAngleAdjust(gyroHeading));
             fileLogger.writeEvent("getDriveError()", "robotErrorIMU " + robotError + ", getAdafruitHeading() " + adafruitIMUHeading + " teamAngleAdjust(adafruitIMUHeading) "  + teamAngleAdjust(adafruitIMUHeading));
             Log.d("getDriveError()", "robotError " + robotErrorIMU + ", getAdafruitHeading() " + adafruitIMUHeading + " teamAngleAdjust(adafruitIMUHeading) "  + teamAngleAdjust(adafruitIMUHeading));
         }
@@ -4139,5 +3902,17 @@ public class AutoDriveTeam5291 extends LinearOpMode //extends OpModeMasterLinear
             return angle - 360;
         else
             return angle;
+    }
+
+    private boolean moveServo (Servo Servo, double Position, double RangeMin, double RangeMax ) {
+        //if ((Range.scale(Position, 0, 180, 0, 1) < RangeMin ) || (Range.scale(Position, 0, 180, 0, 1) > RangeMax )) {
+        //    return false;
+        //}
+        if ((Position < RangeMin ) || (Position > RangeMax )) {
+            return false;
+        }
+
+        Servo.setPosition(Range.scale(Position, 0, 180, 0, 1));
+        return true;
     }
 }

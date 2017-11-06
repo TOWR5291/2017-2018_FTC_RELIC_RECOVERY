@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 import club.towr5291.libraries.robotConfigSettings;
+import club.towr5291.libraries.towrUtils;
 
 /**
  * This is NOT an opmode.
@@ -16,10 +17,6 @@ import club.towr5291.libraries.robotConfigSettings;
  * This hardware class assumes the following device names have been configured on the robot:
  * Note:  All names are lower case and some have single spaces between words.
  *
- * Motor channel:  Left  drive motor:        "leftmotor1"
- * Motor channel:  Left  drive motor:        "leftmotor2"
- * Motor channel:  Right drive motor:        "rightmotor1"
- * Motor channel:  Right drive motor:        "rightmotor2"
  */
 public class HardwareDriveMotors
 {
@@ -30,8 +27,10 @@ public class HardwareDriveMotors
     public DcMotor  baseMotor4  = null;
 
     /* local OpMode members. */
-    HardwareMap hwMap            =  null;
+    HardwareMap hwMap            = null;
     private ElapsedTime period   = new ElapsedTime();
+
+    private boolean gyroAssistEnabled = false;
 
     /* Constructor */
     public HardwareDriveMotors(){
@@ -73,9 +72,9 @@ public class HardwareDriveMotors
                 baseMotor4.setDirection(DcMotor.Direction.REVERSE);
                 break;
             case TileRunnerMecanum2x40:
-                baseMotor1.setDirection(DcMotor.Direction.REVERSE);
+                baseMotor1.setDirection(DcMotor.Direction.FORWARD);
                 baseMotor2.setDirection(DcMotor.Direction.REVERSE);
-                baseMotor3.setDirection(DcMotor.Direction.FORWARD);
+                baseMotor3.setDirection(DcMotor.Direction.REVERSE);
                 baseMotor4.setDirection(DcMotor.Direction.FORWARD);
                 break;
             default:
@@ -222,6 +221,13 @@ public class HardwareDriveMotors
         baseMotor4.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
+    public void setHardwareDrivePower (double leftFront, double leftBack, double rightFront, double rightBack) {
+        baseMotor1.setPower(-leftFront);
+        baseMotor2.setPower(leftBack);
+        baseMotor3.setPower(rightFront);
+        baseMotor4.setPower(-rightBack);
+    }
+
     //set the drive motors power, both left and right
     public void setHardwareDrivePower (double power) {
         setHardwareDriveLeftMotorPower(power);
@@ -257,6 +263,66 @@ public class HardwareDriveMotors
     }
 
 
+    /**
+     * This Method was taken from Triton Robotics Library
+     * This method normalizes the power to the four wheels for mecanum drive.
+     *
+     * @param wheelSpeeds specifies the wheel speed of all four wheels.
+     */
+    private void normalize(double[] wheelSpeeds)
+    {
+        double maxMagnitude = Math.abs(wheelSpeeds[0]);
+        for (int i = 1; i < wheelSpeeds.length; i++)
+        {
+            double magnitude = Math.abs(wheelSpeeds[i]);
+            if (magnitude > maxMagnitude)
+            {
+                maxMagnitude = magnitude;
+            }
+        }
+
+        if (maxMagnitude > 1.0)
+        {
+            for (int i = 0; i < wheelSpeeds.length; i++)
+            {
+                wheelSpeeds[i] /= maxMagnitude;
+            }
+        }
+    }   //normalize
+
+    public class HardwareDriveTankMotorSpeeds {
+        public double tankLeft;
+        public double tankRight;
+
+        public HardwareDriveTankMotorSpeeds(double leftPower, double rightPower) {
+            this.tankLeft = leftPower;
+            this.tankRight = rightPower;
+        }
+        public HardwareDriveTankMotorSpeeds() {
+            this(0, 0);
+        }
+
+        public HardwareDriveTankMotorSpeeds(double[] vals) {
+            this();
+            set(vals);
+        }
+
+        public void set(double[] vals) {
+            if (vals != null) {
+                tankLeft = vals.length > 0 ? vals[0] : 0;
+                tankRight = vals.length > 1 ? vals[1] : 0;
+            } else {
+                tankLeft = 0;
+                tankRight = 0;
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "{LeftPower= " + tankLeft + ", RightPower= " + tankRight + "}";
+        }
+
+    }
 
 }
 
