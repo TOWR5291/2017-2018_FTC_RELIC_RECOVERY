@@ -13,6 +13,7 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
@@ -82,6 +83,66 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     private FileLogger fileLogger;
     private int debug = 3;
 
+    //servos
+    // the servos are on the servo controller
+    private final static double SERVOLIFTLEFTTOP_MIN_RANGE      = 0;
+    private final static double SERVOLIFTLEFTTOP_MAX_RANGE      = 180;
+    private final static double SERVOLIFTLEFTTOP_HOME           = 90;
+    private final static double SERVOLIFTLEFTTOP_GLYPH_RELEASE  = 60;
+    private final static double SERVOLIFTLEFTTOP_GLYPH_GRAB     = 30;
+
+    private final static double SERVOLIFTRIGHTTOP_MIN_RANGE     = 0;
+    private final static double SERVOLIFTRIGHTTOP_MAX_RANGE     = 180;
+    private final static double SERVOLIFTRIGHTTOP_HOME          = 90;
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_RELEASE = 60;
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_GRAB    = 30;
+
+    private final static double SERVOLIFTLEFTBOT_MIN_RANGE      = 0;
+    private final static double SERVOLIFTLEFTBOT_MAX_RANGE      = 180;
+    private final static double SERVOLIFTLEFTBOT_HOME           = 90;
+    private final static double SERVOLIFTLEFTBOT_GLYPH_RELEASE  = 60;
+    private final static double SERVOLIFTLEFTBOT_GLYPH_GRAB     = 30;
+
+    private final static double SERVOLIFTRIGHTBOT_MIN_RANGE     = 0;
+    private final static double SERVOLIFTRIGHTBOT_MAX_RANGE     = 180;
+    private final static double SERVOLIFTRIGHTBOT_HOME          = 90;
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_RELEASE = 60;
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB    = 30;
+
+    private final static double SERVOJEWELLEFT_MIN_RANGE        = 0;
+    private final static double SERVOJEWELLEFT_MAX_RANGE        = 1.0;
+    private final static double SERVOJEWELLEFT_HOME             = 147;
+    private final static double SERVOJEWELRIGHT_MIN_RANGE       = 4;
+    private final static double SERVOJEWELRIGHT_MAX_RANGE       = 1.0;
+    private final static double SERVOJEWELRIGHT_HOME            = 150;
+
+    private Servo servoGlyphGripTopLeft;
+    private Servo servoGlyphGripBotLeft;
+    private Servo servoGlyphGripTopRight;
+    private Servo servoGlyphGripBotRight;
+    private Servo servoJewelLeft;
+    private Servo servoJewelRight;
+
+    private DigitalChannel green1LedChannel;
+    private DigitalChannel red1LedChannel;
+    private DigitalChannel blue1LedChannel;
+    private DigitalChannel green2LedChannel;
+    private DigitalChannel red2LedChannel;
+    private DigitalChannel blue2LedChannel;
+    private DigitalChannel limitswitch1;  // Hardware Device Object
+    private DigitalChannel limitswitch2;  // Hardware Device Object
+    private final boolean LedOn = false;
+    private boolean LedOff = true;
+
+    private void LedState (boolean g1, boolean r1, boolean b1, boolean g2, boolean r2, boolean b2) {
+        green1LedChannel.setState(g1);
+        red1LedChannel.setState(r1);
+        blue1LedChannel.setState(b1);
+        green2LedChannel.setState(g2);
+        red2LedChannel.setState(r2);
+        blue2LedChannel.setState(b2);
+    }
+
     // The IMU sensor object
     BNO055IMU imu;
 
@@ -95,7 +156,10 @@ public class RRMecanumTestIan extends OpModeMasterLinear
 
         if (debug >= 1)
         {
+            //create logging based on initial settings, sharepreferences will adjust levels
             fileLogger = new FileLogger(runtime);
+            fileLogger.setDebugLevel(debug);
+            fileLogger.setLogdEnabled(true);
             fileLogger.open();
             fileLogger.write("Time,SysMS,Thread,Event,Desc");
             fileLogger.writeEvent(TAG, "Log Started");
@@ -118,19 +182,39 @@ public class RRMecanumTestIan extends OpModeMasterLinear
 
         if (debug >= 1)
         {
-            Log.d(TAG, "Loaded sharePreferences");
+            //adjust debug level based on shared preferences
+            fileLogger.setDebugLevel(debug);
             fileLogger.writeEvent(TAG, "Loaded sharePreferences");
-            Log.d(TAG, "Loading baseHardware");
-            fileLogger.writeEvent(TAG, "Loading baseHardware");
+            fileLogger.writeEvent(TAG, "Loading LED Settings");
         }
 
-        robotDrive.init(hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig));
+        // get a reference to a Modern Robotics DIM, and IO channels.
+        green1LedChannel = hardwareMap.get(DigitalChannel.class, "green1");    //  Use generic form of device mapping
+        red1LedChannel = hardwareMap.get(DigitalChannel.class, "red1");    //  Use generic form of device mapping
+        blue1LedChannel = hardwareMap.get(DigitalChannel.class, "blue1");    //  Use generic form of device mapping
+        green2LedChannel = hardwareMap.get(DigitalChannel.class, "green2");    //  Use generic form of device mapping
+        red2LedChannel = hardwareMap.get(DigitalChannel.class, "red2");    //  Use generic form of device mapping
+        blue2LedChannel = hardwareMap.get(DigitalChannel.class, "blue2");    //  Use generic form of device mapping
+        green1LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
+        red1LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
+        blue1LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
+        green2LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
+        red2LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
+        blue2LedChannel.setMode(DigitalChannel.Mode.OUTPUT);
+
+        LedState(LedOn, LedOn, LedOn, LedOn, LedOn, LedOn);
 
         if (debug >= 1)
         {
-            Log.d(TAG, "Loaded baseHardware");
+            fileLogger.writeEvent(TAG, "Loaded LED Settings");
+            fileLogger.writeEvent(TAG, "Loading baseHardware");
+        }
+
+        robotDrive.init(fileLogger, hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig));
+
+        if (debug >= 1)
+        {
             fileLogger.writeEvent(TAG, "Loaded baseHardware");
-            Log.d(TAG, "Setting setHardwareDriveRunWithoutEncoders");
             fileLogger.writeEvent(TAG, "Setting setHardwareDriveRunWithoutEncoders");
         }
 
@@ -138,7 +222,6 @@ public class RRMecanumTestIan extends OpModeMasterLinear
 
         if (debug >= 1)
         {
-            Log.d(TAG, "Set setHardwareDriveRunWithoutEncoders");
             fileLogger.writeEvent(TAG, "Set setHardwareDriveRunWithoutEncoders");
         }
 

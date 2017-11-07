@@ -62,7 +62,7 @@ public class HardwareArmMotors
 
     public void setHardwareArmDirections(){
 
-        armMotor1.setDirection(DcMotor.Direction.FORWARD);
+        armMotor1.setDirection(DcMotor.Direction.REVERSE);
         armMotor2.setDirection(DcMotor.Direction.REVERSE);
         //armMotor3.setDirection(DcMotor.Direction.FORWARD);
         //armMotor4.setDirection(DcMotor.Direction.REVERSE);

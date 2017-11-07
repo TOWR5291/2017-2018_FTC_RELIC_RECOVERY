@@ -4,6 +4,7 @@ import com.qualcomm.robotcore.hardware.DcMotor;
 import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
+import club.towr5291.functions.FileLogger;
 import club.towr5291.libraries.robotConfigSettings;
 import club.towr5291.libraries.towrUtils;
 
@@ -32,12 +33,36 @@ public class HardwareDriveMotors
 
     private boolean gyroAssistEnabled = false;
 
+    FileLogger filelogger;
+
     /* Constructor */
     public HardwareDriveMotors(){
 
     }
 
     /* Initialize standard Hardware interfaces */
+    public void init(FileLogger fileloggerhandle, HardwareMap ahwMap, robotConfigSettings.robotConfigChoice baseConfig) {
+        // Save reference to Hardware map
+        hwMap = ahwMap;
+
+        // Define and Initialize Motors
+        baseMotor1  = hwMap.dcMotor.get("leftMotor1");
+        baseMotor2  = hwMap.dcMotor.get("leftMotor2");
+        baseMotor3  = hwMap.dcMotor.get("rightMotor1");
+        baseMotor4  = hwMap.dcMotor.get("rightMotor2");
+
+        setHardwareDriveDirections(baseConfig);
+
+        // Set all motors to zero power
+        setHardwareDrivePower(0);
+
+        // Set all motors to run without encoders.
+        // May want to use RUN_USING_ENCODERS if encoders are installed.
+        setHardwareDriveResetEncoders();
+
+        setHardwareDriveRunUsingEncoders();
+    }
+
     public void init(HardwareMap ahwMap, robotConfigSettings.robotConfigChoice baseConfig) {
         // Save reference to Hardware map
         hwMap = ahwMap;

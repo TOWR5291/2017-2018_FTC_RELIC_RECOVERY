@@ -411,6 +411,9 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         //start the logging
         if (debug >= 1)
         {
+            //create logging based on initial settings, sharepreferences will adjust levels
+            fileLogger = new FileLogger(runtime);
+            fileLogger.setDebugLevel(debug);
             fileLogger = new FileLogger(runtime);
             fileLogger.open();
             fileLogger.write("Time,SysMS,Thread,Event,Desc");
@@ -425,11 +428,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         initOpenCv();
         dashboard.displayPrintf(1, "initRobot OpenCV!");
 
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "OpenCV Started");
-            Log.d(TAG, "OpenCV Started");
-        }
+        if (debug >= 3) {fileLogger.writeEvent(TAG, "OpenCV Started");}
 
         //load menu settings and setup robot and debug level
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(hardwareMap.appContext);
@@ -445,6 +444,9 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         dashboard.displayPrintf(4, "Start Pos         " + allianceStartPosition);
         dashboard.displayPrintf(5, "Start Del         " + delay);
         dashboard.displayPrintf(6, "Robot             " + robotConfig);
+
+        //adjust debug level
+        if (debug >= 1) fileLogger.setDebugLevel(debug);
 
         dashboard.displayPrintf(1, "initRobot SharePreferences!");
 
@@ -695,6 +697,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         dashboard.displayPrintf(1, "initRobot BaseDrive Loading");
 
+        robotDrive.init(fileLogger, hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig));
         robotDrive.init(hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig));
         robotDrive.setHardwareDriveResetEncoders();
         robotDrive.setHardwareDriveRunUsingEncoders();
@@ -2079,7 +2082,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     mintStartPositionRight1 = mintLastEncoderDestinationRight1;
                     mintStartPositionRight2 = mintLastEncoderDestinationRight2;
                 } else {
-                    robotDrive.init(hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig));
+
                     mintStartPositionLeft1 = robotDrive.getHardwareDriveEncoderPosition().getMotor1EncoderValue();
 
                     mintStartPositionLeft1 = robotDrive.baseMotor1.getCurrentPosition();

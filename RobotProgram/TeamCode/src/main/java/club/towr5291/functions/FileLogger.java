@@ -27,9 +27,41 @@ public class FileLogger {
     private String filenamePrefix = "";
     private boolean isOpen = false;
     private int numFilesToSave = 50;
+    private int debugLevel;
+    private boolean enableLogd = false;
 
     public FileLogger(ElapsedTime elapsedTime) {
         this.elapsedTime = elapsedTime;
+        this.debugLevel = 1;
+        this.enableLogd = false;
+    }
+
+    public FileLogger(ElapsedTime elapsedTime, int debug) {
+        this.elapsedTime = elapsedTime;
+        this.debugLevel = debug;
+        this.enableLogd = false;
+    }
+
+    public FileLogger(ElapsedTime elapsedTime, int debug, boolean enabled) {
+        this.elapsedTime = elapsedTime;
+        this.debugLevel = debug;
+        this.enableLogd = enabled;
+    }
+
+    public int getDebugLevel() {
+        return this.debugLevel;
+    }
+
+    public void setDebugLevel(int debug) {
+        this.debugLevel = debug;
+    }
+
+    public boolean getLogdEnabled() {
+        return this.enableLogd;
+    }
+
+    public void setLogdEnabled(boolean enabled) {
+        this.enableLogd = enabled;
     }
 
     public String getFilename() {
@@ -112,7 +144,12 @@ public class FileLogger {
 
     public synchronized void writeEvent(String event, String desc) {
 //        Log.d(event, desc);
-
+        if (this.enableLogd) {
+            if (event.length() > 23) {
+                event = event.substring(0,22);
+            }
+            Log.d(event.toUpperCase(), desc);
+        }
         if (isOpen)
             this.write(this.elapsedTime.toString()+","+System.currentTimeMillis()+","+Thread.currentThread().getId()+","+event+","+desc);
     }
