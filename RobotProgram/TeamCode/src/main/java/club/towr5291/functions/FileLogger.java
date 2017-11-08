@@ -31,21 +31,24 @@ public class FileLogger {
     private boolean enableLogd = false;
 
     public FileLogger(ElapsedTime elapsedTime) {
+        open();
         this.elapsedTime = elapsedTime;
-        this.debugLevel = 1;
-        this.enableLogd = false;
+        setDebugLevel(1);
+        setLogdEnabled(false);
     }
 
     public FileLogger(ElapsedTime elapsedTime, int debug) {
+        open();
         this.elapsedTime = elapsedTime;
-        this.debugLevel = debug;
-        this.enableLogd = false;
+        setDebugLevel(debug);
+        setLogdEnabled(false);
     }
 
     public FileLogger(ElapsedTime elapsedTime, int debug, boolean enabled) {
+        open();
         this.elapsedTime = elapsedTime;
-        this.debugLevel = debug;
-        this.enableLogd = enabled;
+        setDebugLevel(debug);
+        setLogdEnabled(enabled);
     }
 
     public int getDebugLevel() {
@@ -54,6 +57,7 @@ public class FileLogger {
 
     public void setDebugLevel(int debug) {
         this.debugLevel = debug;
+        writeEvent("SETTING:", "Debug Level Set " + this.debugLevel);
     }
 
     public boolean getLogdEnabled() {
@@ -62,6 +66,8 @@ public class FileLogger {
 
     public void setLogdEnabled(boolean enabled) {
         this.enableLogd = enabled;
+        writeEvent("SETTING:", "logd enabled? " + this.enableLogd);
+
     }
 
     public String getFilename() {
@@ -90,26 +96,27 @@ public class FileLogger {
 
     public void open() {
         String outFile = "";
-        try {
-            long tm = System.currentTimeMillis();
-            this.filenamePrefix = ""+tm;
-            String fileName = "rlog"+tm+".txt";
-            if (isExternalStorageWritable()) {
-                deleteOldLogs();
-                File out = getStorageFullPath(fileName);
-                writer = new FileWriter(out.getAbsolutePath(),true);
-                if (out != null) {
-                    this.filename = out.toString();
-                    System.out.println("Opened file: "+out.toString());
-                    isOpen = true;
+        if (!isOpen)
+            try {
+                long tm = System.currentTimeMillis();
+                this.filenamePrefix = ""+tm;
+                String fileName = "rlog"+tm+".txt";
+                if (isExternalStorageWritable()) {
+                    deleteOldLogs();
+                    File out = getStorageFullPath(fileName);
+                    writer = new FileWriter(out.getAbsolutePath(),true);
+                    if (out != null) {
+                        this.filename = out.toString();
+                        System.out.println("Opened file: "+out.toString());
+                        isOpen = true;
+                    }
                 }
+                else {
+                    System.out.println("External Storage is not writable...");
+                }
+            } catch( Exception ex) {
+                Log.e("Err","Caught Exception opening file: "+outFile+", ex: "+ex);
             }
-            else {
-                System.out.println("External Storage is not writable...");
-            }
-        } catch( Exception ex) {
-            Log.e("Err","Caught Exception opening file: "+outFile+", ex: "+ex);
-        }
     }
 
     public void saveBitmap(Bitmap bm, String filename)
@@ -143,7 +150,6 @@ public class FileLogger {
     }
 
     public synchronized void writeEvent(String event, String desc) {
-//        Log.d(event, desc);
         if (this.enableLogd) {
             if (event.length() > 23) {
                 event = event.substring(0,22);

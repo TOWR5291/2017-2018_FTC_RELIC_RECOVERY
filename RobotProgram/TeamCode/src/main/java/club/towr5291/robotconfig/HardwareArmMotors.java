@@ -5,6 +5,7 @@ import com.qualcomm.robotcore.hardware.HardwareMap;
 import com.qualcomm.robotcore.util.ElapsedTime;
 
 
+import club.towr5291.functions.FileLogger;
 import club.towr5291.libraries.robotConfigSettings;
 
 /**
@@ -37,6 +38,31 @@ public class HardwareArmMotors
 
     /* Initialize standard Hardware interfaces */
     public void init(HardwareMap ahwMap, robotConfigSettings.robotConfigChoice baseConfig) {
+        // Save reference to Hardware map
+        hwMap = ahwMap;
+
+        // Define and Initialize Motors
+        armMotor1  = hwMap.dcMotor.get("lifttop");
+        armMotor2  = hwMap.dcMotor.get("liftbot");
+        //armMotor3  = hwMap.dcMotor.get("relicslide");
+        //armMotor4  = hwMap.dcMotor.get("rightMotor2");
+
+        setHardwareArmDirections();
+
+        // Set all motors to zero power
+        setHardwareArmPower(0);
+
+        // Set all motors to run without encoders.
+        // May want to use RUN_USING_ENCODERS if encoders are installed.
+        setHardwareArmResetEncoders();
+
+        setHardwareArmRunWithoutEncoders();
+
+        setHardwareArmLiftRunUsingEncoders();
+    }
+
+    /* Initialize standard Hardware interfaces */
+    public void init(FileLogger fileloggerhandle, HardwareMap ahwMap, robotConfigSettings.robotConfigChoice baseConfig) {
         // Save reference to Hardware map
         hwMap = ahwMap;
 

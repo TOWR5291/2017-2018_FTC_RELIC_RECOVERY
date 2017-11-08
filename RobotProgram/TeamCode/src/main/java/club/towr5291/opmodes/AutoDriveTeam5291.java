@@ -418,7 +418,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             fileLogger.open();
             fileLogger.write("Time,SysMS,Thread,Event,Desc");
             fileLogger.writeEvent(TAG, "Log Started");
-            Log.d(TAG, "Log Started");
             runtime.reset();
             telemetry.addData("FileLogger: ", runtime.toString());
             telemetry.addData("FileLogger Op Out File: ", fileLogger.getFilename());
@@ -547,19 +546,12 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             fileLogger.writeEvent(TAG, "Alliance Start Pos " +  allianceStartPosition);
             fileLogger.writeEvent(TAG, "Alliance Delay     " +  delay);
             fileLogger.writeEvent(TAG, "Robot Config       " +  robotConfig);
-            Log.d(TAG, "robotConfigTeam #             " +  teamNumber);
-            Log.d(TAG, "Alliance Colour    " +  allianceColor);
-            Log.d(TAG, "Alliance Start Pos " +  allianceStartPosition);
-            Log.d(TAG, "Alliance Delay     " +  delay);
-            Log.d(TAG, "Robot Config       " +  robotConfig);
         }
 
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "Configuring Robot Parameters - Finished");
-            Log.d(TAG, "Configuring Robot Parameters - Finished");
             fileLogger.writeEvent(TAG, "Loading Autonomous Steps - Start");
-            Log.d(TAG, "Loading Autonomous Steps - Start");
         }
 
         dashboard.displayPrintf(1, "initRobot Loading Steps " + allianceColor + " Team " + teamNumber);
@@ -661,9 +653,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "Loading Autonomous Steps - Finished");
-            Log.d(TAG, "Loading Autonomous Steps - Finished");
             fileLogger.writeEvent(TAG, "Configuring Adafruit IMU - Start");
-            Log.d(TAG, "Configuring Adafruit IMU - Start");
         }
 
         dashboard.displayPrintf(1, "initRobot IMU Loading");
@@ -690,9 +680,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "Configuring Adafruit IMU - Finished");
-            Log.d(TAG, "Configuring Adafruit IMU - Finished");
             fileLogger.writeEvent(TAG, "Configuring Motors Base - Start");
-            Log.d(TAG, "Configuring Motors Base - Start");
         }
 
         dashboard.displayPrintf(1, "initRobot BaseDrive Loading");
@@ -707,17 +695,13 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "Configuring Motors Base - Finish");
-            Log.d(TAG, "Configuring Motors Base - Finish");
             fileLogger.writeEvent(TAG, "Configuring Motors Arms - Start");
-            Log.d(TAG, "Configuring Motors Arms - Start");
         }
 
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "Configuring Motors Arms - Finish");
-            Log.d(TAG, "Configuring Motors Arms - Finish");
             fileLogger.writeEvent(TAG, "Configuring Range Sensors - Start");
-            Log.d(TAG, "Configuring Range Sensors - Start");
         }
 
         dashboard.displayPrintf(1, "initRobot Range Sensors Loading");
@@ -734,17 +718,13 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "Configuring Range Sensors - Finish");
-            Log.d(TAG, "Configuring Range Sensors - Finish");
             fileLogger.writeEvent(TAG, "Configuring Servos - Start");
-            Log.d(TAG, "Configuring Servos - Start");
         }
 
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "Configuring Servos - Finish");
-            Log.d(TAG, "Configuring Servos - Finish");
             fileLogger.writeEvent(TAG, "Resetting State Engine - Start");
-            Log.d(TAG, "Resetting State Engine - Start");
         }
 
         mintCurrentStateStep = stepState.STATE_INIT;
@@ -768,17 +748,13 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "Resetting State Engine - Finish");
-            Log.d(TAG, "Resetting State Engine - Finish");
             fileLogger.writeEvent(TAG, "Vuforia Activate - Start");
-            Log.d(TAG, "Vuforia Activate - Start");
         }
 
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "Configuring LED Channels - Finished");
-            Log.d(TAG, "Configuring LED Channels - Finished");
             fileLogger.writeEvent(TAG, "Configuring Vuforia - Start");
-            Log.d(TAG, "Configuring Vuforia - Start");
         }
 
         dashboard.displayPrintf(1, "initRobot VUFORIA Loading");
@@ -1010,13 +986,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         if (debug >= 3)
         {
             fileLogger.writeEvent(TAG, "Configuring Vuforia - Finished");
-            Log.d(TAG, "Configuring Vuforia - Finished");
             fileLogger.writeEvent(TAG, "Configuring Robot Parameters - Start");
-            Log.d(TAG, "Configuring Robot Parameters - Start");
         }
 
         dashboard.displayPrintf(1, "Init - Complete, Wait for Start");
-
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
@@ -1085,37 +1058,18 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                                 if (debug >= 1) {
                                     fileLogger.writeEvent("Vuforia", "upperLeft 0 " + upperLeft.getData()[0]);
                                     fileLogger.writeEvent("Vuforia", "upperLeft 1 " + upperLeft.getData()[1]);
-                                    Log.d("Vuforia", "upperLeft 0 " + upperLeft.getData()[0]);
-                                    Log.d("Vuforia", "upperLeft 1 " + upperLeft.getData()[1]);
-
                                     fileLogger.writeEvent("Vuforia", "upperRight 0 " + upperRight.getData()[0]);
                                     fileLogger.writeEvent("Vuforia", "upperRight 1 " + upperRight.getData()[1]);
-                                    Log.d("Vuforia", "upperRight 0 " + upperRight.getData()[0]);
-                                    Log.d("Vuforia", "upperRight 1 " + upperRight.getData()[1]);
-
                                     fileLogger.writeEvent("Vuforia", "lowerLeft 0 " + lowerLeft.getData()[0]);
                                     fileLogger.writeEvent("Vuforia", "lowerLeft 1 " + lowerLeft.getData()[1]);
-                                    Log.d("Vuforia", "lowerLeft 0 " + lowerLeft.getData()[0]);
-                                    Log.d("Vuforia", "lowerLeft 1 " + lowerLeft.getData()[1]);
-
                                     fileLogger.writeEvent("Vuforia", "lowerRight 0 " + lowerRight.getData()[0]);
                                     fileLogger.writeEvent("Vuforia", "lowerRight 1 " + lowerRight.getData()[1]);
-                                    Log.d("Vuforia", "lowerRight 0 " + lowerRight.getData()[0]);
-                                    Log.d("Vuforia", "lowerRight 1 " + lowerRight.getData()[1]);
-
                                     fileLogger.writeEvent("Vuforia", "dblMidPointTopx " + dblMidPointTopx);
                                     fileLogger.writeEvent("Vuforia", "dblMidPointTopy " + dblMidPointTopy);
                                     fileLogger.writeEvent("Vuforia", "dblMidPointBotx " + dblMidPointBotx);
                                     fileLogger.writeEvent("Vuforia", "dblMidPointBoty " + dblMidPointBoty);
-                                    Log.d("Vuforia", "dblMidPointTopx " + dblMidPointTopx);
-                                    Log.d("Vuforia", "dblMidPointTopy " + dblMidPointTopy);
-                                    Log.d("Vuforia", "dblMidPointBotx " + dblMidPointBotx);
-                                    Log.d("Vuforia", "dblMidPointBoty " + dblMidPointBoty);
-
                                     fileLogger.writeEvent("Vuforia", "width in pixels " + width);
                                     fileLogger.writeEvent("Vuforia", "height in pixels " + height);
-                                    Log.d("Vuforia", "width in pixels " + width);
-                                    Log.d("Vuforia", "height in pixels " + height);
                                 }
                             }
                         }
@@ -1165,7 +1119,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         mColour = beaconColour.beaconAnalysisOCV2(debug, tmp, mintCaptureLoop, beaconTopLeft, beaconBotRight, beaconMiddle, beacFound);
                         if (debug >= 1) {
                             fileLogger.writeEvent("OPENCV","Returned " + mColour);
-                            Log.d("OPENCV","Returned " + mColour);
                         }
 
                         telemetry.addData("Beacon ", mColour);
@@ -1222,23 +1175,12 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     if (debug >= 1) {
                         fileLogger.writeEvent(TAG, "mintCurrentStateStep:- " + mintCurrentStateStep + " mintCurrentStateStep " + mintCurrentStateStep);
                         fileLogger.writeEvent(TAG, "About to check if step exists " + mintCurrentStep);
-                        Log.d(TAG, "mintCurrentStateStep:- " + mintCurrentStateStep + " mintCurrentStateStep " + mintCurrentStateStep);
-                        Log.d(TAG, "About to check if step exists " + mintCurrentStep);
                     }
                     // get step from hashmap, send it to the initStep for decoding
                     if (autonomousSteps.containsKey(String.valueOf(mintCurrentStep))) {
                         if (debug >= 1) {
                             fileLogger.writeEvent(TAG, "Step Exists TRUE " + mintCurrentStep + " about to get the values from the step");
-                            Log.d(TAG, "Step Exists TRUE " + mintCurrentStep + " about to get the values from the step");
                         }
-                        //processingSteps = autonomousSteps.get(String.valueOf(mintCurrentStep));
-                        //if (debug >= 1)
-                        //{
-                        //    fileLogger.writeEvent(TAG, "Got the values for step " + mintCurrentStep + " about to decode");
-                        //    Log.d(TAG, "Got the values for step " + mintCurrentStep + " about to decode");
-                        //}
-                        //decode the step from hashmap
-                        //initStep(processingSteps);
                         initStep();
                     }
                     else {
@@ -1254,13 +1196,11 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     for (String stKey : mintActiveStepsCopy.keySet()) {
                         if (debug >= 1) {
                             fileLogger.writeEvent("STATE_RUNNING", "Looping through Parallel steps, found " + stKey);
-                            Log.d("STATE_RUNNING", "Looping through Parallel steps, found " + stKey);
                         }
                         mintStepNumber = mintActiveStepsCopy.get(stKey);
                         loadActiveStep(mintStepNumber);
                         if (debug >= 1) {
                             fileLogger.writeEvent("STATE_RUNNING", "About to run " + mstrRobotCommand.substring(0, 3));
-                            Log.d("STATE_RUNNING", "About to run " + mstrRobotCommand.substring(0, 3));
                         }
                         processSteps(mstrRobotCommand.substring(0, 3));
                     }
@@ -1305,7 +1245,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 case STATE_COMPLETE:
                     if (debug >= 1) {
                         fileLogger.writeEvent(TAG, "Step Complete - Current Step:- " + mintCurrentStep);
-                        Log.d(TAG, "Step Complete - Current Step:- " + mintCurrentStep);
                     }
 
                     //  Transition to a new state and next step.
@@ -1380,13 +1319,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                             fileLogger.writeEvent(TAG, "AStar Init - startX:                 " + startX);
                             fileLogger.writeEvent(TAG, "AStar Init - startY:                 " + startY);
                             fileLogger.writeEvent(TAG, "AStar Init - startZ:                 " + startZ);
-                            Log.d(TAG, "AStar Init - Localised Values");
-                            Log.d(TAG, "AStar Init - localisedRobotX:        " + localisedRobotX);
-                            Log.d(TAG, "AStar Init - localisedRobotY:        " + localisedRobotY);
-                            Log.d(TAG, "AStar Init - localisedRobotBearing:  " + localisedRobotBearing);
-                            Log.d(TAG, "AStar Init - startX:                 " + startX);
-                            Log.d(TAG, "AStar Init - startY:                 " + startY);
-                            Log.d(TAG, "AStar Init - startZ:                 " + startZ);
                         }
                     }
 
@@ -1394,7 +1326,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     pathValues = getPathValues.findPathAStar(startX, startY, startZ, endX, endY, endDir);  //for enhanced
                     if (debug >= 1) {
                         fileLogger.writeEvent(TAG, "AStar Path - length:                 " + pathValues.length);
-                        Log.d(TAG, "AStar Path - length:                 " + pathValues.length);
                     }
 
                     String[][] mapComplete = new String[A0Star.FIELDWIDTH][A0Star.FIELDWIDTH];
@@ -1448,7 +1379,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     for (int i = 0; i < pathValues.length; i++) {
                         if (debug >= 1) {
                             fileLogger.writeEvent(TAG,"Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4 );
-                            Log.d(TAG,"Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4 );
                         }
                         if (((int)pathValues[i].val1 == 0) && ((int)pathValues[i].val3 == 0) && ((int)pathValues[i].val2 == 0) && ((int)pathValues[i].val4 == 0))
                             break;
@@ -1466,7 +1396,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         }
                         if (debug >= 2) {
                             fileLogger.writeEvent(TAG, fieldOutput);
-                            Log.d(TAG, fieldOutput);
                         }
                         fieldOutput = "";
                     }
@@ -1487,12 +1416,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                             numberOfMoves ++;
                             if (debug >= 2) {
                                 fileLogger.writeEvent(TAG,"Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4 );
-                                Log.d(TAG,"Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4 );
                             }
                             if (((int)pathValues[i].val1 == 0) && ((int)pathValues[i].val2 == 0) && ((int)pathValues[i].val3 == 0)) {
                                 if (debug >= 2) {
                                     fileLogger.writeEvent(TAG,"End Detected" );
-                                    Log.d(TAG,"End Detected" );
                                 }
                                 //end of the sequence,
                                 lastDirection = (int)pathValues[i-1].val4;
@@ -1506,8 +1433,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                                     if (debug >= 2) {
                                         fileLogger.writeEvent(TAG, "First Step Need to turn Robot " + strAngleChange + " Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4);
                                         fileLogger.writeEvent(TAG, "Adding Command (" + key + ", 10, " + strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
-                                        Log.d(TAG, "First Step Need to turn Robot " + strAngleChange + " Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4);
-                                        Log.d(TAG, "Adding Command (" + key + ", 10, " + strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
                                     }
                                     autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto(key, 10, strAngleChange, false, false, 0, 0, 0, 0, 0, 0, 1));
                                     key++;
@@ -1541,8 +1466,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                                         if (debug >= 2) {
                                             fileLogger.writeEvent(TAG,"Heading on a Straight line " + (numberOfMoves) + " Path");
                                             fileLogger.writeEvent(TAG,"Adding Command (" + key +", 10, " + "FW" + (numberOfMoves) + ", false, false, 0, 0, 0, 0, 0, 0, 0.8, false) ");
-                                            Log.d(TAG,"Heading on a Straight line " + (numberOfMoves) + " Path");
-                                            Log.d(TAG,"Adding Command (" + key +", 10, " + "FW" + (numberOfMoves) + ", false, false, 0, 0, 0, 0, 0, 0, 0.8, false) ");
                                         }
                                         autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto (key, 10, "FW" + numberOfMoves , false, false, 0, 0, 0, 0, 0, 0, 0.8));
                                         numberOfMoves = 0;
@@ -1556,8 +1479,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                                         {
                                             fileLogger.writeEvent(TAG,"Heading on a Straight line " + (int) ((numberOfMoves) * 1.4142) + " Path");
                                             fileLogger.writeEvent(TAG, "Adding Command (" + key + ", 10, " + "FW" + (int) ((numberOfMoves) * 1.4142) + ", false, false, 0, 0, 0, 0, 0, 0, .8, false) ");
-                                            Log.d(TAG,"Heading on a Straight line " + (int) ((numberOfMoves) * 1.4142) + " Path");
-                                            Log.d(TAG, "Adding Command (" + key + ", 10, " + "FW" + (int) ((numberOfMoves) * 1.4142) + ", false, false, 0, 0, 0, 0, 0, 0, .8, false) ");
                                         }
                                         autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto (key, 10, "FW" + (int)(numberOfMoves * 1.4142 ) , false, false, 0,    0,    0,    0,    0,    0,    1));
                                         numberOfMoves = 0;
@@ -1567,8 +1488,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                                 if (debug >= 2) {
                                     fileLogger.writeEvent(TAG,"Need to turn Robot " + strAngleChange + " Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4 );
                                     fileLogger.writeEvent(TAG,"Adding Command (" + key +", 10, "+ strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
-                                    Log.d(TAG,"Need to turn Robot " + strAngleChange + " Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4 );
-                                    Log.d(TAG,"Adding Command (" + key +", 10, "+ strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
                                 }
                                 autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto (key, 10, strAngleChange, false, false, 0, 0, 0, 0, 0, 0, 0.4));
                                 key++;
@@ -1581,11 +1500,9 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         if ((lastDirection != endDir) && (!processingAStarSteps)) {
                             if (debug >= 2) {
                                 fileLogger.writeEvent(TAG,"Sraight Moves Robot End Of Sequence - Need to Trun Robot");
-                                Log.d(TAG,"Sraight Moves Robot End Of Sequence - Need to Trun Robot");
                             }
                             strAngleChange = getAngle((int)pathValues[lasti - 1].val4, endDir);
                             fileLogger.writeEvent(TAG,"Adding Command (" + key +", 10, " + strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
-                            Log.d(TAG,"Adding Command (" + key +", 10, " + strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
                             autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto (key, 10,  strAngleChange, false, false, 0, 0, 0, 0, 0, 0, 0.4));
                             key++;
                         }
@@ -1597,19 +1514,16 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 {
                     if (debug >= 1) {
                         fileLogger.writeEvent(TAG, "About to check if step exists " + mintCurrentStepAStar);
-                        Log.d(TAG, "About to check if step exists " + mintCurrentStepAStar);
                     }
                     // get step from hashmap, send it to the initStep for decoding
                     if (autonomousStepsAStar.containsKey(String.valueOf(mintCurrentStepAStar))) {
                         if (debug >= 1) {
                             fileLogger.writeEvent(TAG, "Step Exists TRUE " + mintCurrentStepAStar + " about to get the values from the step");
-                            Log.d(TAG, "Step Exists TRUE " + mintCurrentStepAStar + " about to get the values from the step");
                         }
                         processingSteps = autonomousStepsAStar.get(String.valueOf(mintCurrentStepAStar));      //read the step from the hashmap
                         autonomousStepsAStar.remove(String.valueOf(mintCurrentStepAStar));                     //remove the step from the hashmap
                         if (debug >= 1) {
                             fileLogger.writeEvent(TAG, "Got the values for step " + mintCurrentStepAStar + " about to decode and removed them");
-                            Log.d(TAG, "Got the values for step " + mintCurrentStepAStar + " about to decode and removed them");
                         }
                         //decode the step from hashmap
                         initAStarStep(processingSteps);
@@ -1653,7 +1567,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     if (debug >= 1)
                     {
                         fileLogger.writeEvent(TAG, "A* Path Completed:- " + mintCurrentStep);
-                        Log.d(TAG, "A* Path Completed:- " + mintCurrentStep);
                     }
 
                     //  Transition to a new state and next step.
@@ -1743,7 +1656,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     break;
 
             }
-            telemetry.update();
         }
         //opmode not active anymore
     }
@@ -1753,7 +1665,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         LibraryStateSegAuto mStateSegAuto = autonomousSteps.get(String.valueOf(step));
         if (debug >= 1) {
             fileLogger.writeEvent("loadActiveStep()", "Got the values for step " + step + " about to decode");
-            Log.d("loadActiveStep()", "Got the values for step " + step + " about to decode");
         }
         mdblStepDistance  = 0;
         mdblStepTimeout   = mStateSegAuto.getmRobotTimeOut();
@@ -1774,7 +1685,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         for (String stKey : mintActiveSteps.keySet()) {
             if (debug >= 2) {
                 fileLogger.writeEvent("loadParallelSteps()", "Loading Active Parallel Step " + stKey );
-                Log.d("loadParallelSteps()", "Loading Active Parallel Step " + stKey );
             }
             mintActiveStepsCopy.put(stKey, mintActiveSteps.get(stKey));
         }
@@ -1786,7 +1696,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             if (mintStepNumber == tempStep) {
                 if (debug >= 2) {
                     fileLogger.writeEvent("deleteParallelStep()", "Removing Parallel Step " + tempStep );
-                    Log.d("deleteParallelStep()", "Removing Parallel Step " + tempStep );
                 }
 
                 if (mintActiveSteps.containsKey(stKey))
@@ -1843,14 +1752,12 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     {
         if (debug >= 3) {
             fileLogger.writeEvent("initstep()", "Starting to Decode Step " + mintCurrentStep);
-            Log.d("initstep()", "Starting to Decode Step " + mintCurrentStep);
         }
 
         if (!(mintActiveSteps.containsValue(mintCurrentStep))) {
             mintActiveSteps.put(String.valueOf(mintCurrentStep), mintCurrentStep);
             if (debug >= 3) {
                 fileLogger.writeEvent("initstep()", "Put step into hashmap mintActiveSteps " + mintCurrentStep);
-                Log.d("initstep()", "Put step into hashmap mintActiveSteps " + mintCurrentStep);
             }
         }
 
@@ -1932,20 +1839,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             fileLogger.writeEvent("initStep()", "mdblStepDistance      :- " + mdblStepDistance);
             fileLogger.writeEvent("initStep()", "mdblStepTurnL         :- " + mdblStepTurnL);
             fileLogger.writeEvent("initStep()", "mdblStepTurnR         :- " + mdblStepTurnR);
-            Log.d("initStep()", "Current Step          :- " + mintCurrentStep);
-            Log.d("initStep()", "mdblStepTimeout       :- " + mdblStepTimeout);
-            Log.d("initStep()", "mdblStepSpeed         :- " + mdblStepSpeed);
-            Log.d("initStep()", "mstrRobotCommand      :- " + mstrRobotCommand);
-            Log.d("initStep()", "mblnParallel          :- " + mblnParallel);
-            Log.d("initStep()", "mdblRobotParm1        :- " + mdblRobotParm1);
-            Log.d("initStep()", "mdblRobotParm2        :- " + mdblRobotParm2);
-            Log.d("initStep()", "mdblRobotParm3        :- " + mdblRobotParm3);
-            Log.d("initStep()", "mdblRobotParm4        :- " + mdblRobotParm4);
-            Log.d("initStep()", "mdblRobotParm5        :- " + mdblRobotParm5);
-            Log.d("initStep()", "mdblRobotParm6        :- " + mdblRobotParm6);
-            Log.d("initStep()", "mdblStepDistance      :- " + mdblStepDistance);
-            Log.d("initStep()", "mdblStepTurnL         :- " + mdblStepTurnL);
-            Log.d("initStep()", "mdblStepTurnR         :- " + mdblStepTurnR);
         }
     }
 
@@ -1954,7 +1847,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         if (debug >= 3) {
             fileLogger.writeEvent("initAStarStep", "Starting to Decode AStar Step ");
-            Log.d("initAStarStep", "Starting to Decode AStar Step ");
         }
 
         // Reset the state time, and then change to next state.
@@ -2020,20 +1912,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             fileLogger.writeEvent("initAStarStep()", "mdblStepDistance      :- " + mdblStepDistance);
             fileLogger.writeEvent("initAStarStep()", "mdblStepTurnL         :- " + mdblStepTurnL);
             fileLogger.writeEvent("initAStarStep()", "mdblStepTurnR         :- " + mdblStepTurnR);
-            Log.d("initAStarStep()", "Current Step          :- " + mintCurrentStep);
-            Log.d("initAStarStep()", "mdblStepTimeout       :- " + mdblStepTimeout);
-            Log.d("initAStarStep()", "mdblStepSpeed         :- " + mdblStepSpeed);
-            Log.d("initAStarStep()", "mstrRobotCommand      :- " + mstrRobotCommand);
-            Log.d("initAStarStep()", "mblnParallel          :- " + mblnParallel);
-            Log.d("initAStarStep()", "mdblRobotParm1        :- " + mdblRobotParm1);
-            Log.d("initAStarStep()", "mdblRobotParm2        :- " + mdblRobotParm2);
-            Log.d("initAStarStep()", "mdblRobotParm3        :- " + mdblRobotParm3);
-            Log.d("initAStarStep()", "mdblRobotParm4        :- " + mdblRobotParm4);
-            Log.d("initAStarStep()", "mdblRobotParm5        :- " + mdblRobotParm5);
-            Log.d("initAStarStep()", "mdblRobotParm6        :- " + mdblRobotParm6);
-            Log.d("initAStarStep()", "mdblStepDistance      :- " + mdblStepDistance);
-            Log.d("initAStarStep()", "mdblStepTurnL         :- " + mdblStepTurnL);
-            Log.d("initAStarStep()", "mdblStepTurnR         :- " + mdblStepTurnR);
         }
     }
 
@@ -2072,7 +1950,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                 if (debug >= 2) {
                     fileLogger.writeEvent("runningDriveHeadingStep", "mdblStepDistance   :- " + mdblStepDistance);
-                    Log.d("runningDriveHeadingStep", "mdblStepDistance   :- " + mdblStepDistance);
                 }
                 // Determine new target position
 
@@ -2082,9 +1959,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     mintStartPositionRight1 = mintLastEncoderDestinationRight1;
                     mintStartPositionRight2 = mintLastEncoderDestinationRight2;
                 } else {
-
-                    mintStartPositionLeft1 = robotDrive.getHardwareDriveEncoderPosition().getMotor1EncoderValue();
-
                     mintStartPositionLeft1 = robotDrive.baseMotor1.getCurrentPosition();
                     mintStartPositionLeft2 = robotDrive.baseMotor2.getCurrentPosition();
                     mintStartPositionRight1 = robotDrive.baseMotor3.getCurrentPosition();
@@ -2112,8 +1986,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (debug >= 2) {
                     fileLogger.writeEvent("runningDriveHeadingStep", "mStepLeftTarget1 :- " + mintStepLeftTarget1 +  " mStepLeftTarget2 :- " + mintStepLeftTarget2);
                     fileLogger.writeEvent("runningDriveHeadingStep", "mStepRightTarget1:- " + mintStepRightTarget1 + " mStepRightTarget2:- " + mintStepRightTarget2);
-                    Log.d("runningDriveHeadingStep", "mStepLeftTarget1 :- " + mintStepLeftTarget1 +  " mStepLeftTarget2 :- " + mintStepLeftTarget2);
-                    Log.d("runningDriveHeadingStep", "mStepRightTarget1:- " + mintStepRightTarget1 + " mStepRightTarget2:- " + mintStepRightTarget2);
                 }
 
                 if (!(robotDrive.baseMotor1.getMode().equals(DcMotor.RunMode.RUN_TO_POSITION))) {
@@ -2177,9 +2049,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                             fileLogger.writeEvent("runningDriveHeadingStep", "dblError " + dblError);
                             fileLogger.writeEvent("runningDriveHeadingStep", "dblSteer " + dblSteer);
                             fileLogger.writeEvent("runningDriveHeadingStep", "Heading " + mdblRobotParm2);
-                            Log.d("runningDriveHeadingStep", "dblError " + dblError);
-                            Log.d("runningDriveHeadingStep", "dblSteer " + dblSteer);
-                            Log.d("runningDriveHeadingStep", "Heading " + mdblRobotParm2);
                         }
 
                         // if driving in reverse, the motor correction also needs to be reversed
@@ -2203,7 +2072,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                 if (debug >= 2) {
                     fileLogger.writeEvent("runningDriveHeadingStep", "dblDistanceToEnd " + dblDistanceToEnd);
-                    Log.d("runningDriveHeadingStep", "dblDistanceToEnd " + dblDistanceToEnd);
                 }
 
                 if (mblnRobotLastPos) {
@@ -2211,7 +2079,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         if (debug >= 2)
                         {
                             fileLogger.writeEvent("runningDriveHeadingStep", "mblnRobotLastPos Complete         ");
-                            Log.d("runningDriveHeadingStep", "mblnRobotLastPos Complete         ");
                         }
                         mblnNextStepLastPos = true;
                         mblnDisableVisionProcessing = false;  //enable vision processing
@@ -2227,7 +2094,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 {
                     if (debug >= 3) {
                         fileLogger.writeEvent("runningDriveHeadingStep", "Encoder counts per inch = " + COUNTS_PER_INCH + " dblDistanceFromStart " + dblDistanceFromStart + " dblDistanceToEnd " + dblDistanceToEnd + " Power Level " + dblStepSpeedTemp + " Running to target  L1, L2, R1, R2  " + mintStepLeftTarget1 + ", " + mintStepLeftTarget2 + ", " + mintStepRightTarget1 + ",  " + mintStepRightTarget2 + ", " + " Running at position L1 " + intLeft1MotorEncoderPosition + " L2 " + intLeft2MotorEncoderPosition + " R1 " + intRight1MotorEncoderPosition + " R2 " + intRight2MotorEncoderPosition);
-                        Log.d("runningDriveHeadingStep", "Encoder counts per inch = " + COUNTS_PER_INCH + " dblDistanceFromStart " + dblDistanceFromStart + " dblDistanceToEnd " + dblDistanceToEnd + " Power Level " + dblStepSpeedTemp + " Running to target  L1, L2, R1, R2  " + mintStepLeftTarget1 + ", " + mintStepLeftTarget2 + ", " + mintStepRightTarget1 + ",  " + mintStepRightTarget2 + ", " + " Running at position L1 " + intLeft1MotorEncoderPosition + " L2 " + intLeft2MotorEncoderPosition + " R1 " + intRight1MotorEncoderPosition + " R2 " + intRight2MotorEncoderPosition);
                     }
                     telemetry.addData("Path1", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
                     telemetry.addData("Path2", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intRight1MotorEncoderPosition);
@@ -2241,7 +2107,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     if (debug >= 2)
                     {
                         fileLogger.writeEvent("runningDriveHeadingStep", "Complete         ");
-                        Log.d("runningDriveHeadingStep", "Complete         ");
                     }
                     mblnDisableVisionProcessing = false;  //enable vision processing
                     mintCurrentStateDriveHeading = stepState.STATE_COMPLETE;
@@ -2252,7 +2117,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (mStateTime.seconds() > mdblStepTimeout) {
                     if (debug >= 1) {
                         fileLogger.writeEvent("runningDriveHeadingStep", "Timeout:- ");
-                        Log.d("runningDriveHeadingStep", "Timeout:- ");
                     }
                     //  Transition to a new state.
                     mintCurrentStateDriveHeading = stepState.STATE_COMPLETE;
@@ -2300,8 +2164,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (debug >= 2) {
                     fileLogger.writeEvent("PivotTurnStep", "mdblStepTurnL      :- " + mdblStepTurnL);
                     fileLogger.writeEvent("PivotTurnStep", "mdblStepTurnR      :- " + mdblStepTurnR);
-                    Log.d("PivotTurnStep", "mdblStepTurnL      :- " + mdblStepTurnL);
-                    Log.d("PivotTurnStep", "mdblStepTurnR      :- " + mdblStepTurnR);
                 }
 
                 // Turn On RUN_TO_POSITION
@@ -2309,7 +2171,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     // Determine new target position
                     if (debug >= 2) {
                         fileLogger.writeEvent("PivotTurnStep", "Current LPosition:-" + robotDrive.baseMotor1.getCurrentPosition());
-                        Log.d("PivotTurnStep", "Current LPosition:-" + robotDrive.baseMotor1.getCurrentPosition());
                     }
 
                     // Get Current Encoder positions
@@ -2340,7 +2201,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                     if (debug >= 2) {
                         fileLogger.writeEvent("PivotTurnStep", "mintStepLeftTarget1:-  " + mintStepLeftTarget1 + " mintStepLeftTarget2:-  " + mintStepLeftTarget2);
-                        Log.d("PivotTurnStep", "mintStepLeftTarget1:-  " + mintStepLeftTarget1 + " mintStepLeftTarget2:-  " + mintStepLeftTarget2);
                     }
                     // pass target position to motor controller
                     robotDrive.baseMotor1.setTargetPosition(mintStepLeftTarget1);
@@ -2356,7 +2216,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     // Determine new target position
                     if (debug >= 2) {
                         fileLogger.writeEvent("PivotTurnStep", "Current RPosition:-" + robotDrive.baseMotor3.getCurrentPosition());
-                        Log.d("PivotTurnStep", "Current RPosition:-" + robotDrive.baseMotor3.getCurrentPosition());
                     }
 
                     // Get Current Encoder positions
@@ -2387,7 +2246,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                     if (debug >= 2) {
                         fileLogger.writeEvent("PivotTurnStep", "mintStepRightTarget1:- " + mintStepRightTarget1 + " mintStepRightTarget2:- " + mintStepRightTarget2);
-                        Log.d("PivotTurnStep", "mintStepRightTarget1:- " + mintStepRightTarget1 + " mintStepRightTarget2:- " + mintStepRightTarget2);
                     }
                     // pass target position to motor controller
                     robotDrive.baseMotor3.setTargetPosition(mintStepRightTarget1);
@@ -2409,8 +2267,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (debug >= 3) {
                     fileLogger.writeEvent("PivotTurnStep", "gblStepLeftTarget :- " + mintStepLeftTarget1 +  " mintStepLeftTarget2 :- " + mintStepLeftTarget2);
                     fileLogger.writeEvent("PivotTurnStep", "gblStepRightTarget:- " + mintStepRightTarget1 + " mintStepRightTarget2:- " + mintStepRightTarget2);
-                    Log.d("PivotTurnStep", "gblStepLeftTarget :- " + mintStepLeftTarget1 +  " mintStepLeftTarget2 :- " + mintStepLeftTarget2);
-                    Log.d("PivotTurnStep", "gblStepRightTarget:- " + mintStepRightTarget1 + " mintStepRightTarget2:- " + mintStepRightTarget2);
                 }
                 mintCurrentStatePivotTurn = stepState.STATE_RUNNING;
             }
@@ -2431,14 +2287,11 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (debug >= 3) {
                     fileLogger.writeEvent("PivotTurnStep", "Current LPosition1:-" + robotDrive.baseMotor1.getCurrentPosition() + " LTarget:- " + mintStepLeftTarget1 + " LPosition2:-" + robotDrive.baseMotor2.getCurrentPosition() + " LTarget2:- " + mintStepLeftTarget2);
                     fileLogger.writeEvent("PivotTurnStep", "Current RPosition1:-" + robotDrive.baseMotor3.getCurrentPosition() + " RTarget:- " + mintStepRightTarget1 + " RPosition2:-" + robotDrive.baseMotor4.getCurrentPosition() + " RTarget2:- " + mintStepRightTarget2);
-                    Log.d("PivotTurnStep", "Current LPosition1:-" + robotDrive.baseMotor1.getCurrentPosition() + " LTarget:- " + mintStepLeftTarget1 + " LPosition2:-" + robotDrive.baseMotor2.getCurrentPosition() + " LTarget2:- " + mintStepLeftTarget2);
-                    Log.d("PivotTurnStep", "Current RPosition1:-" + robotDrive.baseMotor3.getCurrentPosition() + " RTarget:- " + mintStepRightTarget1 + " RPosition2:-" + robotDrive.baseMotor4.getCurrentPosition() + " RTarget2:- " + mintStepRightTarget2);
                 }
 
                 if (mdblStepTurnR == 0) {
                     if (debug >= 3) {
                         fileLogger.writeEvent("PivotTurnStep()", "Running         ");
-                        Log.d("PivotTurnStep()", "Running         ");
                     }
                     telemetry.addData("Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
                     telemetry.addData("Actual_Left", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
@@ -2456,7 +2309,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     if (((robotDrive.getHardwareDriveIsBusy() & robotConfigSettings.motors.leftMotor1.toInt()) == robotConfigSettings.motors.leftMotor1.toInt())) {
                         if (debug >= 1) {
                             fileLogger.writeEvent("PivotTurnStep()","Complete         " );
-                            Log.d("PivotTurnStep()","Complete         " );
                         }
                         mblnDisableVisionProcessing = false;  //enable vision processing
                         mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
@@ -2465,7 +2317,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 } else if (mdblStepTurnL == 0) {
                     if (debug >= 3) {
                         fileLogger.writeEvent("PivotTurnStep()","Running         " );
-                        Log.d("PivotTurnStep()","Running         " );
                     }
 
                     telemetry.addData("Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
@@ -2485,7 +2336,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     if (((robotDrive.getHardwareDriveIsBusy() & robotConfigSettings.motors.rightMotor1.toInt()) == robotConfigSettings.motors.rightMotor1.toInt())) {
                         if (debug >= 1) {
                             fileLogger.writeEvent("PivotTurnStep()","Complete         " );
-                            Log.d("PivotTurnStep()","Complete         " );
                         }
                         mblnDisableVisionProcessing = false;  //enable vision processing
                         mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
@@ -2496,7 +2346,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     robotDrive.setHardwareDrivePower(0);
                     if (debug >= 1) {
                         fileLogger.writeEvent("PivotTurnStep()","Complete         " );
-                        Log.d("PivotTurnStep()","Complete         " );
                     }
                     mblnDisableVisionProcessing = false;  //enable vision processing
                     mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
@@ -2508,7 +2357,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             {
                 if (debug >= 1) {
                     fileLogger.writeEvent("PivotTurnStep()", "Timeout:- ");
-                    Log.d("PivotTurnStep()", "Timeout:- ");
                 }
                 //  Transition to a new state.
                 mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
@@ -2580,10 +2428,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     fileLogger.writeEvent("TankTurnStep()","Current LPosition2:- " + robotDrive.baseMotor2.getCurrentPosition() + " mintStepLeftTarget2:-   " + mintStepLeftTarget2 );
                     fileLogger.writeEvent("TankTurnStep()","Current RPosition1:- " + robotDrive.baseMotor3.getCurrentPosition() + " mintStepRightTarget1:- " + mintStepRightTarget1 );
                     fileLogger.writeEvent("TankTurnStep()","Current RPosition2:- " + robotDrive.baseMotor4.getCurrentPosition() + " mintStepRightTarget2:- " + mintStepRightTarget2 );
-                    Log.d("TankTurnStep()","Current LPosition1:- " + robotDrive.baseMotor1.getCurrentPosition() + " mintStepLeftTarget1:-   " + mintStepLeftTarget1 );
-                    Log.d("TankTurnStep()","Current LPosition2:- " + robotDrive.baseMotor2.getCurrentPosition() + " mintStepLeftTarget2:-   " + mintStepLeftTarget2 );
-                    Log.d("TankTurnStep()","Current RPosition1:- " + robotDrive.baseMotor3.getCurrentPosition() + " mintStepRightTarget1:- " + mintStepRightTarget1 );
-                    Log.d("TankTurnStep()","Current RPosition2:- " + robotDrive.baseMotor4.getCurrentPosition() + " mintStepRightTarget2:- " + mintStepRightTarget2 );
                 }
 
                 // pass target position to motor controller
@@ -2600,10 +2444,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     fileLogger.writeEvent("TankTurnStep()","mintStepLeftTarget2 :- " + mintStepLeftTarget2  );
                     fileLogger.writeEvent("TankTurnStep()","mintStepRightTarget1:- " + mintStepRightTarget1  );
                     fileLogger.writeEvent("TankTurnStep()","mintStepRightTarget2:- " + mintStepRightTarget2  );
-                    Log.d("TankTurnStep()","mintStepLeftTarget1 :- " + mintStepLeftTarget1  );
-                    Log.d("TankTurnStep()","mintStepLeftTarget2 :- " + mintStepLeftTarget2  );
-                    Log.d("TankTurnStep()","mintStepRightTarget1:- " + mintStepRightTarget1  );
-                    Log.d("TankTurnStep()","mintStepRightTarget2:- " + mintStepRightTarget2  );
                 }
 
                 mintCurrentStateTankTurn = stepState.STATE_RUNNING;
@@ -2627,10 +2467,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     fileLogger.writeEvent("TankTurnStep()","Current LPosition2:- " + intLeft2MotorEncoderPosition + " LTarget2:- " + mintStepLeftTarget2);
                     fileLogger.writeEvent("TankTurnStep()","Current RPosition1:- " + intRight1MotorEncoderPosition + " RTarget1:- " + mintStepRightTarget1);
                     fileLogger.writeEvent("TankTurnStep()","Current RPosition2:- " + intRight2MotorEncoderPosition + " RTarget2:- " + mintStepRightTarget2);
-                    Log.d("TankTurnStep()","Current LPosition1:- " + intLeft1MotorEncoderPosition + " LTarget1:- " + mintStepLeftTarget1);
-                    Log.d("TankTurnStep()","Current LPosition2:- " + intLeft2MotorEncoderPosition + " LTarget2:- " + mintStepLeftTarget2);
-                    Log.d("TankTurnStep()","Current RPosition1:- " + intRight1MotorEncoderPosition + " RTarget1:- " + mintStepRightTarget1);
-                    Log.d("TankTurnStep()","Current RPosition2:- " + intRight2MotorEncoderPosition + " RTarget2:- " + mintStepRightTarget2);
                 }
 
                 telemetry.addData("Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
@@ -2663,7 +2499,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             if (mStateTime.seconds() > mdblStepTimeout) {
                 if (debug >= 1) {
                     fileLogger.writeEvent("TankTurnStep()", "Timeout:- ");
-                    Log.d("TankTurnStep()", "Timeout:- ");
                 }
                 //  Transition to a new state.
                 mintCurrentStateTankTurn = stepState.STATE_COMPLETE;
@@ -2696,7 +2531,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mblnDisableVisionProcessing = true;  //disable vision processing
 
                 mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
-                Log.d(TAG, "RadiusTurnStep mdblRobotTurnAngle" + mdblRobotTurnAngle );
                 if (debug >= 3) {
                     fileLogger.writeEvent("RadiusTurnStep()","mdblRobotTurnAngle" + mdblRobotTurnAngle );
                 }
@@ -2719,10 +2553,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     fileLogger.writeEvent("RadiusTurnStep()","rdblArcLengthRadiusTurnOuter " + rdblArcLengthRadiusTurnOuter );
                     fileLogger.writeEvent("RadiusTurnStep()","rdblSpeedOuter " + rdblSpeedOuter );
                     fileLogger.writeEvent("RadiusTurnStep()","rdblSpeedInner " + rdblSpeedInner );
-                    Log.d("RadiusTurnStep", "dblArcLengthRadiusTurnInner " + dblArcLengthRadiusTurnInner );
-                    Log.d("RadiusTurnStep", "rdblArcLengthRadiusTurnOuter " + rdblArcLengthRadiusTurnOuter );
-                    Log.d("RadiusTurnStep", "rdblSpeedOuter " + rdblSpeedOuter );
-                    Log.d("RadiusTurnStep", "rdblSpeedInner " + rdblSpeedInner );
                 }
 
                 // Get Current Encoder positions
@@ -2798,10 +2628,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     fileLogger.writeEvent("RadiusTurnStep()","Current LPosition2:- " + robotDrive.baseMotor2.getCurrentPosition() + " mintStepLeftTarget2:-   " + mintStepLeftTarget2 );
                     fileLogger.writeEvent("RadiusTurnStep()","Current RPosition1:- " + robotDrive.baseMotor3.getCurrentPosition() + " mintStepRightTarget1:- " + mintStepRightTarget1 );
                     fileLogger.writeEvent("RadiusTurnStep()","Current RPosition2:- " + robotDrive.baseMotor4.getCurrentPosition() + " mintStepRightTarget2:- " + mintStepRightTarget2 );
-                    Log.d("RadiusTurnStep()","Current LPosition1:- " + robotDrive.baseMotor1.getCurrentPosition() + " mintStepLeftTarget1:-   " + mintStepLeftTarget1 );
-                    Log.d("RadiusTurnStep()","Current LPosition2:- " + robotDrive.baseMotor2.getCurrentPosition() + " mintStepLeftTarget2:-   " + mintStepLeftTarget2 );
-                    Log.d("RadiusTurnStep()","Current RPosition1:- " + robotDrive.baseMotor3.getCurrentPosition() + " mintStepRightTarget1:- " + mintStepRightTarget1 );
-                    Log.d("RadiusTurnStep()","Current RPosition2:- " + robotDrive.baseMotor4.getCurrentPosition() + " mintStepRightTarget2:- " + mintStepRightTarget2 );
                 }
                 mintCurrentStateRadiusTurn = stepState.STATE_RUNNING;
             }
@@ -2824,15 +2650,11 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     fileLogger.writeEvent("RadiusTurnStep()","Current LPosition2:- " + intLeft2MotorEncoderPosition + " LTarget2:- " + mintStepLeftTarget2);
                     fileLogger.writeEvent("RadiusTurnStep()","Current RPosition1:- " + intRight1MotorEncoderPosition + " RTarget1:- " + mintStepRightTarget1);
                     fileLogger.writeEvent("RadiusTurnStep()","Current RPosition2:- " + intRight2MotorEncoderPosition + " RTarget2:- " + mintStepRightTarget2);
-                    Log.d("RadiusTurnStep()","Current LPosition1:- " + intLeft1MotorEncoderPosition + " LTarget1:- " + mintStepLeftTarget1);
-                    Log.d("RadiusTurnStep()","Current LPosition2:- " + intLeft2MotorEncoderPosition + " LTarget2:- " + mintStepLeftTarget2);
-                    Log.d("RadiusTurnStep()","Current RPosition1:- " + intRight1MotorEncoderPosition + " RTarget1:- " + mintStepRightTarget1);
-                    Log.d("RadiusTurnStep()","Current RPosition2:- " + intRight2MotorEncoderPosition + " RTarget2:- " + mintStepRightTarget2);
                 }
 
-                telemetry.addData("Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
-                telemetry.addData("Actual_Left", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
-                telemetry.addData("ActualRight", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
+                dashboard.displayPrintf(1, LABEL_WIDTH, "Target: ", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
+                dashboard.displayPrintf(2, LABEL_WIDTH, "Actual_Left: ", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
+                dashboard.displayPrintf(3, LABEL_WIDTH, "ActualRight: ", "Running at %7d :%7d",  intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
 
                 if (mblnRobotLastPos) {
                     if ((((dblDistanceToEndRight1 + dblDistanceToEndRight2) / 2) < 2) && (((dblDistanceToEndLeft1 + dblDistanceToEndLeft2) / 2) < 2)) {
@@ -2847,7 +2669,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     robotDrive.setHardwareDrivePower(0);
                     if (debug >= 1) {
                         fileLogger.writeEvent("RadiusTurnStep()","Complete         " );
-                        Log.d("RadiusTurnStep()","Complete         " );
                     }
                     mblnDisableVisionProcessing = false;  //enable vision processing
                     mintCurrentStateRadiusTurn = stepState.STATE_COMPLETE;
@@ -2858,7 +2679,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             if (mStateTime.seconds() > mdblStepTimeout) {
                 if (debug >= 1) {
                     fileLogger.writeEvent("RadiusTurnStep()", "Timeout:- ");
-                    Log.d("RadiusTurnStep()", "Timeout:- ");
                 }
                 //  Transition to a new state.
                 mintCurrentStateRadiusTurn = stepState.STATE_COMPLETE;
@@ -2867,8 +2687,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             break;
         }
     }
-
-
 
     private void MecanumStrafe()
     {
@@ -2879,9 +2697,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 double currentHeading;
 
                 adafruitIMUHeading = getAdafruitHeading();
-
                 currentHeading = adafruitIMUHeading;
-
 
                 mdblPowerBoost = 0;
                 mintStableCount = 0;
@@ -2889,13 +2705,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
                 if (debug >= 3) {
                     fileLogger.writeEvent("MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    Log.d("MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
                     fileLogger.writeEvent("MecanumStrafe()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " currentHeading " + currentHeading);
-                    Log.d("MecanumStrafe()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " currentHeading " + currentHeading);
                 }
                 mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection ((int)currentHeading, (int)mdblRobotTurnAngle).substring(3));
                 robotDrive.setHardwareDriveRunWithoutEncoders();
-
                 mintCurrentStateMecanumStrafe = stepState.STATE_RUNNING;
             }
             break;
@@ -2903,35 +2716,27 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 double adafruitIMUHeading;
 
                 adafruitIMUHeading = getAdafruitHeading();
-
                 mdblGyrozAccumulated = adafruitIMUHeading;
                 mdblGyrozAccumulated = teamAngleAdjust(mdblGyrozAccumulated);//Set variables to MRgyro readings
                 mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(3));
                 String mstrDirection = (newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(0, 3));
                 if (debug >= 3) {
                     fileLogger.writeEvent("MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    Log.d("MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
                     fileLogger.writeEvent("MecanumStrafe()", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
                     fileLogger.writeEvent("MecanumStrafe()", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
                     fileLogger.writeEvent("MecanumStrafe()", "Running, mstrDirection        = " + mstrDirection);
                     fileLogger.writeEvent("MecanumStrafe()", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
-                    Log.d("MecanumStrafe()", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
-                    Log.d("MecanumStrafe()", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
-                    Log.d("MecanumStrafe()", "Running, mstrDirection        = " + mstrDirection);
-                    Log.d("MecanumStrafe()", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
                 }
 
                 if (Math.abs(mdblTurnAbsoluteGyro) > 21) {  //Continue while the robot direction is further than three degrees from the target
                     mintStableCount = 0;
                     if (debug >= 3) {
                         fileLogger.writeEvent("MecanumStrafe()","High Speed.....");
-                        Log.d("MecanumStrafe()","High Speed.....");
                     }
                     if (mstrDirection.equals("LTE")) {
                         //want to turn left
                         if (debug >= 3) {
                             fileLogger.writeEvent("MecanumStrafe()","Left Turn.....");
-                            Log.d("MecanumStrafe()","Left Turn.....");
                         }
                         if (mstrWiggleDir.equals("RTE")) {
                             mdblPowerBoost = mdblPowerBoost - 0.01;
@@ -2950,7 +2755,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         mstrWiggleDir = "RTE";
                         if (debug >= 3) {
                             fileLogger.writeEvent("MecanumStrafe()","Right Turn.....");
-                            Log.d("MecanumStrafe()","Right Turn.....");
                         }
                         robotDrive.setHardwareDriveLeftMotorPower(-mdblStepSpeed);
                         robotDrive.setHardwareDriveRightMotorPower(mdblStepSpeed);
@@ -2965,7 +2769,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     }
                     if (debug >= 3) {
                         fileLogger.writeEvent("MecanumStrafe()","Slow Speed Nearing final angle.....");
-                        Log.d("MecanumStrafe()","Slow Speed Nearing final angle.....");
                     }
                     if (mstrDirection.equals("LTE") ) {
                         //want to turn left
@@ -2977,7 +2780,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                         if (debug >= 3) {
                             fileLogger.writeEvent("TankTurnGyro()","Left Turn.....");
-                            Log.d("TankTurnGyro()","Left Turn.....");
                         }
                         robotDrive.setHardwareDriveLeftMotorPower(.12 + mdblPowerBoost);
                         robotDrive.setHardwareDriveRightMotorPower(-(0.12 + mdblPowerBoost));
@@ -2991,7 +2793,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         if (debug >= 3)
                         {
                             fileLogger.writeEvent("TankTurnGyro()","Right Turn.....");
-                            Log.d("TankTurnGyro()","Right Turn.....");
                         }
                         robotDrive.setHardwareDriveLeftMotorPower(-(0.12 + mdblPowerBoost));
                         robotDrive.setHardwareDriveRightMotorPower(0.12 + mdblPowerBoost);
@@ -3013,7 +2814,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             if (mStateTime.seconds() > mdblStepTimeout) {
                 if (debug >= 1) {
                     fileLogger.writeEvent("TankTurnGyro()", "Timeout:- ");
-                    Log.d("TankTurnGyro()", "Timeout:- ");
                 }
                 //  Transition to a new state.
                 mintCurrentStateMecanumStrafe = stepState.STATE_COMPLETE;
@@ -3022,7 +2822,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             break;
         }
     }
-
 
     private void TankTurnGyroHeading()
     {
@@ -3039,9 +2838,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
                 if (debug >= 3) {
                     fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    Log.d("TankTurnGyroHeadingEnc", "USING HEADING FROM IMU=" + useAdafruitIMU);
                     fileLogger.writeEvent("TankTurnGyro()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
-                    Log.d("TankTurnGyro()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
                 }
                 mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection ((int)adafruitIMUHeading, (int)mdblRobotTurnAngle).substring(3));
                 robotDrive.setHardwareDriveRunWithoutEncoders();
@@ -3060,28 +2857,21 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 String mstrDirection = (newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(0, 3));
                 if (debug >= 3) {
                     fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    Log.d("TankTurnGyroHeadingEnc", "USING HEADING FROM IMU=" + useAdafruitIMU);
                     fileLogger.writeEvent("TankTurnGyro()", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
                     fileLogger.writeEvent("TankTurnGyro()", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
                     fileLogger.writeEvent("TankTurnGyro()", "Running, mstrDirection        = " + mstrDirection);
                     fileLogger.writeEvent("TankTurnGyro()", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
-                    Log.d("TankTurnGyro()", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
-                    Log.d("TankTurnGyro()", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
-                    Log.d("TankTurnGyro()", "Running, mstrDirection        = " + mstrDirection);
-                    Log.d("TankTurnGyro()", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
                 }
 
                 if (Math.abs(mdblTurnAbsoluteGyro) > 21) {  //Continue while the robot direction is further than three degrees from the target
                     mintStableCount = 0;
                     if (debug >= 3) {
                         fileLogger.writeEvent("TankTurnGyro()","High Speed.....");
-                        Log.d("TankTurnGyro()","High Speed.....");
                     }
                     if (mstrDirection.equals("LTE")) {
                         //want to turn left
                         if (debug >= 3) {
                             fileLogger.writeEvent("TankTurnGyro()","Left Turn.....");
-                            Log.d("TankTurnGyro()","Left Turn.....");
                         }
                         if (mstrWiggleDir.equals("RTE")) {
                             mdblPowerBoost = mdblPowerBoost - 0.01;
@@ -3100,7 +2890,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         mstrWiggleDir = "RTE";
                         if (debug >= 3) {
                             fileLogger.writeEvent("TankTurnGyro()","Right Turn.....");
-                            Log.d("TankTurnGyro()","Right Turn.....");
                         }
                         robotDrive.setHardwareDriveLeftMotorPower(-mdblStepSpeed);
                         robotDrive.setHardwareDriveRightMotorPower(mdblStepSpeed);
@@ -3115,7 +2904,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     }
                     if (debug >= 3) {
                         fileLogger.writeEvent("TankTurnGyro()","Slow Speed Nearing final angle.....");
-                        Log.d("TankTurnGyro()","Slow Speed Nearing final angle.....");
                     }
                     if (mstrDirection.equals("LTE") ) {
                         //want to turn left
@@ -3127,7 +2915,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                         if (debug >= 3) {
                             fileLogger.writeEvent("TankTurnGyro()","Left Turn.....");
-                            Log.d("TankTurnGyro()","Left Turn.....");
                         }
                         robotDrive.setHardwareDriveLeftMotorPower(.12 + mdblPowerBoost);
                         robotDrive.setHardwareDriveRightMotorPower(-(0.12 + mdblPowerBoost));
@@ -3141,7 +2928,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         if (debug >= 3)
                         {
                             fileLogger.writeEvent("TankTurnGyro()","Right Turn.....");
-                            Log.d("TankTurnGyro()","Right Turn.....");
                         }
                         robotDrive.setHardwareDriveLeftMotorPower(-(0.12 + mdblPowerBoost));
                         robotDrive.setHardwareDriveRightMotorPower(0.12 + mdblPowerBoost);
@@ -3163,7 +2949,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             if (mStateTime.seconds() > mdblStepTimeout) {
                 if (debug >= 1) {
                     fileLogger.writeEvent("TankTurnGyro()", "Timeout:- ");
-                    Log.d("TankTurnGyro()", "Timeout:- ");
                 }
                 //  Transition to a new state.
                 mintCurrentStateTankTurnGyroHeading = stepState.STATE_COMPLETE;
@@ -3188,7 +2973,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
                 if (debug >= 3) {
                     fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USE ADAFRUIT IMU = " + useAdafruitIMU + ",mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
-                    Log.d("TankTurnGyroHeadingEnc", "USE ADAFRUIT IMU = " + useAdafruitIMU + ",mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
                 }
                 mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection((int)adafruitIMUHeading, (int) mdblRobotTurnAngle).substring(3));
                 mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_RUNNING;
@@ -3204,15 +2988,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 String mstrDirection = (newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(0, 3));
                 if (debug >= 3) {
                     fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    Log.d("TankTurnGyroHeadingEnc", "USING HEADING FROM IMU=" + useAdafruitIMU);
                     fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
                     fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
                     fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "Running, mstrDirection        = " + mstrDirection);
                     fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
-                    Log.d("TankTurnGyroHeadingEnc", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
-                    Log.d("TankTurnGyroHeadingEnc", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
-                    Log.d("TankTurnGyroHeadingEnc", "Running, mstrDirection        = " + mstrDirection);
-                    Log.d("TankTurnGyroHeadingEnc", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
                 }
                 autonomousStepsFile.insertSteps(3, newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle), false, false, 0, 0, 0, 0, 0, 0, mdblStepSpeed, mintCurrentStep + 1);
                 mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_COMPLETE;
@@ -3222,7 +3001,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             if (mStateTime.seconds() > mdblStepTimeout) {
                 if (debug >= 1) {
                     fileLogger.writeEvent("TankTurnGyroHeadingEnc", "Timeout:- ");
-                    Log.d("TankTurnGyroHeadingEnc", "Timeout:- ");
                 }
                 //  Transition to a new state.
                 mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_COMPLETE;
@@ -3241,7 +3019,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mintCurrentStateVuforiaLocalise5291 = stepState.STATE_RUNNING;
                 if (debug >= 2) {
                     fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "Initialised");
-                    Log.d("mintCurStVuforiaLoc5291", "Initialised");
                 }
             }
             break;
@@ -3251,15 +3028,12 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (debug >= 2) {
                     fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "Running" );
                     fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "localiseRobotPos " + localiseRobotPos );
-                    Log.d("mintCurStVuforiaLoc5291", "Running" );
-                    Log.d("mintCurStVuforiaLoc5291", "localiseRobotPos " + localiseRobotPos );
                 }
                 if (!localiseRobotPos) {
                     //need to rerun this step as we cannot get localisation and need to adjust robot to see if we can see a target
                     autonomousStepsFile.insertSteps(3, "VFL", false, false, 0,    0,    0,    0,    0,    0,  0.5, mintCurrentStep + 1);
                     if (debug >= 2) {
                         fileLogger.writeEvent("mintCurStVuforiaLoc5291", "Not Localised, inserting a new step" );
-                        Log.d("mintCurStVuforiaLoc5291", "Not Localised, inserting a new step" );
                     }
                     //need a delay, as Vuforia is slow to update
                     autonomousStepsFile.insertSteps(2, "DEL500", false, false, 0, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
@@ -3281,7 +3055,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                 if (debug >= 2) {
                     fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "Localised, determining angles.... intLocalisedRobotBearing= " + intLocalisedRobotBearing + " Alliancecolour= " + allianceColor);
-                    Log.d("mintCurStVuforiaLoc5291", "Localised, determining angles.... intLocalisedRobotBearing= " + intLocalisedRobotBearing + " Alliancecolour= " + allianceColor);
                 }
                 //vuforia angles or 0 towards the BLUE drivers, AStar 0 is to the BLUE beacons
                 if (allianceColor.equals("Red")) {
@@ -3298,7 +3071,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     //double check localisation
                     if (debug >= 2) {
                         fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "Inserting Steps VFL 0 0 0 mintCurrentStep " + mintCurrentStep);
-                        Log.d("mintCurStVuforiaLoc5291", "Inserting Steps VFL 0 0 0 mintCurrentStep " + mintCurrentStep);
                     }
                     autonomousStepsFile.insertSteps(3, "VFL", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
                     //need a delay, as Vuforia is slow to update
@@ -3337,7 +3109,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             {
                 if (debug >= 1) {
                     fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "Timeout:- ");
-                    Log.d("mintCurStVuforiaLoc5291", "Timeout:- ");
                 }
                 //  Transition to a new state.
                 mintCurrentStateVuforiaLocalise5291 = stepState.STATE_COMPLETE;
@@ -3357,7 +3128,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mintCurStVuforiaMove5291 = stepState.STATE_RUNNING;
                 if (debug >= 2) {
                     fileLogger.writeEvent("VuforiaMove()", "Initialised");
-                    Log.d("VuforiaMove()", "Initialised");
                 }
             }
             break;
@@ -3367,8 +3137,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (debug >= 2) {
                     fileLogger.writeEvent("VuforiaMove()", "Running" );
                     fileLogger.writeEvent("VuforiaMove()", "localiseRobotPos " + localiseRobotPos );
-                    Log.d("VuforiaMove()", "Running" );
-                    Log.d("VuforiaMove()", "localiseRobotPos " + localiseRobotPos );
                 }
                 if (!localiseRobotPos)
                 {
@@ -3385,7 +3153,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 double requiredMoveY = (currentY - (int)mdblRobotParm5);
 
                 double requiredMoveDistance = ((Math.sqrt(requiredMoveX * requiredMoveX + requiredMoveY * requiredMoveY)) / 25.4);
-
                 double requiredMoveAngletemp1 = requiredMoveX/requiredMoveY;
                 double requiredMoveAngletemp2 = Math.atan(requiredMoveAngletemp1);
                 double requiredMoveAngletemp3 = Math.toDegrees(requiredMoveAngletemp2);
@@ -3397,11 +3164,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     fileLogger.writeEvent("VuforiaMove()", "Localised, determining angles....Alliancecolour= " + allianceColor + " intLocalisedRobotBearing= " + intLocalisedRobotBearing + " CurrentX= " + currentX + " CurrentY= " + currentY);
                     fileLogger.writeEvent("VuforiaMove()", "Localised, determining angles....requiredMoveX " + requiredMoveX + " requiredMoveY " + requiredMoveY);
                     fileLogger.writeEvent("VuforiaMove()", "Localised, determining angles....requiredMoveDistance " + requiredMoveDistance + " requiredMoveAngle " + requiredMoveAngle);
-                    Log.d("VuforiaMove()", "Temp Values requiredMoveAngletemp1 " + requiredMoveAngletemp1 + " requiredMoveAngletemp2 " + requiredMoveAngletemp2 + " requiredMoveAngletemp3 " + requiredMoveAngletemp3);
-                    Log.d("VuforiaMove()", "Temp Values currentX " + currentX + " currentY " + currentY);
-                    Log.d("VuforiaMove()", "Localised, determining angles....Alliancecolour= " + allianceColor + " intLocalisedRobotBearing= " + intLocalisedRobotBearing + " CurrentX= " + currentX + " CurrentY= " + currentY);
-                    Log.d("VuforiaMove()", "Localised, determining angles....requiredMoveX " + requiredMoveX + " requiredMoveY " + requiredMoveY);
-                    Log.d("VuforiaMove()", "Localised, determining angles....requiredMoveDistance " + requiredMoveDistance + " requiredMoveAngle " + requiredMoveAngle);
                 }
 
                 if ((((int) mdblRobotParm5) > currentY) && ((int) mdblRobotParm4 > currentX)) {
@@ -3428,7 +3190,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (debug >= 1)
                 {
                     fileLogger.writeEvent("VuforiaMove()", "Timeout:- ");
-                    Log.d("VuforiaMove()", "Timeout:- ");
                 }
                 //  Transition to a new state.
                 mintCurStVuforiaMove5291 = stepState.STATE_COMPLETE;
@@ -3449,7 +3210,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mintCurStVuforiaTurn5291 = stepState.STATE_RUNNING;
                 if (debug >= 2) {
                     fileLogger.writeEvent("VuforiaTurn()", "Initialised");
-                    Log.d("VuforiaTurn()", "Initialised");
                 }
             }
             break;
@@ -3458,8 +3218,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (debug >= 2) {
                     fileLogger.writeEvent("VuforiaTurn()", "Running" );
                     fileLogger.writeEvent("VuforiaTurn()", "localiseRobotPos " + localiseRobotPos );
-                    Log.d("VuforiaTurn()", "Running" );
-                    Log.d("VuforiaTurn()", "localiseRobotPos " + localiseRobotPos );
                 }
                 if (!localiseRobotPos)
                 {
@@ -3474,7 +3232,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                 if (debug >= 2) {
                     fileLogger.writeEvent("VuforiaTurn()", "Localised, determining angles....Alliancecolour= " + allianceColor + " intLocalisedRobotBearing= " + intLocalisedRobotBearing  + " requiredMoveAngle " + requiredMoveAngle);
-                    Log.d("VuforiaTurn()", "Localised, determining angles....Alliancecolour= " + allianceColor + " intLocalisedRobotBearing= " + intLocalisedRobotBearing  + " requiredMoveAngle " + requiredMoveAngle);
                 }
                 autonomousStepsFile.insertSteps(3, strCorrectionAngle, false, false, 0, 0, 0, 0, 0, 0, 0.4, mintCurrentStep + 1);
                 mintCurStVuforiaTurn5291 = stepState.STATE_COMPLETE;
@@ -3486,7 +3243,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (debug >= 1)
                 {
                     fileLogger.writeEvent("VuforiaTurn()", "Timeout:- ");
-                    Log.d("VuforiaTurn()", "Timeout:- ");
                 }
                 //  Transition to a new state.
                 mintCurStVuforiaTurn5291 = stepState.STATE_COMPLETE;
@@ -3504,7 +3260,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mintCurrentStepDelay = stepState.STATE_RUNNING;
                 if (debug >= 2) {
                     fileLogger.writeEvent("DelayStep()", "Init Delay Time    " + mintStepDelay);
-                    Log.d("DelayStep()", "Init Delay Time    " + mintStepDelay);
                 }
             }
             break;
@@ -3513,7 +3268,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (mStateTime.milliseconds() >= mintStepDelay) {
                     if (debug >= 1) {
                         fileLogger.writeEvent("DelayStep()", "Complete         ");
-                        Log.d("DelayStep()", "Complete         ");
                     }
                     mintCurrentStepDelay = stepState.STATE_COMPLETE;
                     deleteParallelStep();
@@ -3525,7 +3279,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 if (debug >= 1)
                 {
                     fileLogger.writeEvent("DelayStep()", "Timeout:- ");
-                    Log.d("DelayStep()", "Timeout:- ");
                 }
                 //  Transition to a new state.
                 mintCurrentStepDelay = stepState.STATE_COMPLETE;
@@ -3549,7 +3302,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         if (debug >= 2)
         {
             fileLogger.writeEvent(TAG, "Getangle - Current Angle1:= " + angle1 + " Desired Angle2:= " + angle2);
-            Log.d(TAG, "Getangle - Current Angle1:= " + angle1 + " Desired Angle2:= " + angle2);
         }
 
         switch (angle1)
@@ -3723,7 +3475,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         if (debug >= 2)
         {
             fileLogger.writeEvent("teamAngleAdjust", "teamAngleAdjust - angle " + angle + " allianceColor " + allianceColor);
-            Log.d("teamAngleAdjust", "teamAngleAdjust - angle " + angle + " allianceColor " + allianceColor);
         }
 
         if (allianceColor.equals("Red")) {
@@ -3736,7 +3487,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             if (debug >= 2)
             {
                 fileLogger.writeEvent("teamAngleAdjust", "In RED Angle " + angle);
-                Log.d("teamAngleAdjust", "In RED Angle " + angle);
             }
 
         } else
@@ -3824,7 +3574,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         mdblRangeSensor2 = getDistance(range2Cache[0] & 0xFF, range2Cache[1] & 0xFF, DistanceUnit.CM);
         if (debug >= 2) {
             fileLogger.writeEvent("readRangeSensors()", "mdblRangeSensor1 " + mdblRangeSensor1 + ",mdblRangeSensor2 " + mdblRangeSensor2);
-            Log.d("readRangeSensors()", "mdblRangeSensor1 " + mdblRangeSensor1 + ",mdblRangeSensor2 " + mdblRangeSensor2);
         }
     }
 
@@ -3846,9 +3595,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         if (debug >= 2) {
             fileLogger.writeEvent("getDriveError()", "targetAngle " + targetAngle);
-            Log.d("getDriveError()", "targetAngle " + targetAngle);
             fileLogger.writeEvent("getDriveError()", "Adafruit IMU Reading " + adafruitIMUHeading);
-            Log.d("getDriveError()", "Adafruit IMU Reading " + adafruitIMUHeading);
         }
 
         // calculate error in -179 to +180 range  (
@@ -3858,9 +3605,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         if (debug >= 3) {
             fileLogger.writeEvent("getDriveError()", "USING HEADING FROM IMU=" + useAdafruitIMU);
-            Log.d("getDriveError()", "USING HEADING FROM IMU=" + useAdafruitIMU);
             fileLogger.writeEvent("getDriveError()", "robotErrorIMU " + robotError + ", getAdafruitHeading() " + adafruitIMUHeading + " teamAngleAdjust(adafruitIMUHeading) "  + teamAngleAdjust(adafruitIMUHeading));
-            Log.d("getDriveError()", "robotError " + robotErrorIMU + ", getAdafruitHeading() " + adafruitIMUHeading + " teamAngleAdjust(adafruitIMUHeading) "  + teamAngleAdjust(adafruitIMUHeading));
         }
         if (robotError > 180)
             robotError -= 360;
@@ -3869,7 +3614,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         if (debug >= 2) {
             fileLogger.writeEvent("getDriveError()", "robotError2 " + robotError);
-            Log.d("getDriveError()", "robotError2 " + robotError);
         }
         return -robotError;
     }

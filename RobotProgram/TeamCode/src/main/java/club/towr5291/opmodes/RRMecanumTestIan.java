@@ -7,6 +7,7 @@ package club.towr5291.opmodes;
 import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
+import android.widget.TextView;
 
 import com.qualcomm.hardware.bosch.BNO055IMU;
 import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
@@ -18,6 +19,7 @@ import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
 import com.qualcomm.robotcore.util.Range;
 
+import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 import org.firstinspires.ftc.robotcore.external.navigation.Acceleration;
 import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
@@ -28,11 +30,11 @@ import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 
 import java.util.Locale;
 
+import club.towr5291.R;
 import club.towr5291.functions.FileLogger;
 import club.towr5291.libraries.robotConfigSettings;
 import club.towr5291.robotconfig.HardwareDriveMotors;
-
-
+import hallib.HalDashboard;
 
 //import club.towr5291.robotconfig.HardwareArmMotorsRR;
 
@@ -40,13 +42,13 @@ import club.towr5291.robotconfig.HardwareDriveMotors;
 //@Disabled
 public class RRMecanumTestIan extends OpModeMasterLinear
 {
-
     //set up TAG for logging prefic, this info will appear first in every log statemend
     private static final String TAG = "BaseDriveTest";
 
     //motors
     // Declare OpMode members.
-    private HardwareDriveMotors robotDrive      = new HardwareDriveMotors();   // Use a Pushbot's hardware
+    private HardwareDriveMotors robotDrive  = new HardwareDriveMotors();   // Use a Pushbot's hardware
+    private HardwareDriveMotors armDrive    = new HardwareDriveMotors();   // Use a Pushbot's hardware
 
     //mode selection stuff
     public int mode = 0;
@@ -87,25 +89,29 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     // the servos are on the servo controller
     private final static double SERVOLIFTLEFTTOP_MIN_RANGE      = 0;
     private final static double SERVOLIFTLEFTTOP_MAX_RANGE      = 180;
-    private final static double SERVOLIFTLEFTTOP_HOME           = 90;
+    private final static double SERVOLIFTLEFTTOP_HOME           = 165; //90
+    private final static double SERVOLIFTLEFTTOP_GLYPH_START    = 125;  //need to work this out
     private final static double SERVOLIFTLEFTTOP_GLYPH_RELEASE  = 60;
     private final static double SERVOLIFTLEFTTOP_GLYPH_GRAB     = 30;
 
     private final static double SERVOLIFTRIGHTTOP_MIN_RANGE     = 0;
     private final static double SERVOLIFTRIGHTTOP_MAX_RANGE     = 180;
-    private final static double SERVOLIFTRIGHTTOP_HOME          = 90;
+    private final static double SERVOLIFTRIGHTTOP_HOME          = 165;
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_START   = 125;  //need to work this out
     private final static double SERVOLIFTRIGHTTOP_GLYPH_RELEASE = 60;
     private final static double SERVOLIFTRIGHTTOP_GLYPH_GRAB    = 30;
 
     private final static double SERVOLIFTLEFTBOT_MIN_RANGE      = 0;
     private final static double SERVOLIFTLEFTBOT_MAX_RANGE      = 180;
-    private final static double SERVOLIFTLEFTBOT_HOME           = 90;
+    private final static double SERVOLIFTLEFTBOT_HOME           = 165;
+    private final static double SERVOLIFTLEFTBOT_GLYPH_START    = 125;  //need to work this out
     private final static double SERVOLIFTLEFTBOT_GLYPH_RELEASE  = 60;
     private final static double SERVOLIFTLEFTBOT_GLYPH_GRAB     = 30;
 
     private final static double SERVOLIFTRIGHTBOT_MIN_RANGE     = 0;
     private final static double SERVOLIFTRIGHTBOT_MAX_RANGE     = 180;
-    private final static double SERVOLIFTRIGHTBOT_HOME          = 90;
+    private final static double SERVOLIFTRIGHTBOT_HOME          = 165;
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_START   = 125;  //need to work this out
     private final static double SERVOLIFTRIGHTBOT_GLYPH_RELEASE = 60;
     private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB    = 30;
 
@@ -115,7 +121,6 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     private final static double SERVOJEWELRIGHT_MIN_RANGE       = 4;
     private final static double SERVOJEWELRIGHT_MAX_RANGE       = 1.0;
     private final static double SERVOJEWELRIGHT_HOME            = 150;
-
     private Servo servoGlyphGripTopLeft;
     private Servo servoGlyphGripBotLeft;
     private Servo servoGlyphGripTopRight;
@@ -133,6 +138,13 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     private DigitalChannel limitswitch2;  // Hardware Device Object
     private final boolean LedOn = false;
     private boolean LedOff = true;
+
+    private static HalDashboard dashboard = null;
+
+    public static HalDashboard getDashboard()
+    {
+        return dashboard;
+    }
 
     private void LedState (boolean g1, boolean r1, boolean b1, boolean g2, boolean r2, boolean b2) {
         green1LedChannel.setState(g1);
@@ -154,21 +166,23 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     public void runOpMode() throws InterruptedException
     {
 
+        dashboard = HalDashboard.createInstance(telemetry);
+
+        FtcRobotControllerActivity act = (FtcRobotControllerActivity)(hardwareMap.appContext);
+
+        dashboard.setTextView((TextView)act.findViewById(R.id.textOpMode));
+        dashboard.displayPrintf(0, "Starting Menu System");
+
         if (debug >= 1)
         {
             //create logging based on initial settings, sharepreferences will adjust levels
-            fileLogger = new FileLogger(runtime);
-            fileLogger.setDebugLevel(debug);
-            fileLogger.setLogdEnabled(true);
-            fileLogger.open();
+            fileLogger = new FileLogger(runtime, debug,true);
+            fileLogger.writeEvent("START", "-------------------------------------------------------------------------");
             fileLogger.write("Time,SysMS,Thread,Event,Desc");
-            fileLogger.writeEvent(TAG, "Log Started");
-            Log.d(TAG, "Log Started");
-            runtime.reset();
-            telemetry.addData("FileLogger: ", runtime.toString());
-            telemetry.addData("FileLogger Op Out File: ", fileLogger.getFilename());
-            Log.d(TAG, "Loading sharePreferences");
             fileLogger.writeEvent(TAG, "Loading sharePreferences");
+            runtime.reset();
+            dashboard.displayPrintf(1, "FileLogger - " + runtime.toString());
+            dashboard.displayPrintf(2, "FileLogger - " + fileLogger.getFilename());
         }
 
         //load menu settings and setup robot and debug level
@@ -179,6 +193,13 @@ public class RRMecanumTestIan extends OpModeMasterLinear
         delay = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Delay", "0"));
         robotConfig = sharedPreferences.getString("club.towr5291.Autonomous.RobotConfig", "TileRunnerMecanum2x40");
         debug = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Debug", "1"));
+
+        dashboard.displayPrintf(3, "Team          - " + teamNumber);
+        dashboard.displayPrintf(4, "alliance      - " + allianceColor);
+        dashboard.displayPrintf(5, "StartPosition - " + allianceStartPosition);
+        dashboard.displayPrintf(6, "Delay         - " + delay);
+        dashboard.displayPrintf(7, "Config        - " + robotConfig);
+        dashboard.displayPrintf(8, "Debug         - " + debug);
 
         if (debug >= 1)
         {
@@ -211,6 +232,7 @@ public class RRMecanumTestIan extends OpModeMasterLinear
         }
 
         robotDrive.init(fileLogger, hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig));
+        armDrive.init(fileLogger, hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig), "lifttop", "liftbot", null, null);
 
         if (debug >= 1)
         {
@@ -220,31 +242,114 @@ public class RRMecanumTestIan extends OpModeMasterLinear
 
         robotDrive.setHardwareDriveRunWithoutEncoders();
 
+        //config the servos
+        servoGlyphGripTopLeft = hardwareMap.servo.get("griptopleft");
+        servoGlyphGripBotLeft = hardwareMap.servo.get("gripbotleft");
+        servoGlyphGripTopLeft.setDirection(Servo.Direction.REVERSE);
+        servoGlyphGripBotLeft.setDirection(Servo.Direction.REVERSE);
+        servoGlyphGripTopRight = hardwareMap.servo.get("griptopright");
+        servoGlyphGripBotRight = hardwareMap.servo.get("gripbotright");
+        servoJewelLeft = hardwareMap.servo.get("jewelleft");
+        servoJewelRight = hardwareMap.servo.get("jewelright");
+
         if (debug >= 1)
         {
             fileLogger.writeEvent(TAG, "Set setHardwareDriveRunWithoutEncoders");
         }
 
+        // get a reference to our digitalTouch object.
+        limitswitch1 = hardwareMap.get(DigitalChannel.class, "limittop");
+        limitswitch2 = hardwareMap.get(DigitalChannel.class, "limitbot");
+
+        // set the digital channel to input.
+        limitswitch1.setMode(DigitalChannel.Mode.INPUT);
+        limitswitch2.setMode(DigitalChannel.Mode.INPUT);
+
+        if (debug >= 1) fileLogger.writeEvent(TAG, "Set Limit Switches");
+
+        //lock the jewel arms home
+        sendServosHome(servoGlyphGripTopLeft, servoGlyphGripBotLeft, servoGlyphGripTopRight, servoGlyphGripBotRight, servoJewelLeft, servoJewelRight);
+
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
+        dashboard.clearDisplay();
+
         while (opModeIsActive()) {
-            dblLeftMotor1 = Range.clip(+gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -1.0, 1.0);
+
+            if (limitswitch1.getState() == true) {
+                dashboard.displayPrintf(3, "Limit Switch Top Is Not Pressed");
+            } else {
+                dashboard.displayPrintf(3, "Limit Switch Top Is Pressed");
+            }
+            if (limitswitch2.getState() == true) {
+                dashboard.displayPrintf(4, "Limit Switch Bot Is Not Pressed");
+            } else {
+                dashboard.displayPrintf(4, "Limit Switch Bot Is Pressed");
+            }
+
+            if ((limitswitch1.getState() == false) && (gamepad2.right_stick_y > 0)){
+                armDrive.setHardwareDriveLeft1MotorPower(0);
+            } else {
+                armDrive.setHardwareDriveLeft1MotorPower(gamepad2.right_stick_y);
+            }
+            if ((limitswitch2.getState() == false) && (gamepad2.left_stick_y > 0)){
+                armDrive.setHardwareDriveLeft2MotorPower(0);
+            } else {
+                armDrive.setHardwareDriveLeft2MotorPower(gamepad2.left_stick_y);
+            }
+
+            if (gamepad2.left_trigger != 0) {
+                LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
+                moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_GRAB, SERVOLIFTRIGHTTOP_GLYPH_GRAB);
+            } else if (gamepad2.left_bumper) {
+                LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
+                moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_START, SERVOLIFTRIGHTTOP_GLYPH_START);
+            } else {
+                LedState(LedOff, LedOff, LedOff, LedOff, LedOff, LedOff);
+                moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_RELEASE, SERVOLIFTRIGHTTOP_GLYPH_RELEASE);
+            }
+
+            if (gamepad2.right_trigger != 0) {
+                LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
+                moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_GRAB, SERVOLIFTRIGHTBOT_GLYPH_GRAB);
+            } else if (gamepad2.right_bumper) {
+                LedState(LedOff, LedOn, LedOn, LedOff, LedOn, LedOn);
+                moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_START, SERVOLIFTRIGHTBOT_GLYPH_START);
+            } else {
+                LedState(LedOff, LedOff, LedOff, LedOff, LedOff, LedOff);
+                moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_RELEASE, SERVOLIFTRIGHTBOT_GLYPH_RELEASE);
+            }
+
+
+            dblLeftMotor1 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -1.0, 1.0);
             dblLeftMotor2 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -1.0, 1.0);
             dblRightMotor1 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -1.0, 1.0);
-            dblRightMotor2 = Range.clip(+gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -1.0, 1.0);
+            dblRightMotor2 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x, -1.0, 1.0);
+
+            if ((dblLeftMotor1 < 0) || (dblRightMotor1 < 0)) LedState(LedOff, LedOn, LedOff, LedOff, LedOn, LedOff);
+            if ((dblLeftMotor1 > 0) || (dblRightMotor1 > 0)) LedState(LedOn, LedOff, LedOff, LedOn, LedOff, LedOff);
 
             robotDrive.setHardwareDrivePower(dblLeftMotor1, dblLeftMotor2, dblRightMotor1, dblRightMotor2);
-
-
         }
+        stopMode();
     }
+
+    public void stopMode()
+    {
+        //stop the log
+        if (fileLogger != null) {
+            fileLogger.writeEvent("STOP", "-------------------------------------------------------------------------");
+            fileLogger.writeEvent(TAG, "Stopped");
+            fileLogger.close();
+            fileLogger = null;
+        }
+    }   //stopMode
 
     public static double scaleRange(double value, double lowSrcRange, double highSrcRange, double lowDstRange, double highDstRange)
     {
         return lowDstRange + (value - lowSrcRange)*(highDstRange - lowDstRange)/(highSrcRange - lowSrcRange);
     }   //scaleRange
-
 
     public double determineHeading(float x) {
         return Math.asin(x/radius);
@@ -300,5 +405,38 @@ public class RRMecanumTestIan extends OpModeMasterLinear
             return value;
         }
     }
+
+    private void sendServosHome(Servo servoGlyphGripTopLeft, Servo servoGlyphGripBotLeft, Servo servoGlyphGripTopRight, Servo servoGlyphGripBotRight, Servo servoJewelLeft, Servo servoJewelRight) {
+        moveServo(servoGlyphGripTopLeft, SERVOLIFTLEFTTOP_HOME, SERVOLIFTLEFTTOP_MIN_RANGE, SERVOLIFTLEFTTOP_MAX_RANGE);
+        moveServo(servoGlyphGripBotLeft, SERVOLIFTLEFTBOT_HOME, SERVOLIFTLEFTBOT_MIN_RANGE, SERVOLIFTLEFTBOT_MAX_RANGE);
+        moveServo(servoGlyphGripTopRight, SERVOLIFTRIGHTTOP_HOME, SERVOLIFTRIGHTTOP_MIN_RANGE, SERVOLIFTRIGHTTOP_MAX_RANGE);
+        moveServo(servoGlyphGripBotRight, SERVOLIFTRIGHTBOT_HOME, SERVOLIFTRIGHTBOT_MIN_RANGE, SERVOLIFTRIGHTBOT_MAX_RANGE);
+
+        moveServo(servoJewelLeft, SERVOJEWELLEFT_HOME, SERVOJEWELLEFT_MIN_RANGE, SERVOJEWELLEFT_MAX_RANGE);
+        moveServo(servoJewelRight, SERVOJEWELRIGHT_HOME, SERVOJEWELRIGHT_MIN_RANGE, SERVOJEWELRIGHT_MAX_RANGE);
+    }
+
+    private void moveTopServos(Servo servoGlyphGripTopLeft, Servo servoGlyphGripTopRight, double positionTopLeft, double positionTopRight) {
+        moveServo(servoGlyphGripTopLeft, positionTopLeft, SERVOLIFTLEFTTOP_MIN_RANGE, SERVOLIFTLEFTTOP_MAX_RANGE);
+        moveServo(servoGlyphGripTopRight, positionTopRight, SERVOLIFTRIGHTTOP_MIN_RANGE, SERVOLIFTRIGHTTOP_MAX_RANGE);
+    }
+
+    private void moveBotServos(Servo servoGlyphGripBotLeft, Servo servoGlyphGripBotRight, double positionBotLeft, double positionBotRight) {
+        moveServo(servoGlyphGripBotLeft, positionBotLeft, SERVOLIFTLEFTBOT_MIN_RANGE, SERVOLIFTLEFTBOT_MAX_RANGE);
+        moveServo(servoGlyphGripBotRight, positionBotRight, SERVOLIFTRIGHTBOT_MIN_RANGE, SERVOLIFTRIGHTBOT_MAX_RANGE);
+    }
+
+    private boolean moveServo (Servo Servo, double Position, double RangeMin, double RangeMax ) {
+        //if ((Range.scale(Position, 0, 180, 0, 1) < RangeMin ) || (Range.scale(Position, 0, 180, 0, 1) > RangeMax )) {
+        //    return false;
+        //}
+        if ((Position < RangeMin ) || (Position > RangeMax )) {
+            return false;
+        }
+
+        Servo.setPosition(Range.scale(Position, 0, 180, 0, 1));
+        return true;
+    }
+
 }
 

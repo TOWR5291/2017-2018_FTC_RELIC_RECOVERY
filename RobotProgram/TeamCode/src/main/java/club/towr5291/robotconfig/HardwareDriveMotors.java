@@ -63,6 +63,32 @@ public class HardwareDriveMotors
         setHardwareDriveRunUsingEncoders();
     }
 
+    public void init(FileLogger fileloggerhandle, HardwareMap ahwMap, robotConfigSettings.robotConfigChoice baseConfig, String motor1, String motor2, String motor3, String motor4) {
+        // Save reference to Hardware map
+        hwMap = ahwMap;
+
+        // Define and Initialize Motors
+        if (motor1 != null)
+            baseMotor1  = hwMap.dcMotor.get(motor1);
+        if (motor2 != null)
+            baseMotor2  = hwMap.dcMotor.get(motor2);
+        if (motor3 != null)
+            baseMotor3  = hwMap.dcMotor.get(motor3);
+        if (motor4 != null)
+            baseMotor4  = hwMap.dcMotor.get(motor4);
+
+        setHardwareDriveDirections(baseConfig);
+
+        // Set all motors to zero power
+        setHardwareDrivePower(0);
+
+        // Set all motors to run without encoders.
+        // May want to use RUN_USING_ENCODERS if encoders are installed.
+        setHardwareDriveResetEncoders();
+
+        setHardwareDriveRunUsingEncoders();
+    }
+
     public void init(HardwareMap ahwMap, robotConfigSettings.robotConfigChoice baseConfig) {
         // Save reference to Hardware map
         hwMap = ahwMap;
@@ -91,22 +117,34 @@ public class HardwareDriveMotors
             case TileRunner2x20:
             case TileRunner2x40:
             case TileRunner2x60:
-                baseMotor1.setDirection(DcMotor.Direction.FORWARD);
-                baseMotor2.setDirection(DcMotor.Direction.REVERSE);
-                baseMotor3.setDirection(DcMotor.Direction.FORWARD);
-                baseMotor4.setDirection(DcMotor.Direction.REVERSE);
+                if (baseMotor1 != null)
+                    baseMotor1.setDirection(DcMotor.Direction.FORWARD);
+                if (baseMotor2 != null)
+                    baseMotor2.setDirection(DcMotor.Direction.REVERSE);
+                if (baseMotor3 != null)
+                    baseMotor3.setDirection(DcMotor.Direction.FORWARD);
+                if (baseMotor4 != null)
+                    baseMotor4.setDirection(DcMotor.Direction.REVERSE);
                 break;
             case TileRunnerMecanum2x40:
-                baseMotor1.setDirection(DcMotor.Direction.FORWARD);
-                baseMotor2.setDirection(DcMotor.Direction.REVERSE);
-                baseMotor3.setDirection(DcMotor.Direction.REVERSE);
-                baseMotor4.setDirection(DcMotor.Direction.FORWARD);
+                if (baseMotor1 != null)
+                    baseMotor1.setDirection(DcMotor.Direction.FORWARD);
+                if (baseMotor2 != null)
+                    baseMotor2.setDirection(DcMotor.Direction.REVERSE);
+                if (baseMotor3 != null)
+                    baseMotor3.setDirection(DcMotor.Direction.REVERSE);
+                if (baseMotor4 != null)
+                    baseMotor4.setDirection(DcMotor.Direction.FORWARD);
                 break;
             default:
-                baseMotor1.setDirection(DcMotor.Direction.FORWARD);
-                baseMotor2.setDirection(DcMotor.Direction.REVERSE);
-                baseMotor3.setDirection(DcMotor.Direction.FORWARD);
-                baseMotor4.setDirection(DcMotor.Direction.REVERSE);
+                if (baseMotor1 != null)
+                    baseMotor1.setDirection(DcMotor.Direction.FORWARD);
+                if (baseMotor2 != null)
+                    baseMotor2.setDirection(DcMotor.Direction.REVERSE);
+                if (baseMotor3 != null)
+                    baseMotor3.setDirection(DcMotor.Direction.FORWARD);
+                if (baseMotor4 != null)
+                    baseMotor4.setDirection(DcMotor.Direction.REVERSE);
                 break;
         }
     }
@@ -131,10 +169,19 @@ public class HardwareDriveMotors
         // int 15 = 1110 is right2 (1), right1 (1), left2 (1), left1
         // int 16 = 1111 is right2 (1), right1 (1), left2 (1), left1 (1)
 
-        int myInt1 = (baseMotor1.isBusy()) ? 1 : 0;
-        int myInt2 = (baseMotor2.isBusy()) ? 1 : 0;
-        int myInt3 = (baseMotor3.isBusy()) ? 1 : 0;
-        int myInt4 = (baseMotor4.isBusy()) ? 1 : 0;
+        int myInt1 = 0;
+        int myInt2 = 0;
+        int myInt3 = 0;
+        int myInt4 = 0;
+
+        if (baseMotor1 != null)
+            myInt1 = (baseMotor1.isBusy()) ? 1 : 0;
+        if (baseMotor2 != null)
+            myInt2 = (baseMotor2.isBusy()) ? 1 : 0;
+        if (baseMotor3 != null)
+            myInt3 = (baseMotor3.isBusy()) ? 1 : 0;
+        if (baseMotor4 != null)
+            myInt4 = (baseMotor4.isBusy()) ? 1 : 0;
 
         return (myInt1) + (2 * myInt2) + (4 * myInt3)  + (8 * myInt4);
 
@@ -194,19 +241,35 @@ public class HardwareDriveMotors
     public motorEncoderPositions getHardwareDriveEncoderPosition() {
 
         motorEncoderPositions positions = new motorEncoderPositions();
-        positions.setMotor1EncoderValue(baseMotor1.getCurrentPosition());
-        positions.setMotor2EncoderValue(baseMotor2.getCurrentPosition());
-        positions.setMotor3EncoderValue(baseMotor3.getCurrentPosition());
-        positions.setMotor4EncoderValue(baseMotor4.getCurrentPosition());
+        if (baseMotor1 != null)
+            positions.setMotor1EncoderValue(baseMotor1.getCurrentPosition());
+        else
+            positions.setMotor1EncoderValue(0);
+        if (baseMotor2 != null)
+            positions.setMotor2EncoderValue(baseMotor2.getCurrentPosition());
+        else
+            positions.setMotor2EncoderValue(0);
+        if (baseMotor3 != null)
+            positions.setMotor3EncoderValue(baseMotor3.getCurrentPosition());
+        else
+            positions.setMotor3EncoderValue(0);
+        if (baseMotor4 != null)
+            positions.setMotor4EncoderValue(baseMotor4.getCurrentPosition());
+        else
+            positions.setMotor4EncoderValue(0);
 
         return positions;
     }
 
     public void setHardwareDriveResetEncoders() {
-        baseMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        baseMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        baseMotor3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-        baseMotor4.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        if (baseMotor1 != null)
+            baseMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        if (baseMotor2 != null)
+            baseMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        if (baseMotor3 != null)
+            baseMotor3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        if (baseMotor4 != null)
+            baseMotor4.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
     }
 
     public void setHardwareDriveRunUsingEncoders() {
@@ -215,20 +278,28 @@ public class HardwareDriveMotors
     }
 
     public void setHardwareDriveLeftRunUsingEncoders() {
-        baseMotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        baseMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        if (baseMotor1 != null)
+            baseMotor1.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        if (baseMotor2 != null)
+            baseMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     public void setHardwareDriveRightRunUsingEncoders() {
-        baseMotor3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
-        baseMotor4.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        if (baseMotor3 != null)
+            baseMotor3.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+        if (baseMotor4 != null)
+            baseMotor4.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
     }
 
     public void setHardwareDriveRunWithoutEncoders() {
-        baseMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        baseMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        baseMotor3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-        baseMotor4.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        if (baseMotor1 != null)
+            baseMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        if (baseMotor2 != null)
+            baseMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        if (baseMotor3 != null)
+            baseMotor3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+        if (baseMotor4 != null)
+            baseMotor4.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
     }
 
     public void setHardwareDriveRunToPosition() {
@@ -237,20 +308,28 @@ public class HardwareDriveMotors
     }
 
     public void setHardwareDriveLeftRunToPosition() {
-        baseMotor1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        baseMotor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        if (baseMotor1 != null)
+            baseMotor1.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        if (baseMotor2 != null)
+            baseMotor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
     public void setHardwareDriveRightRunToPosition() {
-        baseMotor3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
-        baseMotor4.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        if (baseMotor3 != null)
+            baseMotor3.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+        if (baseMotor4 != null)
+            baseMotor4.setMode(DcMotor.RunMode.RUN_TO_POSITION);
     }
 
     public void setHardwareDrivePower (double leftFront, double leftBack, double rightFront, double rightBack) {
-        baseMotor1.setPower(-leftFront);
-        baseMotor2.setPower(leftBack);
-        baseMotor3.setPower(rightFront);
-        baseMotor4.setPower(-rightBack);
+        if (baseMotor1 != null)
+            baseMotor1.setPower(leftFront);
+        if (baseMotor2 != null)
+            baseMotor2.setPower(leftBack);
+        if (baseMotor3 != null)
+            baseMotor3.setPower(rightFront);
+        if (baseMotor4 != null)
+            baseMotor4.setPower(rightBack);
     }
 
     //set the drive motors power, both left and right
@@ -272,19 +351,23 @@ public class HardwareDriveMotors
     }
 
     public void setHardwareDriveLeft1MotorPower (double power) {
-        baseMotor1.setPower(power);
+        if (baseMotor1 != null)
+            baseMotor1.setPower(power);
     }
 
     public void setHardwareDriveLeft2MotorPower (double power) {
-        baseMotor2.setPower(power);
+        if (baseMotor2 != null)
+            baseMotor2.setPower(power);
     }
 
     public void setHardwareDriveRight1MotorPower (double power) {
-        baseMotor3.setPower(power);
+        if (baseMotor3 != null)
+            baseMotor3.setPower(power);
     }
 
     public void setHardwareDriveRight2MotorPower (double power) {
-        baseMotor4.setPower(power);
+        if (baseMotor4 != null)
+            baseMotor4.setPower(power);
     }
 
 
@@ -346,8 +429,6 @@ public class HardwareDriveMotors
         public String toString() {
             return "{LeftPower= " + tankLeft + ", RightPower= " + tankRight + "}";
         }
-
     }
-
 }
 

@@ -98,25 +98,29 @@ public class ConceptRobotBasicTests extends LinearOpMode {
     // the servos are on the servo controller
     private final static double SERVOLIFTLEFTTOP_MIN_RANGE      = 0;
     private final static double SERVOLIFTLEFTTOP_MAX_RANGE      = 180;
-    private final static double SERVOLIFTLEFTTOP_HOME           = 90;
+    private final static double SERVOLIFTLEFTTOP_HOME           = 180; //90
+    private final static double SERVOLIFTLEFTTOP_GLYPH_START    = 60;  //need to work this out
     private final static double SERVOLIFTLEFTTOP_GLYPH_RELEASE  = 60;
     private final static double SERVOLIFTLEFTTOP_GLYPH_GRAB     = 30;
 
     private final static double SERVOLIFTRIGHTTOP_MIN_RANGE     = 0;
     private final static double SERVOLIFTRIGHTTOP_MAX_RANGE     = 180;
-    private final static double SERVOLIFTRIGHTTOP_HOME          = 90;
+    private final static double SERVOLIFTRIGHTTOP_HOME          = 180; //90
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_START   = 60;  //need to work this out
     private final static double SERVOLIFTRIGHTTOP_GLYPH_RELEASE = 60;
     private final static double SERVOLIFTRIGHTTOP_GLYPH_GRAB    = 30;
 
     private final static double SERVOLIFTLEFTBOT_MIN_RANGE      = 0;
     private final static double SERVOLIFTLEFTBOT_MAX_RANGE      = 180;
-    private final static double SERVOLIFTLEFTBOT_HOME           = 90;
+    private final static double SERVOLIFTLEFTBOT_HOME           = 180;  //90
+    private final static double SERVOLIFTLEFTBOT_GLYPH_START    = 60;  //need to work this out
     private final static double SERVOLIFTLEFTBOT_GLYPH_RELEASE  = 60;
     private final static double SERVOLIFTLEFTBOT_GLYPH_GRAB     = 30;
 
     private final static double SERVOLIFTRIGHTBOT_MIN_RANGE     = 0;
     private final static double SERVOLIFTRIGHTBOT_MAX_RANGE     = 180;
-    private final static double SERVOLIFTRIGHTBOT_HOME          = 90;
+    private final static double SERVOLIFTRIGHTBOT_HOME          = 180;  //90
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_START   = 60;  //need to work this out
     private final static double SERVOLIFTRIGHTBOT_GLYPH_RELEASE = 60;
     private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB    = 30;
 
@@ -183,21 +187,6 @@ public class ConceptRobotBasicTests extends LinearOpMode {
         limitswitch1.setMode(DigitalChannel.Mode.INPUT);
         limitswitch2.setMode(DigitalChannel.Mode.INPUT);
 
-
-        if (debug >= 1)
-        {
-            fileLogger = new FileLogger(runtime);
-            fileLogger.open();
-            fileLogger.write("Time,SysMS,Thread,Event,Desc");
-            fileLogger.writeEvent("ConceptRobotBasicTests", "Log Started");
-            Log.d("ConceptRobotBasicTests", "Log Started");
-            runtime.reset();
-            telemetry.addData("FileLogger: ", runtime.toString());
-            telemetry.addData("FileLogger Op Out File: ", fileLogger.getFilename());
-            Log.d("ConceptRobotBasicTests", "Loading sharePreferences");
-            fileLogger.writeEvent("ConceptRobotBasicTests", "Loading sharePreferences");
-        }
-
         //load menu settings and setup robot and debug level
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(hardwareMap.appContext);
         teamNumber = sharedPreferences.getString("club.towr5291.Autonomous.TeamNumber", "0000");
@@ -209,9 +198,15 @@ public class ConceptRobotBasicTests extends LinearOpMode {
 
         if (debug >= 1)
         {
-            Log.d("ConceptRobotBasicTests", "Loaded sharePreferences");
+            fileLogger = new FileLogger(runtime, debug,true);
+            fileLogger.writeEvent("START", "-------------------------------------------------------------------------");
+            fileLogger.write("Time,SysMS,Thread,Event,Desc");
+            fileLogger.writeEvent("ConceptRobotBasicTests", "Loading sharePreferences");
+            Log.d("ConceptRobotBasicTests", "Log Started");
+            runtime.reset();
+            telemetry.addData("FileLogger: ", runtime.toString());
+            telemetry.addData("FileLogger Op Out File: ", fileLogger.getFilename());
             fileLogger.writeEvent("ConceptRobotBasicTests", "Loaded sharePreferences");
-            Log.d("ConceptRobotBasicTests", "Loading baseHardware");
             fileLogger.writeEvent("ConceptRobotBasicTests", "Loading baseHardware");
         }
 
@@ -220,19 +215,13 @@ public class ConceptRobotBasicTests extends LinearOpMode {
 
         if (debug >= 1)
         {
-            Log.d("ConceptRobotBasicTests", "Loaded baseHardware");
             fileLogger.writeEvent("ConceptRobotBasicTests", "Loaded baseHardware");
-            Log.d("ConceptRobotBasicTests", "Setting setHardwareDriveRunWithoutEncoders");
             fileLogger.writeEvent("ConceptRobotBasicTests", "Setting setHardwareDriveRunWithoutEncoders");
         }
 
         robotDrive.setHardwareDriveRunWithoutEncoders();
 
-        if (debug >= 1)
-        {
-            Log.d("ConceptRobotBasicTests", "Set setHardwareDriveRunWithoutEncoders");
-            fileLogger.writeEvent("ConceptRobotBasicTests", "Set setHardwareDriveRunWithoutEncoders");
-        }
+        if (debug >= 1) { fileLogger.writeEvent("ConceptRobotBasicTests", "Set setHardwareDriveRunWithoutEncoders"); }
 
         //config the servos
         servoGlyphGripTopLeft = hardwareMap.servo.get("griptopleft");
@@ -247,11 +236,7 @@ public class ConceptRobotBasicTests extends LinearOpMode {
         //lock the jewel arms home
         sendServosHome(servoGlyphGripTopLeft, servoGlyphGripBotLeft, servoGlyphGripTopRight, servoGlyphGripBotRight, servoJewelLeft, servoJewelRight);
 
-        if (debug >= 1)
-        {
-            Log.d("ConceptRobotBasicTests", "Set Servos Configs");
-            fileLogger.writeEvent("ConceptRobotBasicTests", "Set Servos Configs");
-        }
+        if (debug >= 1) { fileLogger.writeEvent("ConceptRobotBasicTests", "Set Servos Configs");}
 
         // wait for the start button to be pressed.
         waitForStart();
@@ -317,16 +302,10 @@ public class ConceptRobotBasicTests extends LinearOpMode {
     }
 
     private void sendServosHome(Servo servoGlyphGripTopLeft, Servo servoGlyphGripBotLeft, Servo servoGlyphGripTopRight, Servo servoGlyphGripBotRight, Servo servoJewelLeft, Servo servoJewelRight) {
-        //moveServo(servoGlyphGripTopLeft, SERVOLIFTLEFTTOP_HOME, SERVOLIFTLEFTTOP_MIN_RANGE, SERVOLIFTLEFTTOP_MAX_RANGE);
-        //moveServo(servoGlyphGripBotLeft, SERVOLIFTLEFTBOT_HOME, SERVOLIFTLEFTBOT_MIN_RANGE, SERVOLIFTLEFTBOT_MAX_RANGE);
-        //moveServo(servoGlyphGripTopRight, SERVOLIFTRIGHTTOP_HOME, SERVOLIFTRIGHTTOP_MIN_RANGE, SERVOLIFTRIGHTTOP_MAX_RANGE);
-        //moveServo(servoGlyphGripBotRight, SERVOLIFTRIGHTBOT_HOME, SERVOLIFTRIGHTBOT_MIN_RANGE, SERVOLIFTRIGHTBOT_MAX_RANGE);
-
-
-        moveServo(servoGlyphGripTopLeft, SERVOLIFTLEFTTOP_GLYPH_GRAB, SERVOLIFTLEFTTOP_MIN_RANGE, SERVOLIFTLEFTTOP_MAX_RANGE);
-        moveServo(servoGlyphGripBotLeft, SERVOLIFTLEFTBOT_GLYPH_GRAB, SERVOLIFTLEFTBOT_MIN_RANGE, SERVOLIFTLEFTBOT_MAX_RANGE);
-        moveServo(servoGlyphGripTopRight, SERVOLIFTRIGHTTOP_GLYPH_GRAB, SERVOLIFTRIGHTTOP_MIN_RANGE, SERVOLIFTRIGHTTOP_MAX_RANGE);
-        moveServo(servoGlyphGripBotRight, SERVOLIFTRIGHTBOT_GLYPH_GRAB, SERVOLIFTRIGHTBOT_MIN_RANGE, SERVOLIFTRIGHTBOT_MAX_RANGE);
+        moveServo(servoGlyphGripTopLeft, SERVOLIFTLEFTTOP_HOME, SERVOLIFTLEFTTOP_MIN_RANGE, SERVOLIFTLEFTTOP_MAX_RANGE);
+        moveServo(servoGlyphGripBotLeft, SERVOLIFTLEFTBOT_HOME, SERVOLIFTLEFTBOT_MIN_RANGE, SERVOLIFTLEFTBOT_MAX_RANGE);
+        moveServo(servoGlyphGripTopRight, SERVOLIFTRIGHTTOP_HOME, SERVOLIFTRIGHTTOP_MIN_RANGE, SERVOLIFTRIGHTTOP_MAX_RANGE);
+        moveServo(servoGlyphGripBotRight, SERVOLIFTRIGHTBOT_HOME, SERVOLIFTRIGHTBOT_MIN_RANGE, SERVOLIFTRIGHTBOT_MAX_RANGE);
 
         moveServo(servoJewelLeft, SERVOJEWELLEFT_HOME, SERVOJEWELLEFT_MIN_RANGE, SERVOJEWELLEFT_MAX_RANGE);
         moveServo(servoJewelRight, SERVOJEWELRIGHT_HOME, SERVOJEWELRIGHT_MIN_RANGE, SERVOJEWELRIGHT_MAX_RANGE);
