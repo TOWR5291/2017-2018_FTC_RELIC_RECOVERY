@@ -76,6 +76,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
 import org.firstinspires.ftc.robotcore.external.navigation.Position;
+import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
 import org.firstinspires.ftc.robotcore.external.navigation.Velocity;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
@@ -158,7 +159,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     private ElapsedTime     runtime = new ElapsedTime();
 
     //set up the variables for file logger and what level of debug we will log info at
-    private FileLogger fileLogger;
+    public FileLogger fileLogger;
     private int debug = 3;
 
     //set up range sensor variables
@@ -288,19 +289,40 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
     //servos
     // the servos are on the servo controller
-    private final static double SERVOLIFTLEFTTOP_MIN_RANGE  = 0;
-    private final static double SERVOLIFTLEFTTOP_MAX_RANGE  = 1.0;
-    private final static double SERVOLIFTRIGHTTOP_MIN_RANGE  = 0;
-    private final static double SERVOLIFTRIGHTTOP_MAX_RANGE  = 1.0;
-    private final static double SERVOLIFTLEFTBOT_MIN_RANGE  = 0;
-    private final static double SERVOLIFTLEFTBOT_MAX_RANGE  = 1.0;
-    private final static double SERVOLIFTRIGHTBOT_MIN_RANGE  = 0;
-    private final static double SERVOLIFTRIGHTBOT_MAX_RANGE  = 1.0;
+    private final static double SERVOLIFTLEFTTOP_MIN_RANGE      = 0;
+    private final static double SERVOLIFTLEFTTOP_MAX_RANGE      = 180;
+    private final static double SERVOLIFTLEFTTOP_HOME           = 165; //90
+    private final static double SERVOLIFTLEFTTOP_GLYPH_START    = 125;  //need to work this out
+    private final static double SERVOLIFTLEFTTOP_GLYPH_RELEASE  = 60;
+    private final static double SERVOLIFTLEFTTOP_GLYPH_GRAB     = 30;
 
-    private final static double SERVOJEWELLEFT_MIN_RANGE  = 0;
-    private final static double SERVOJEWELLEFT_MAX_RANGE  = 1.0;
-    private final static double SERVOJEWELRIGHT_MIN_RANGE  = 0;
-    private final static double SERVOJEWELRIGHT_MAX_RANGE  = 1.0;
+    private final static double SERVOLIFTRIGHTTOP_MIN_RANGE     = 0;
+    private final static double SERVOLIFTRIGHTTOP_MAX_RANGE     = 180;
+    private final static double SERVOLIFTRIGHTTOP_HOME          = 165;
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_START   = 125;  //need to work this out
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_RELEASE = 60;
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_GRAB    = 30;
+
+    private final static double SERVOLIFTLEFTBOT_MIN_RANGE      = 0;
+    private final static double SERVOLIFTLEFTBOT_MAX_RANGE      = 180;
+    private final static double SERVOLIFTLEFTBOT_HOME           = 165;
+    private final static double SERVOLIFTLEFTBOT_GLYPH_START    = 125;  //need to work this out
+    private final static double SERVOLIFTLEFTBOT_GLYPH_RELEASE  = 60;
+    private final static double SERVOLIFTLEFTBOT_GLYPH_GRAB     = 30;
+
+    private final static double SERVOLIFTRIGHTBOT_MIN_RANGE     = 0;
+    private final static double SERVOLIFTRIGHTBOT_MAX_RANGE     = 180;
+    private final static double SERVOLIFTRIGHTBOT_HOME          = 165;
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_START   = 125;  //need to work this out
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_RELEASE = 60;
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB    = 30;
+
+    private final static double SERVOJEWELLEFT_MIN_RANGE        = 0;
+    private final static double SERVOJEWELLEFT_MAX_RANGE        = 180;
+    private final static double SERVOJEWELLEFT_HOME             = 147;
+    private final static double SERVOJEWELRIGHT_MIN_RANGE       = 4;
+    private final static double SERVOJEWELRIGHT_MAX_RANGE       = 180;
+    private final static double SERVOJEWELRIGHT_HOME            = 150;
 
     private Servo servoGlyphGripTopLeft;
     private Servo servoGlyphGripBotLeft;
@@ -1014,6 +1036,9 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         gotBeacomDims = true;
                         beacFound = false;
                     }
+
+                    //vuMark will be the position to load the glyph
+                    RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
 
                     if (!gotBeacomDims) {
                         for (VuforiaTrackable jewels : RelicRecovery) {

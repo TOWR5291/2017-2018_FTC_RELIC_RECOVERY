@@ -14,6 +14,7 @@ import com.qualcomm.hardware.bosch.JustLoggingAccelerationIntegrator;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.DcMotor;
+import com.qualcomm.robotcore.hardware.DcMotorSimple;
 import com.qualcomm.robotcore.hardware.DigitalChannel;
 import com.qualcomm.robotcore.hardware.Servo;
 import com.qualcomm.robotcore.util.ElapsedTime;
@@ -116,10 +117,10 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB    = 30;
 
     private final static double SERVOJEWELLEFT_MIN_RANGE        = 0;
-    private final static double SERVOJEWELLEFT_MAX_RANGE        = 1.0;
+    private final static double SERVOJEWELLEFT_MAX_RANGE        = 180;
     private final static double SERVOJEWELLEFT_HOME             = 147;
     private final static double SERVOJEWELRIGHT_MIN_RANGE       = 4;
-    private final static double SERVOJEWELRIGHT_MAX_RANGE       = 1.0;
+    private final static double SERVOJEWELRIGHT_MAX_RANGE       = 180;
     private final static double SERVOJEWELRIGHT_HOME            = 150;
     private Servo servoGlyphGripTopLeft;
     private Servo servoGlyphGripBotLeft;
@@ -269,7 +270,7 @@ public class RRMecanumTestIan extends OpModeMasterLinear
 
         //lock the jewel arms home
         sendServosHome(servoGlyphGripTopLeft, servoGlyphGripBotLeft, servoGlyphGripTopRight, servoGlyphGripBotRight, servoJewelLeft, servoJewelRight);
-
+        
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
@@ -296,7 +297,7 @@ public class RRMecanumTestIan extends OpModeMasterLinear
             if ((limitswitch2.getState() == false) && (gamepad2.left_stick_y > 0)){
                 armDrive.setHardwareDriveLeft2MotorPower(0);
             } else {
-                armDrive.setHardwareDriveLeft2MotorPower(gamepad2.left_stick_y);
+                armDrive.setHardwareDriveLeft2MotorPower(-gamepad2.left_stick_y);
             }
 
             if (gamepad2.left_trigger != 0) {
@@ -424,6 +425,11 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     private void moveBotServos(Servo servoGlyphGripBotLeft, Servo servoGlyphGripBotRight, double positionBotLeft, double positionBotRight) {
         moveServo(servoGlyphGripBotLeft, positionBotLeft, SERVOLIFTLEFTBOT_MIN_RANGE, SERVOLIFTLEFTBOT_MAX_RANGE);
         moveServo(servoGlyphGripBotRight, positionBotRight, SERVOLIFTRIGHTBOT_MIN_RANGE, SERVOLIFTRIGHTBOT_MAX_RANGE);
+    }
+
+    private void moveServosPair(Servo servoLeft, Servo servoRight, double positionLeft, double positionRight) {
+        moveServo(servoLeft, positionLeft, 0, 180);
+        moveServo(servoRight, positionRight, 0, 180);
     }
 
     private boolean moveServo (Servo Servo, double Position, double RangeMin, double RangeMax ) {

@@ -6,6 +6,7 @@ import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
 import android.widget.ImageView;
+import android.widget.TextView;
 
 import com.qualcomm.robotcore.eventloop.opmode.Autonomous;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
@@ -20,6 +21,7 @@ import com.vuforia.Vec2F;
 import com.vuforia.Vec3F;
 import com.vuforia.Vuforia;
 
+import org.firstinspires.ftc.robotcontroller.internal.FtcRobotControllerActivity;
 import org.firstinspires.ftc.robotcore.external.ClassFactory;
 import org.firstinspires.ftc.robotcore.external.matrices.MatrixF;
 import org.firstinspires.ftc.robotcore.external.matrices.OpenGLMatrix;
@@ -28,6 +30,8 @@ import org.firstinspires.ftc.robotcore.external.navigation.AngleUnit;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesOrder;
 import org.firstinspires.ftc.robotcore.external.navigation.AxesReference;
 import org.firstinspires.ftc.robotcore.external.navigation.Orientation;
+import org.firstinspires.ftc.robotcore.external.navigation.RelicRecoveryVuMark;
+import org.firstinspires.ftc.robotcore.external.navigation.VuMarkInstanceId;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaLocalizer;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackable;
 import org.firstinspires.ftc.robotcore.external.navigation.VuforiaTrackableDefaultListener;
@@ -40,6 +44,7 @@ import org.opencv.core.Mat;
 import org.opencv.core.MatOfPoint;
 import org.opencv.core.MatOfPoint2f;
 import org.opencv.core.Point;
+import org.opencv.core.Point3;
 import org.opencv.core.Scalar;
 import org.opencv.core.Size;
 import org.opencv.imgproc.Imgproc;
@@ -60,6 +65,9 @@ import club.towr5291.functions.BeaconAnalysisOCV2;
 import club.towr5291.functions.BeaconAnalysisOCVAnalyse;
 import club.towr5291.functions.FileLogger;
 import club.towr5291.R;
+import club.towr5291.functions.JewelAnalysisOCV;
+import club.towr5291.opmodes.OpModeMasterLinear;
+import hallib.HalDashboard;
 
 import static club.towr5291.functions.Constants.BeaconColours.BEACON_BLUE_RED;
 import static club.towr5291.functions.Constants.BeaconColours.BEACON_RED_BLUE;
@@ -72,10 +80,15 @@ import static org.opencv.imgproc.Imgproc.contourArea;
  */
 
 @Autonomous(name="Concept Vuforia Grab Image", group="5291Test")
-public class ConceptVuforiaOpGrabImage extends LinearOpMode{
+public class ConceptVuforiaOpGrabImage extends OpModeMasterLinear
+{
+    //set up TAG for logging prefic, this info will appear first in every log statemend
+    private static final String TAG = "AutoDriveTeam5291";
+
     OpenGLMatrix lastLocation = null;
     private double robotX;
     private double robotY;
+    private double robotZ;
     private double robotBearing;
 
     //set up the variables for the logger
@@ -97,74 +110,122 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
     private static final int TARGET_WIDTH = 254;
     private static final int TARGET_HEIGHT = 184;
 
+
+    private static HalDashboard dashboard = null;
+    public static HalDashboard getDashboard()
+    {
+        return dashboard;
+    }
+
+
     @Override
     public void runOpMode() throws InterruptedException {
 
-        //load variables
+        dashboard = HalDashboard.createInstance(telemetry);
+
+        FtcRobotControllerActivity act = (FtcRobotControllerActivity)(hardwareMap.appContext);
+
+        dashboard.setTextView((TextView)act.findViewById(R.id.textOpMode));
+
+        dashboard.clearDisplay();
+        dashboard.displayPrintf(0, "Starting Menu System");
+
+        dashboard.displayPrintf(0, 200, "Text: ", "*** Robot Data ***");
+        //start the logging
+
+        //create logging based on initial settings, sharepreferences will adjust levels
+        fileLogger = new FileLogger(runtime,1,true);
+        fileLogger.write("Time,SysMS,Thread,Event,Desc");
+        fileLogger.writeEvent(TAG, "Log Started");
+        runtime.reset();
+
+        //init openCV
+        initOpenCv();
+        dashboard.displayPrintf(1, "initRobot OpenCV!");
+
+        if (debug >= 3) {fileLogger.writeEvent(TAG, "OpenCV Started");}
+
+        //load menu settings and setup robot and debug level
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(hardwareMap.appContext);
         teamNumber = sharedPreferences.getString("club.towr5291.Autonomous.TeamNumber", "0000");
         allianceColor = sharedPreferences.getString("club.towr5291.Autonomous.Color", "Red");
         allianceStartPosition = sharedPreferences.getString("club.towr5291.Autonomous.StartPosition", "Left");
-        allianceParkPosition = sharedPreferences.getString("club.towr5291.Autonomous.ParkPosition", "Vortex");
         delay = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Delay", "0"));
-        numBeacons = sharedPreferences.getString("club.towr5291.Autonomous.Beacons", "One");
-        robotConfig = sharedPreferences.getString("club.towr5291.Autonomous.RobotConfig", "TileRunner-2x40");
-        debug = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Debug", null));
+        robotConfig = sharedPreferences.getString("club.towr5291.Autonomous.RobotConfig", "TileRunnerMecanum2x40");
+        debug = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Debug", "1"));
 
-        debug = 3;
+        dashboard.displayPrintf(2, "robotConfigTeam # " + teamNumber);
+        dashboard.displayPrintf(3, "Alliance          " + allianceColor);
+        dashboard.displayPrintf(4, "Start Pos         " + allianceStartPosition);
+        dashboard.displayPrintf(5, "Start Del         " + delay);
+        dashboard.displayPrintf(6, "Robot             " + robotConfig);
+        dashboard.displayPrintf(7, "Debug             " + debug);
 
-        //start the log
-        startDate = new SimpleDateFormat("yyyy/MM/dd HH:mm:ss").format(new Date());
-        fileLogger = new FileLogger(runtime);
-        fileLogger.open();
-        fileLogger.write("Time,SysMS,Thread,Event,Desc");
-        fileLogger.writeEvent("init()","Log Started");
+        fileLogger.setDebugLevel(debug);
 
-        //BeaconAnalysisOCV beaconColour = new BeaconAnalysisOCV();
-        //BeaconAnalysisOCV2 beaconColour = new BeaconAnalysisOCV2();
-        //BeaconAnalysisOCVAnalyse beaconColour = new BeaconAnalysisOCVAnalyse();
-        BeaconAnalysisOCVPlayground beaconColour = new BeaconAnalysisOCVPlayground();
+        JewelAnalysisOCV JewelColour = new JewelAnalysisOCV();
 
-        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(R.id.cameraMonitorViewId);
+        //load all the vuforia stuff
+
+        /*
+         * To start up Vuforia, tell it the view that we wish to use for camera monitor (on the RC phone);
+         * If no camera monitor is desired, use the parameterless constructor instead (commented out below).
+         */
+        int cameraMonitorViewId = hardwareMap.appContext.getResources().getIdentifier("cameraMonitorViewId", "id", hardwareMap.appContext.getPackageName());
+        VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters(cameraMonitorViewId);
+        // OR...  Do Not Activate the Camera Monitor View, to save power
+        // VuforiaLocalizer.Parameters parameters = new VuforiaLocalizer.Parameters();
+
+        switch (teamNumber) {
+            case "5291":
+                parameters.vuforiaLicenseKey = "AVATY7T/////AAAAGQJxfNYzLUgGjSx0aOEU0Q0rpcfZO2h2sY1MhUZUr+Bu6RgoUMUP/nERGmD87ybv1/lM2LBFDxcBGRHkXvxtkHel4XEUCsNHFTGWYcVkMIZqctQsIrTe13MnUvSOfQj8ig7xw3iULcwDpY+xAftW61dKTJ0IAOCxx2F0QjJWqRJBxrEUR/DfQi4LyrgnciNMXCiZ8KFyBdC63XMYkQj2joTN579+2u5f8aSCe8jkAFnBLcB1slyaU9lhnlTEMcFjwrLBcWoYIFAZluvFT0LpqZRlS1/XYf45QBSJztFKHIsj1rbCgotAE36novnAQBs74ewnWsJifokJGOYWdFJveWzn3GE9OEH23Y5l7kFDu4wc";
+                break;
+            case "11230":
+                parameters.vuforiaLicenseKey = "Not Provided";
+                break;
+            case "11231":
+                parameters.vuforiaLicenseKey = "Aai2GEX/////AAAAGaIIK9GK/E5ZsiRZ/jrJzdg7wYZCIFQ7uzKqQrMx/0Hh212zumzIy4raGwDY6Mf6jABMShH2etZC/BcjIowIHeAG5ShG5lvZIZEplTO+1zK1nFSiGFTPV59iGVqH8KjLbQdgUbsCBqp4f3tI8BWYqAS27wYIPfTK697SuxdQnpEZAOhHpgz+S2VoShgGr+EElzYMBFEaj6kdA/Lq5OwQp31JPet7NWYph6nN+TNHJAxnQBkthYmQg687WlRZhYrvNJepnoEwsDO3NSyeGlFquwuQwgdoGjzq2qn527I9tvM/XVZt7KR1KyWCn3PIS/LFvADSuyoQ2lsiOFtM9C+KCuNWiqQmj7dPPlpvVeUycoDH";
+                break;
+        }
+
+        /*
+         * We also indicate which camera on the RC that we wish to use.
+         * Here we chose the back (HiRes) camera (for greater range), but
+         * for a competition robot, the front camera might be more convenient.
+         */
         parameters.cameraDirection = VuforiaLocalizer.CameraDirection.BACK;
-        parameters.vuforiaLicenseKey = "AVATY7T/////AAAAGQJxfNYzLUgGjSx0aOEU0Q0rpcfZO2h2sY1MhUZUr+Bu6RgoUMUP/nERGmD87ybv1/lM2LBFDxcBGRHkXvxtkHel4XEUCsNHFTGWYcVkMIZqctQsIrTe13MnUvSOfQj8ig7xw3iULcwDpY+xAftW61dKTJ0IAOCxx2F0QjJWqRJBxrEUR/DfQi4LyrgnciNMXCiZ8KFyBdC63XMYkQj2joTN579+2u5f8aSCe8jkAFnBLcB1slyaU9lhnlTEMcFjwrLBcWoYIFAZluvFT0LpqZRlS1/XYf45QBSJztFKHIsj1rbCgotAE36novnAQBs74ewnWsJifokJGOYWdFJveWzn3GE9OEH23Y5l7kFDu4wc";
-        //parameters.cameraMonitorFeedback = VuforiaLocalizer.Parameters.CameraMonitorFeedback.AXES;
 
         VuforiaLocalizer vuforia = ClassFactory.createVuforiaLocalizer(parameters);
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);                                          //enables RGB565 format for the image
-        vuforia.setFrameQueueCapacity(1);                                                           //tells VuforiaLocalizer to only store one frame at a time
-        //ConceptVuforiaGrabImage vuforia = new ConceptVuforiaGrabImage(parameters);
-        Vuforia.setHint(HINT.HINT_MAX_SIMULTANEOUS_IMAGE_TARGETS,4);
+        vuforia.setFrameQueueCapacity(5);                                                           //tells VuforiaLocalizer to only store one frame at a time
+        Vuforia.setHint(HINT.HINT_MAX_SIMULTANEOUS_IMAGE_TARGETS,1);
 
-        VuforiaTrackables velocityVortex = vuforia.loadTrackablesFromAsset("FTC_2016-17");
-        VuforiaTrackable wheels = velocityVortex.get(0);
-        wheels.setName("wheels");  // wheels target
-
-        VuforiaTrackable tools  = velocityVortex.get(1);
-        tools.setName("tools");  // tools target
-
-        VuforiaTrackable legos = velocityVortex.get(2);
-        legos.setName("legos");  // legos target
-
-        VuforiaTrackable gears  = velocityVortex.get(3);
-        gears.setName("gears");  // gears target
+        /**
+         * Load the data set containing the VuMarks for Relic Recovery. There's only one trackable
+         * in this data set: all three of the VuMarks in the game were created from this one template,
+         * but differ in their instance id information.
+         * @see VuMarkInstanceId
+         */
+        VuforiaTrackables RelicRecovery = vuforia.loadTrackablesFromAsset("RelicVuMark");
+        VuforiaTrackable relicTemplate = RelicRecovery.get(0);
+        relicTemplate.setName("relicVuMarkTemplate"); // can help in debugging; otherwise not necessary
 
         /** For convenience, gather together all the trackable objects in one easily-iterable collection */
         List<VuforiaTrackable> allTrackables = new ArrayList<VuforiaTrackable>();
-        allTrackables.addAll(velocityVortex);
+        allTrackables.addAll(RelicRecovery);
 
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);
 
         /**
          * We use units of mm here because that's the recommended units of measurement for the
          * size values specified in the XML for the ImageTarget trackables in data sets. E.g.:
-         *      <ImageTarget name="stones" size="247 173"/>
          * You don't *have to* use mm here, but the units here and the units used in the XML
          * target configuration files *must* correspond for the math to work out correctly.
          */
         float mmPerInch        = 25.4f;
         float mmBotWidth       = 18 * mmPerInch;            // ... or whatever is right for your robot
-        float mmFTCFieldWidth  = (12*12 - 2) * mmPerInch;   // the FTC field is ~11'10" center-to-center of the glass panels
+        float FTCFieldWidth    = (12*12 - 3);
+        float mmFTCFieldWidth  = FTCFieldWidth * mmPerInch;   // the FTC field is ~11'10" center-to-center of the glass panels
 
         /**
          * In order for localization to work, we need to tell the system where each target we
@@ -201,13 +262,6 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
          *
          * </ol>
          *
-         * This example places the "stones" image on the perimeter wall to the Left
-         *  of the Red Driver station wall.  Similar to the Red Beacon Location on the Res-Q
-         *
-         * This example places the "chips" image on the perimeter wall to the Right
-         *  of the Blue Driver station.  Similar to the Blue Beacon Location on the Res-Q
-         *
-         * See the doc folder of this project for a description of the field Axis conventions.
          *
          * Initially the target is conceptually lying at the origin of the field's coordinate system
          * (the center of the field), facing up.
@@ -224,66 +278,65 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
          *
          */
 
-        // RED Targets
-        // To Place GEARS Target
-        // position is approximately - (-6feet, -1feet)
+        // Target Positions
+        // position is approximately - (32inch, -70.5inch)
+        Point3 Red1Coord        = new Point3 (32, -FTCFieldWidth/2, 0);
+        Point3 Red1Angle        = new Point3 (-90, 0, 0);
+        Point3 Red1PhoneCoord   = new Point3 (0,0,200);
+        Point3 Red1PhoneAngle   = new Point3 (-90,0,90);
 
-        OpenGLMatrix gearsTargetLocationOnField = OpenGLMatrix
+        Point3 Red2Coord        = new Point3 (-44.5, -FTCFieldWidth/2, 0);
+        Point3 Red2Angle        = new Point3 (-90, 0, 0);
+        Point3 Red2PhoneCoord   = new Point3 (0,0,200);
+        Point3 Red2PhoneAngle   = new Point3 (-90,0,90);
+
+        Point3 Blue1Coord       = new Point3 (15.25, FTCFieldWidth/2, 0);
+        Point3 Blue1Angle       = new Point3 (90, 0, 0);
+        Point3 Blue1PhoneCoord  = new Point3 (0,0,200);
+        Point3 Blue1PhoneAngle  = new Point3 (-90,0,-90);
+
+        Point3 Blue2Coord       = new Point3 (-56, FTCFieldWidth/2, 0);
+        Point3 Blue2Angle       = new Point3 (90, 0, 0);
+        Point3 Blue2PhoneCoord  = new Point3 (0,0,200);
+        Point3 Blue2PhoneAngle  = new Point3 (-90,0,-90);
+
+        Point3 targetPoint      = new Point3 (0,0,0);
+        Point3 targetAngle      = new Point3 (0,0,0);
+        Point3 phonePoint       = new Point3 (0,0,200);
+        Point3 phoneAngle       = new Point3 (-90,0,0);
+
+        if ((allianceColor == "Red") && (allianceStartPosition == "Left")) {
+            targetPoint = Red1Coord;
+            targetAngle = Red1Angle;
+            phonePoint = Red1PhoneCoord;
+            phoneAngle = Red1PhoneAngle;
+        } else if ((allianceColor == "Red") && (allianceStartPosition == "Right")) {
+            targetPoint = Red2Coord;
+            targetAngle = Red2Angle;
+            phonePoint = Red2PhoneCoord;
+            phoneAngle = Red2PhoneAngle;
+        } else if ((allianceColor == "Blue") && (allianceStartPosition == "Left")) {
+            targetPoint = Blue1Coord;
+            targetAngle = Blue1Angle;
+            phonePoint = Blue1PhoneCoord;
+            phoneAngle = Blue1PhoneAngle;
+        } else if ((allianceColor == "Blue") && (allianceStartPosition == "Right")) {
+            targetPoint = Blue2Coord;
+            targetAngle = Blue2Angle;
+            phonePoint = Blue2PhoneCoord;
+            phoneAngle = Blue2PhoneAngle;
+        }
+
+        OpenGLMatrix relicVuMarkTemplateLocationOnField = OpenGLMatrix
                 /* Then we translate the target off to the RED WALL. Our translation here
                 is a negative translation in X.*/
-                .translation(-mmFTCFieldWidth/2, -1 * 12 * mmPerInch, 0)
+                .translation(mmPerInch * (float)targetPoint.x, mmPerInch * (float)targetPoint.y, mmPerInch * (float)targetPoint.z)
                 .multiplied(Orientation.getRotationMatrix(
                         /* First, in the fixed (field) coordinate system, we rotate 90deg in X, then 90 in Z */
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, 90, 90, 0));
-        gears.setLocation(gearsTargetLocationOnField);
-        //RobotLog.ii(TAG, "Gears Target=%s", format(gearsTargetLocationOnField));
+                        AngleUnit.DEGREES, (float)targetAngle.x, (float)targetAngle.y, (float)targetAngle.z));
 
-        // To Place GEARS Target
-        // position is approximately - (-6feet, 3feet)
-        OpenGLMatrix toolsTargetLocationOnField = OpenGLMatrix
-                /* Then we translate the target off to the Blue Audience wall.
-                Our translation here is a positive translation in Y.*/
-                .translation(-mmFTCFieldWidth/2, 3 * 12 * mmPerInch, 0)
-                //.translation(0, mmFTCFieldWidth/2, 0)
-                .multiplied(Orientation.getRotationMatrix(
-                        /* First, in the fixed (field) coordinate system, we rotate 90deg in X */
-                        AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, 90, 90, 0));
-        tools.setLocation(toolsTargetLocationOnField);
-        //RobotLog.ii(TAG, "Tools Target=%s", format(toolsTargetLocationOnField));
-
-        //Finsih RED Targets
-
-        // BLUE Targets
-        // To Place LEGOS Target
-        // position is approximately - (-3feet, 6feet)
-
-        OpenGLMatrix legosTargetLocationOnField = OpenGLMatrix
-                /* Then we translate the target off to the RED WALL. Our translation here
-                is a negative translation in X.*/
-                .translation(-3 * 12 * mmPerInch, mmFTCFieldWidth/2, 0)
-                .multiplied(Orientation.getRotationMatrix(
-                        /* First, in the fixed (field) coordinate system, we rotate 90deg in X, then 90 in Z */
-                        AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, 90, 0, 0));
-        legos.setLocation(legosTargetLocationOnField);
-        //RobotLog.ii(TAG, "Gears Target=%s", format(legosTargetLocationOnField));
-
-        // To Place WHEELS Target
-        // position is approximately - (1feet, 6feet)
-        OpenGLMatrix wheelsTargetLocationOnField = OpenGLMatrix
-                /* Then we translate the target off to the Blue Audience wall.
-                Our translation here is a positive translation in Y.*/
-                .translation(1 * 12 * mmPerInch, mmFTCFieldWidth/2, 0)
-                .multiplied(Orientation.getRotationMatrix(
-                        /* First, in the fixed (field) coordinate system, we rotate 90deg in X */
-                        AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, 90, 0, 0));
-        wheels.setLocation(wheelsTargetLocationOnField);
-        //RobotLog.ii(TAG, "Tools Target=%s", format(wheelsTargetLocationOnField));
-
-        //Finsih BLUE Targets
+        relicTemplate.setLocation(relicVuMarkTemplateLocationOnField);
 
         /**
          * Create a transformation matrix describing where the phone is on the robot. Here, we
@@ -298,21 +351,17 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
          * plane) is then CCW, as one would normally expect from the usual classic 2D geometry.
          */
         OpenGLMatrix phoneLocationOnRobot = OpenGLMatrix
-                .translation((mmBotWidth/2), 50,0)
+                .translation((mmBotWidth/2) * (float)phonePoint.x, (mmBotWidth/2) * (float)phonePoint.x, (mmBotWidth/2) * (float)phonePoint.x)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.YZY,
-                        AngleUnit.DEGREES, -90, 0, 0));
-        //RobotLog.ii(TAG, "phone=%s", format(phoneLocationOnRobot));
+                        AngleUnit.DEGREES, (float)phoneAngle.x, (float)phoneAngle.y, (float)phoneAngle.z));
 
         /**
          * Let the trackable listeners we care about know where the phone is. We know that each
          * listener is a {@link VuforiaTrackableDefaultListener} and can so safely cast because
          * we have not ourselves installed a listener of a different type.
          */
-        ((VuforiaTrackableDefaultListener)gears.getListener()).setPhoneInformation(phoneLocationOnRobot, parameters.cameraDirection);
-        ((VuforiaTrackableDefaultListener)tools.getListener()).setPhoneInformation(phoneLocationOnRobot, parameters.cameraDirection);
-        ((VuforiaTrackableDefaultListener)legos.getListener()).setPhoneInformation(phoneLocationOnRobot, parameters.cameraDirection);
-        ((VuforiaTrackableDefaultListener)wheels.getListener()).setPhoneInformation(phoneLocationOnRobot, parameters.cameraDirection);
+        ((VuforiaTrackableDefaultListener)relicTemplate.getListener()).setPhoneInformation(phoneLocationOnRobot, parameters.cameraDirection);
 
         /**
          * A brief tutorial: here's how all the math is going to work:
@@ -332,14 +381,15 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
          *
          * @see VuforiaTrackableDefaultListener#getRobotLocation()
          */
+        //activate vuforia
+        RelicRecovery.activate();
+
+        //set up variable for our capturedimage
+        Image rgb = null;
+
+        dashboard.displayPrintf(1, "initRobot VUFORIA Loaded");
 
         waitForStart();
-
-        //Mat tmp = new Mat();
-
-        velocityVortex.activate();
-
-        Image rgb = null;
 
         int loop = 0;
         Constants.BeaconColours Colour = Constants.BeaconColours.UNKNOWN;
@@ -351,9 +401,9 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
             Point beaconTopLeft = new Point(0,0);
             Point beaconMiddle = new Point(0,0);
 
-            for (VuforiaTrackable beac : velocityVortex) {
+            for (VuforiaTrackable jewel : RelicRecovery) {
 
-                OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) beac.getListener()).getRawPose();
+                OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) jewel.getListener()).getRawPose();
 
                 if (pose != null) {
 
@@ -390,80 +440,57 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
 
                     if (debug >= 1)
                     {
-                        fileLogger.writeEvent("Vuforia", "upperLeft 0 "  + upperLeft.getData()[0]);
-                        fileLogger.writeEvent("Vuforia", "upperLeft 1 "  + upperLeft.getData()[1]);
-                        Log.d("Vuforia", "upperLeft 0 "  + upperLeft.getData()[0]);
-                        Log.d("Vuforia", "upperLeft 1 "  + upperLeft.getData()[1]);
+                        try {
+                            fileLogger.writeEvent("Vuforia", "upperLeft 0 "  + upperLeft.getData()[0]);
+                            fileLogger.writeEvent("Vuforia", "upperLeft 1 "  + upperLeft.getData()[1]);
 
-                        fileLogger.writeEvent("Vuforia", "upperRight 0 "  + upperRight.getData()[0]);
-                        fileLogger.writeEvent("Vuforia", "upperRight 1 "  + upperRight.getData()[1]);
-                        Log.d("Vuforia", "upperRight 0 "  + upperRight.getData()[0]);
-                        Log.d("Vuforia", "upperRight 1 "  + upperRight.getData()[1]);
+                            fileLogger.writeEvent("Vuforia", "upperRight 0 "  + upperRight.getData()[0]);
+                            fileLogger.writeEvent("Vuforia", "upperRight 1 "  + upperRight.getData()[1]);
 
-                        fileLogger.writeEvent("Vuforia", "lowerLeft 0 "  + lowerLeft.getData()[0]);
-                        fileLogger.writeEvent("Vuforia", "lowerLeft 1 "  + lowerLeft.getData()[1]);
-                        Log.d("Vuforia", "lowerLeft 0 "  + lowerLeft.getData()[0]);
-                        Log.d("Vuforia", "lowerLeft 1 "  + lowerLeft.getData()[1]);
+                            fileLogger.writeEvent("Vuforia", "lowerLeft 0 "  + lowerLeft.getData()[0]);
+                            fileLogger.writeEvent("Vuforia", "lowerLeft 1 "  + lowerLeft.getData()[1]);
 
-                        fileLogger.writeEvent("Vuforia", "lowerRight 0 "  + lowerRight.getData()[0]);
-                        fileLogger.writeEvent("Vuforia", "lowerRight 1 "  + lowerRight.getData()[1]);
-                        Log.d("Vuforia", "lowerRight 0 "  + lowerRight.getData()[0]);
-                        Log.d("Vuforia", "lowerRight 1 "  + lowerRight.getData()[1]);
+                            fileLogger.writeEvent("Vuforia", "lowerRight 0 "  + lowerRight.getData()[0]);
+                            fileLogger.writeEvent("Vuforia", "lowerRight 1 "  + lowerRight.getData()[1]);
 
-                        fileLogger.writeEvent("Vuforia", "dblMidPointTopx "  + dblMidPointTopx);
-                        fileLogger.writeEvent("Vuforia", "dblMidPointTopy "  + dblMidPointTopy);
-                        fileLogger.writeEvent("Vuforia", "dblMidPointBotx "  + dblMidPointBotx);
-                        fileLogger.writeEvent("Vuforia", "dblMidPointBoty "  + dblMidPointBoty);
-                        Log.d("Vuforia", "dblMidPointTopx "  + dblMidPointTopx);
-                        Log.d("Vuforia", "dblMidPointTopy "  + dblMidPointTopy);
-                        Log.d("Vuforia", "dblMidPointBotx "  + dblMidPointBotx);
-                        Log.d("Vuforia", "dblMidPointBoty "  + dblMidPointBoty);
+                            fileLogger.writeEvent("Vuforia", "dblMidPointTopx "  + dblMidPointTopx);
+                            fileLogger.writeEvent("Vuforia", "dblMidPointTopy "  + dblMidPointTopy);
+                            fileLogger.writeEvent("Vuforia", "dblMidPointBotx "  + dblMidPointBotx);
+                            fileLogger.writeEvent("Vuforia", "dblMidPointBoty "  + dblMidPointBoty);
 
-                        fileLogger.writeEvent("Vuforia", "width in pixels "  + width);
-                        fileLogger.writeEvent("Vuforia", "height in pixels "  + height);
-                        Log.d("Vuforia", "width in pixels "  + width);
-                        Log.d("Vuforia", "height in pixels "  + height);
+                            fileLogger.writeEvent("Vuforia", "width in pixels "  + width);
+                            fileLogger.writeEvent("Vuforia", "height in pixels "  + height);
+                        }
+                            catch (Exception e) {
+                                //fileLogger.writeEvent("Vuforia", "OOOPS" );
+                        }
                     }
                 }
             }
 
-            if (gotBeacomDims) {
+            VuforiaLocalizer.CloseableFrame frame = vuforia.getFrameQueue().take(); //takes the frame at the head of the queue
 
-                VuforiaLocalizer.CloseableFrame frame = vuforia.getFrameQueue().take(); //takes the frame at the head of the queue
+            long numImages = frame.getNumImages();
 
-                long numImages = frame.getNumImages();
-
-                for (int i = 0; i < numImages; i++) {
-                    if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
-                        rgb = frame.getImage(i);
-                        break;
-                    }
+            for (int i = 0; i < numImages; i++) {
+                if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
+                    rgb = frame.getImage(i);
+                    break;
                 }
+            }
 
             /*rgb is now the Image object that we’ve used in the video*/
-                Log.d("OPENCV", "Height " + rgb.getHeight() + " Width " + rgb.getWidth());
+            Log.d("OPENCV", "Height " + rgb.getHeight() + " Width " + rgb.getWidth());
 
-                Bitmap bm = Bitmap.createBitmap(rgb.getWidth(), rgb.getHeight(), Bitmap.Config.RGB_565);
-                bm.copyPixelsFromBuffer(rgb.getPixels());
-                Mat tmp = new Mat(rgb.getWidth(), rgb.getHeight(), CvType.CV_8UC4);
-                Utils.bitmapToMat(bm, tmp);
+            Bitmap bm = Bitmap.createBitmap(rgb.getWidth(), rgb.getHeight(), Bitmap.Config.RGB_565);
+            bm.copyPixelsFromBuffer(rgb.getPixels());
+            Mat tmp = new Mat(rgb.getWidth(), rgb.getHeight(), CvType.CV_8UC4);
+            Utils.bitmapToMat(bm, tmp);
 
-                if (beaconTopLeft.x < 0)
-                    beaconTopLeft.x = 0;
-                if (beaconTopLeft.y < 0)
-                    beaconTopLeft.y = 0;
-                if (beaconBotRight.x > rgb.getWidth())
-                    beaconBotRight.x = rgb.getWidth();
-                if (beaconBotRight.y > rgb.getHeight())
-                    beaconBotRight.y = rgb.getHeight();
-
-                frame.close();
-                //Constants.BeaconColours Colour = beaconColour.beaconAnalysisOCV(tmp, loop);
-                //Constants.BeaconColours Colour = beaconColour.beaconAnalysisOCV2(tmp, loop, debug);
-                Colour = beaconColour.BeaconAnalysisOCVPlayground(debug, tmp, loop, beaconTopLeft, beaconBotRight, beaconMiddle);
-                loop++;
-                Log.d("OPENCV", "Returned " + Colour);
-            }
+            frame.close();
+            Log.d("fl", "Debug Level Before" + fileLogger.getDebugLevel() );
+            Colour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, loop);
+            loop++;
 
             for (VuforiaTrackable trackable : allTrackables) {
                 /**
@@ -471,7 +498,7 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
                  * the last time that call was made, or if the trackable is not currently visible.
                  * getRobotLocation() will return null if the trackable is not currently visible.
                  */
-                telemetry.addData(trackable.getName(), ((VuforiaTrackableDefaultListener)trackable.getListener()).isVisible() ? "Visible" : "Not Visible");    //
+                //telemetry.addData(trackable.getName(), ((VuforiaTrackableDefaultListener)trackable.getListener()).isVisible() ? "Visible" : "Not Visible");    //
 
                 OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener)trackable.getListener()).getUpdatedRobotLocation();
                 if (robotLocationTransform != null) {
@@ -482,6 +509,7 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
             /**
              * Provide feedback as to where the robot was last located (if we know).
              */
+            RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
             if (lastLocation != null) {
                 // Then you can extract the positions and angles using the getTranslation and getOrientation methods.
                 VectorF trans = lastLocation.getTranslation();
@@ -489,6 +517,7 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
                 // Robot position is defined by the standard Matrix translation (x and y)
                 robotX = trans.get(0);
                 robotY = trans.get(1);
+                robotZ = trans.get(2);
 
                 // Robot bearing (in Cartesian system) position is defined by the standard Matrix z rotation
                 robotBearing = rot.thirdAngle;
@@ -497,47 +526,41 @@ public class ConceptVuforiaOpGrabImage extends LinearOpMode{
                     robotBearing = 360 + robotBearing;
                 }
 
-                telemetry.addData("Pos X ", robotX);
-                telemetry.addData("Pos Y ", robotY);
-                telemetry.addData("Bear  ", robotBearing);
-                //  RobotLog.vv(TAG, "robot=%s", format(lastLocation));
-                telemetry.addData("Pos   ", format(lastLocation));
+                dashboard.displayCenterPrintf(1,200, "*** Vision Data***");
+                dashboard.displayPrintf(2, "Pos X " + robotX);
+                dashboard.displayPrintf(3, "Pos Z " + robotY);
+                dashboard.displayPrintf(4, "Pos Z " + robotZ);
+                dashboard.displayPrintf(5, "Pos B " + robotBearing);
+                dashboard.displayPrintf(6, "Pos - " + format(lastLocation));
+                dashboard.displayCenterPrintf(7,200, vuMark.toString());
 
-                telemetry.addData("Text ", "*** Vision Data***");
-                //telemetry.addData("Red  ", "Red :  " + redpoint);
-                //telemetry.addData("Blue ", "Blue:  " + bluepoint);
-                //telemetry.addData("Dir  ", "Direction:  " + directionOfBeacon);
             } else {
-                telemetry.addData("Pos   ", "Unknown");
+                dashboard.displayCenterPrintf(1,200,"*** UNKNOWN***");
             }
 
             switch (Colour) {
                 case BEACON_BLUE_RED:
-                    telemetry.addData("Beacon ", "Blue Red");
+                    dashboard.displayPrintf(9, "Colour Blue Red");
                     break;
                 case BEACON_RED_BLUE:
-                    telemetry.addData("Beacon ", "Red Blue");
+                    dashboard.displayPrintf(9, "Colour Red Blue");
                     break;
                 case BEACON_BLUE_LEFT:
-                    telemetry.addData("Beacon ", "Blue Left");
+                    dashboard.displayPrintf(9, "Colour Blue XXXX");
                     break;
                 case BEACON_RED_LEFT:
-                    telemetry.addData("Beacon ", "Red Left");
+                    dashboard.displayPrintf(9, "Colour Red XXXX");
                     break;
                 case BEACON_BLUE_RIGHT:
-                    telemetry.addData("Beacon ", "Blue Right");
+                    dashboard.displayPrintf(9, "Colour XXXX Blue");
                     break;
                 case BEACON_RED_RIGHT:
-                    telemetry.addData("Beacon ", "Red Right");
+                    dashboard.displayPrintf(9, "Colour XXXX Red");
                     break;
                 case UNKNOWN:
-                    telemetry.addData("Beacon ", "Unknown");
+                    dashboard.displayPrintf(9, "Colour Unknown");
                     break;
             }
-
-
-            telemetry.update();
-
         }
 
         //stop the log
