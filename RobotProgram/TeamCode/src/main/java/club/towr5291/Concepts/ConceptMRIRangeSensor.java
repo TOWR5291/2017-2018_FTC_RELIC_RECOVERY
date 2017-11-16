@@ -27,6 +27,8 @@ public class ConceptMRIRangeSensor extends OpMode {
 
     byte[] range1Cache; //The read will return an array of bytes. They are stored in this variable
 
+    private I2cAddr RANGE2ADDRESS = new I2cAddr(0x18); //Default I2C address for MR Range (7-bit)
+
     I2cAddr RANGE1ADDRESS = new I2cAddr(0x14); //Default I2C address for MR Range (7-bit)
     public static final int RANGE1_REG_START = 0x04; //Register to start reading
     public static final int RANGE1_READ_LENGTH = 2; //Number of byte to read
@@ -36,8 +38,8 @@ public class ConceptMRIRangeSensor extends OpMode {
 
     @Override
     public void init() {
-        RANGE1 = hardwareMap.i2cDevice.get("range");
-        RANGE1Reader = new I2cDeviceSynchImpl(RANGE1, RANGE1ADDRESS, false);
+        RANGE1 = hardwareMap.i2cDevice.get("range2");
+        RANGE1Reader = new I2cDeviceSynchImpl(RANGE1, RANGE2ADDRESS, false);
         RANGE1Reader.engage();
     }
 

@@ -82,7 +82,7 @@ public class BeaconAnalysisOCVPlayground {
 
     private double lumAvg = 0;
 
-    private Constants.BeaconColours beaconColourResult;
+    private Constants.ObjectColours ObjectColourResult;
 
     private int debug = 4;
 
@@ -108,14 +108,14 @@ public class BeaconAnalysisOCVPlayground {
 
     }
 
-    public Constants.BeaconColours BeaconAnalysisOCVPlayground(int debuglevel, Mat img, int count, Point beacTopL, Point beacBotR, Point beacMiddle) {
+    public Constants.ObjectColours BeaconAnalysisOCVPlayground(int debuglevel, Mat img, int count, Point beacTopL, Point beacBotR, Point beacMiddle) {
 
         //set debug level based on menu system
         debug = debuglevel;
         debug = 10;
 
         if ((count >= 1) && (debug >= 9))
-            return Constants.BeaconColours.UNKNOWN;
+            return Constants.ObjectColours.UNKNOWN;
         
         //clear out old information
         finalImg = new Mat();
@@ -294,7 +294,7 @@ public class BeaconAnalysisOCVPlayground {
             }
         }
 
-        return beaconColourResult;
+        return ObjectColourResult;
     }
 
     private void findLum()
@@ -867,7 +867,7 @@ public class BeaconAnalysisOCVPlayground {
 
         if ( beacon_box.height == 0 || beacon_box.width == 0)
         {
-            beaconColourResult = Constants.BeaconColours.UNKNOWN;
+            ObjectColourResult = Constants.ObjectColours.UNKNOWN;
             Log.d("beacon colour", "( beacon_box.height == 0 || beacon_box.width == 0) = colour unknow");
             return;
         }
@@ -884,7 +884,7 @@ public class BeaconAnalysisOCVPlayground {
         Log.d("beacon center", "beac_ctr " + beac_ctr);
 
         if (( centroidBlue.size() == 0 ) || ( centroidRed.size() == 0 ))  {
-            beaconColourResult = Constants.BeaconColours.UNKNOWN;
+            ObjectColourResult = Constants.ObjectColours.UNKNOWN;
             return;
         }
         centroidBluePosition = centroidBlue.get(0);
@@ -894,43 +894,43 @@ public class BeaconAnalysisOCVPlayground {
             //beaconColourResult = Constants.BeaconColours.UNKNOWN;
             //return;
         } else if ( centroidBluePosition.x  < centroidRedPosition.x ) {
-            beaconColourResult = Constants.BeaconColours.BEACON_BLUE_RED;
+            ObjectColourResult = Constants.ObjectColours.OBJECT_BLUE_RED;
             return;
         } else if ( centroidRedPosition.x < centroidBluePosition.x ) {
-            beaconColourResult = Constants.BeaconColours.BEACON_RED_BLUE;
+            ObjectColourResult = Constants.ObjectColours.OBJECT_RED_BLUE;
             return;
         }
 
         if (( red_box.width > 5 && red_box.height > 5 )) {
             if (centroidRedPosition.x < beacMiddle.x) {
-                beaconColourResult = Constants.BeaconColours.BEACON_RED_LEFT;
+                ObjectColourResult = Constants.ObjectColours.OBJECT_RED_LEFT;
                 return;
             } else if (centroidRedPosition.x > beacMiddle.x) {
-                beaconColourResult = Constants.BeaconColours.BEACON_RED_RIGHT;
+                ObjectColourResult = Constants.ObjectColours.OBJECT_RED_RIGHT;
                 return;
             }
         } else if (( blue_box.width > 5 && blue_box.height > 5 )) {
             if (centroidBluePosition.x < beacMiddle.x) {
-                beaconColourResult = Constants.BeaconColours.BEACON_BLUE_LEFT;
+                ObjectColourResult = Constants.ObjectColours.OBJECT_BLUE_LEFT;
                 return;
             } else if (centroidBluePosition.x > beacMiddle.x) {
-                beaconColourResult = Constants.BeaconColours.BEACON_BLUE_RIGHT;
+                ObjectColourResult = Constants.ObjectColours.OBJECT_BLUE_RIGHT;
                 return;
             }
         }
 
         if (( red_box.width < 5 || red_box.height < 5 ) || ( blue_box.width < 5 || blue_box.height < 5 )) {
-            beaconColourResult = Constants.BeaconColours.UNKNOWN;
+            ObjectColourResult = Constants.ObjectColours.UNKNOWN;
             return;
         } else if (( beac_ctr > centroidBluePosition.x ) && ( beac_ctr < centroidRedPosition.x )) {
-            beaconColourResult = Constants.BeaconColours.BEACON_BLUE_RED;
+            ObjectColourResult = Constants.ObjectColours.OBJECT_BLUE_RED;
             return;
         } else if (( beac_ctr > centroidRedPosition.x ) && ( beac_ctr < centroidBluePosition.x )) {
-            beaconColourResult = Constants.BeaconColours.BEACON_RED_BLUE;
+            ObjectColourResult = Constants.ObjectColours.OBJECT_RED_BLUE;
             return;
         }
 
-        beaconColourResult = Constants.BeaconColours.UNKNOWN;
+        ObjectColourResult = Constants.ObjectColours.UNKNOWN;
         return;
 
     }

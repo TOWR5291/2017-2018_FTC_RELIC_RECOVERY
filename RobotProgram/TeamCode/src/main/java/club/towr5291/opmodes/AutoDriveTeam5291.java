@@ -101,6 +101,7 @@ import club.towr5291.functions.AStarGetPathVer2;
 import club.towr5291.functions.BeaconAnalysisOCV2;
 import club.towr5291.functions.Constants;
 import club.towr5291.functions.FileLogger;
+import club.towr5291.functions.JewelAnalysisOCV;
 import club.towr5291.functions.ReadStepFile;
 import club.towr5291.libraries.robotConfigSettings;
 import club.towr5291.libraries.LibraryStateSegAuto;
@@ -138,8 +139,7 @@ Written by Ian Haden October 2016
 2017-03-19 - Ian Haden - Updated Beacon Viewing Area (Crop whole picture to just beacon)
 */
 @Autonomous(name="5291 Autonomous Drive", group="5291")
-public class AutoDriveTeam5291 extends OpModeMasterLinear
-{
+public class AutoDriveTeam5291 extends OpModeMasterLinear {
     final int LABEL_WIDTH = 200;
 
     //set up TAG for logging prefic, this info will appear first in every log statemend
@@ -156,7 +156,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     private int delay;
     private String robotConfig;
 
-    private ElapsedTime     runtime = new ElapsedTime();
+    private ElapsedTime runtime = new ElapsedTime();
 
     //set up the variables for file logger and what level of debug we will log info at
     public FileLogger fileLogger;
@@ -195,16 +195,17 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     private int mintPowerBoostCount;
 
     //set up robot variables
-    private double     COUNTS_PER_MOTOR_REV;            // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-    private double     DRIVE_GEAR_REDUCTION;            // This is < 1.0 if geared UP, Tilerunner is geared up
-    private double     WHEEL_DIAMETER_INCHES;           // For figuring circumference
-    private double     WHEEL_ACTUAL_FUDGE;              // Fine tuning amount
-    private double     COUNTS_PER_INCH;
-    private double     ROBOT_TRACK;                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-    private double     COUNTS_PER_DEGREE;
-    private double     WHEEL_TURN_FUDGE;
-    private double     REVERSE_DIRECTION;               // determines which directin the robot runs when FW is positive or negative when commanded to move a direction
-
+    private double COUNTS_PER_MOTOR_REV;            // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+    private double DRIVE_GEAR_REDUCTION;            // This is < 1.0 if geared UP, Tilerunner is geared up
+    private double WHEEL_DIAMETER_INCHES;           // For figuring circumference
+    private double WHEEL_ACTUAL_FUDGE;              // Fine tuning amount
+    private double COUNTS_PER_INCH;
+    private double ROBOT_TRACK;                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+    private double COUNTS_PER_DEGREE;
+    private double WHEEL_TURN_FUDGE;
+    private double REVERSE_DIRECTION;               // determines which directin the robot runs when FW is positive or negative when commanded to move a direction
+    private int LIFTMAIN_COUNTS_PER_INCH;           //number of encoder counts oer inch
+    private int LIFTTOP_COUNTS_PER_INCH;            //number of encoder counts oer inch
     //vuforia localisation variables
     private OpenGLMatrix lastLocation = null;
     private double localisedRobotX;
@@ -227,17 +228,25 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     private stepState mintCurrentStateVuforiaLocalise5291;                                  // Current State of Vuforia Localisation
     private stepState mintCurStVuforiaMove5291;                                             // Current State of Vuforia Move
     private stepState mintCurStVuforiaTurn5291;                                             // Current State of Vuforia Turn
+    private stepState mintCurrentStateJewelColour5291;                                      // Current State Detecting Jewel
+    private stepState mintCurrentStateJewelArm5291;                                         // Current State of moving Jewel Arm Out
+    private stepState mintCurrentStateTopGripperMove5291;                                   // Current State of moving the top Glyph Gripper
+    private stepState mintCurrentStateBotGripperMove5291;                                   // Current State of moving the bottom Glyph Gripper
+    private stepState mintCurrentStateTopLiftMove5291;                                      // Current State of Moving the top lift
+    private stepState mintCurrentStateMainLiftMove5291;                                     // Current State of moving the main lift
+    private stepState mintCurrentStateJewelArmClose5291;                                    // Current State of moving Jewel Arm Home
     private stepState mintCurrentStateGyroTurnEncoder5291;                                  // Current State of the Turn function that take the Gyro as an initial heading
     private stepState mintCurrentStateEyes5291;                                             // Current State of the Eyelids
     private stepState mintCurrentStateTankTurnGyroHeading;                                  // Current State of Tank Turn using Gyro
     private stepState mintCurrentStateMecanumStrafe;                                        // Current State of mecanum strafe
     private stepState mintCurrentStepDelay;                                                 // Current State of Delay (robot doing nothing)
     //private ArrayList<LibraryStateTrack> mValueSteps    = new ArrayList<>();              // Current State of the Step
-    private HashMap<String,Integer> mintActiveSteps = new HashMap<>();
-    private HashMap<String,Integer> mintActiveStepsCopy = new HashMap<>();
+    private HashMap<String, Integer> mintActiveSteps = new HashMap<>();
+    private HashMap<String, Integer> mintActiveStepsCopy = new HashMap<>();
 
-    // Declare OpMode members.
-    private HardwareDriveMotors robotDrive      = new HardwareDriveMotors();   // Use a Pushbot's hardware
+    //motors
+    private HardwareDriveMotors robotDrive = new HardwareDriveMotors();   // Use a Pushbot's hardware
+    private HardwareDriveMotors armDrive = new HardwareDriveMotors();   // Use a Pushbot's hardware
 
     //variable for the state engine, declared here so they are accessible throughout the entire opmode with having to pass them through each function
     private boolean mblnReadyToCapture = false;              //Ready to get the camera for capturing images
@@ -249,6 +258,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     private int mintStepLeftTarget2;                         //Left Motor 2   - encoder target position
     private int mintStepRightTarget1;                        //Right Motor 1  - encoder target position
     private int mintStepRightTarget2;                        //Right Motor 2  - encoder target position
+    private int mintStartPositionMain;                       //Main Lift Motor - start Position
+    private int mintStartPositionTop;                        //Main Lift Motor - start Position
+    private int mintTargetPositionMain;                      //Main Lift Motor - start Position
+    private int mintTargetPositionTop;                       //Main Lift Motor - start Position
     private double mdblStepTimeout;                          //Timeout value ofthe step, the step will abort if the timeout is reached
     private double mdblStepSpeed;                            //When a move command is executed this is the speed the motors will run at
     private String mstrRobotCommand;                         //The command the robot will execute, such as move forward, turn right etc
@@ -276,54 +289,53 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     private int mintStepNumber;
 
     //hashmap for the steps to be stored in.  A Hashmap is like a fancy array
-    private HashMap<String,LibraryStateSegAuto> autonomousSteps = new HashMap<String,LibraryStateSegAuto>();
-    private HashMap<String,String> powerTable = new HashMap<String,String>();
+    private HashMap<String, LibraryStateSegAuto> autonomousSteps = new HashMap<String, LibraryStateSegAuto>();
+    private HashMap<String, String> powerTable = new HashMap<String, String>();
     private ReadStepFile autonomousStepsFile = new ReadStepFile();
 
     //OpenCV Stuff
-    //private BeaconAnalysisOCV beaconColour = new BeaconAnalysisOCV();
-    private BeaconAnalysisOCV2 beaconColour = new BeaconAnalysisOCV2();
+    private JewelAnalysisOCV JewelColour = new JewelAnalysisOCV();
+    ;
     private int mintCaptureLoop = 0;
     private int mintNumberColourTries = 0;
-    private Constants.BeaconColours mColour;
+    private Constants.ObjectColours mColour;
 
     //servos
     // the servos are on the servo controller
-    private final static double SERVOLIFTLEFTTOP_MIN_RANGE      = 0;
-    private final static double SERVOLIFTLEFTTOP_MAX_RANGE      = 180;
-    private final static double SERVOLIFTLEFTTOP_HOME           = 165; //90
-    private final static double SERVOLIFTLEFTTOP_GLYPH_START    = 125;  //need to work this out
-    private final static double SERVOLIFTLEFTTOP_GLYPH_RELEASE  = 60;
-    private final static double SERVOLIFTLEFTTOP_GLYPH_GRAB     = 30;
+    private final static double SERVOLIFTLEFTTOP_MIN_RANGE = 0;
+    private final static double SERVOLIFTLEFTTOP_MAX_RANGE = 180;
+    private final static double SERVOLIFTLEFTTOP_HOME = 165; //90
+    private final static double SERVOLIFTLEFTTOP_GLYPH_START = 125;  //need to work this out
+    private final static double SERVOLIFTLEFTTOP_GLYPH_RELEASE = 60;
+    private final static double SERVOLIFTLEFTTOP_GLYPH_GRAB = 30;
 
-    private final static double SERVOLIFTRIGHTTOP_MIN_RANGE     = 0;
-    private final static double SERVOLIFTRIGHTTOP_MAX_RANGE     = 180;
-    private final static double SERVOLIFTRIGHTTOP_HOME          = 165;
-    private final static double SERVOLIFTRIGHTTOP_GLYPH_START   = 125;  //need to work this out
+    private final static double SERVOLIFTRIGHTTOP_MIN_RANGE = 0;
+    private final static double SERVOLIFTRIGHTTOP_MAX_RANGE = 180;
+    private final static double SERVOLIFTRIGHTTOP_HOME = 165;
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_START = 125;  //need to work this out
     private final static double SERVOLIFTRIGHTTOP_GLYPH_RELEASE = 60;
-    private final static double SERVOLIFTRIGHTTOP_GLYPH_GRAB    = 30;
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_GRAB = 30;
 
-    private final static double SERVOLIFTLEFTBOT_MIN_RANGE      = 0;
-    private final static double SERVOLIFTLEFTBOT_MAX_RANGE      = 180;
-    private final static double SERVOLIFTLEFTBOT_HOME           = 165;
-    private final static double SERVOLIFTLEFTBOT_GLYPH_START    = 125;  //need to work this out
-    private final static double SERVOLIFTLEFTBOT_GLYPH_RELEASE  = 60;
-    private final static double SERVOLIFTLEFTBOT_GLYPH_GRAB     = 30;
+    private final static double SERVOLIFTLEFTBOT_MIN_RANGE = 0;
+    private final static double SERVOLIFTLEFTBOT_MAX_RANGE = 180;
+    private final static double SERVOLIFTLEFTBOT_HOME = 165;
+    private final static double SERVOLIFTLEFTBOT_GLYPH_START = 125;  //need to work this out
+    private final static double SERVOLIFTLEFTBOT_GLYPH_RELEASE = 60;
+    private final static double SERVOLIFTLEFTBOT_GLYPH_GRAB = 30;
 
-    private final static double SERVOLIFTRIGHTBOT_MIN_RANGE     = 0;
-    private final static double SERVOLIFTRIGHTBOT_MAX_RANGE     = 180;
-    private final static double SERVOLIFTRIGHTBOT_HOME          = 165;
-    private final static double SERVOLIFTRIGHTBOT_GLYPH_START   = 125;  //need to work this out
+    private final static double SERVOLIFTRIGHTBOT_MIN_RANGE = 0;
+    private final static double SERVOLIFTRIGHTBOT_MAX_RANGE = 180;
+    private final static double SERVOLIFTRIGHTBOT_HOME = 165;
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_START = 125;  //need to work this out
     private final static double SERVOLIFTRIGHTBOT_GLYPH_RELEASE = 60;
-    private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB    = 30;
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB = 30;
 
-    private final static double SERVOJEWELLEFT_MIN_RANGE        = 0;
-    private final static double SERVOJEWELLEFT_MAX_RANGE        = 180;
-    private final static double SERVOJEWELLEFT_HOME             = 147;
-    private final static double SERVOJEWELRIGHT_MIN_RANGE       = 4;
-    private final static double SERVOJEWELRIGHT_MAX_RANGE       = 180;
-    private final static double SERVOJEWELRIGHT_HOME            = 150;
-
+    private final static double SERVOJEWELLEFT_MIN_RANGE = 0;
+    private final static double SERVOJEWELLEFT_MAX_RANGE = 180;
+    private final static double SERVOJEWELLEFT_HOME = 147;
+    private final static double SERVOJEWELRIGHT_MIN_RANGE = 4;
+    private final static double SERVOJEWELRIGHT_MAX_RANGE = 180;
+    private final static double SERVOJEWELRIGHT_HOME = 150;
     private Servo servoGlyphGripTopLeft;
     private Servo servoGlyphGripBotLeft;
     private Servo servoGlyphGripTopRight;
@@ -333,12 +345,12 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
     //LED Strips
     private DeviceInterfaceModule dim;                  // Device Object
-    DigitalChannel  green1LedChannel;
-    DigitalChannel  red1LedChannel;
-    DigitalChannel  blue1LedChannel;
-    DigitalChannel  green2LedChannel;
-    DigitalChannel  red2LedChannel;
-    DigitalChannel  blue2LedChannel;
+    DigitalChannel green1LedChannel;
+    DigitalChannel red1LedChannel;
+    DigitalChannel blue1LedChannel;
+    DigitalChannel green2LedChannel;
+    DigitalChannel red2LedChannel;
+    DigitalChannel blue2LedChannel;
 
     //Limit Switches
     DigitalChannel limitswitch1;  // Hardware Device Object
@@ -354,15 +366,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     private boolean LedOff = true;
 
     //load variables
-    LibraryStateSegAuto processingSteps = new LibraryStateSegAuto(0,0,"",false,false,0,0,0,0,0,0,0);
+    LibraryStateSegAuto processingSteps = new LibraryStateSegAuto(0, 0, "", false, false, 0, 0, 0, 0, 0, 0, 0);
     sixValues[] pathValues = new sixValues[1000];
     A0Star a0Star = new A0Star();
     String fieldOutput;
-    HashMap<String,LibraryStateSegAuto> autonomousStepsAStar = new HashMap<>();
+    HashMap<String, LibraryStateSegAuto> autonomousStepsAStar = new HashMap<>();
 
     private static HalDashboard dashboard = null;
-    public static HalDashboard getDashboard()
-    {
+
+    public static HalDashboard getDashboard() {
         return dashboard;
     }
 
@@ -370,7 +382,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         STATE_ERROR,
         STATE_TEAM,
         STATE_MOVING,
-        STATE_BEACON,
+        STATE_OBJECT,
         STATE_SUCCESS,
         STATE_FINISHED
     }
@@ -394,8 +406,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     //each robot speeds up and slows down at different rates
     //helps reduce over runs and
     //table for the tilerunner from AndyMark.  These values are for the twin 20 motors which makes the robot fast
-    private void loadPowerTableTileRunner ()
-    {
+    private void loadPowerTableTileRunner() {
         powerTable.put(String.valueOf(0.5), ".1");
         powerTable.put(String.valueOf(1), ".2");
         powerTable.put(String.valueOf(2), ".3");
@@ -407,8 +418,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     }
 
     //table for the custom tanktread robot.  These values are for the twin 40 motors
-    private void loadPowerTableTankTread ()
-    {
+    private void loadPowerTableTankTread() {
         powerTable.put(String.valueOf(0.5), ".3");
         powerTable.put(String.valueOf(1), ".3");
         powerTable.put(String.valueOf(2), ".4");
@@ -421,35 +431,31 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     }
 
     @Override
-    public void runOpMode() throws InterruptedException
-    {
+    public void runOpMode() throws InterruptedException {
         dashboard = HalDashboard.createInstance(telemetry);
         dashboard = HalDashboard.getInstance();
 
-        FtcRobotControllerActivity activity = (FtcRobotControllerActivity)hardwareMap.appContext;
+        FtcRobotControllerActivity activity = (FtcRobotControllerActivity) hardwareMap.appContext;
 
-        dashboard.setTextView((TextView)activity.findViewById(R.id.textOpMode));
+        dashboard.setTextView((TextView) activity.findViewById(R.id.textOpMode));
         dashboard.displayPrintf(0, LABEL_WIDTH, "Text: ", "*** Robot Data ***");
         //start the logging
-        if (debug >= 1)
-        {
-            //create logging based on initial settings, sharepreferences will adjust levels
-            fileLogger = new FileLogger(runtime);
-            fileLogger.setDebugLevel(debug);
-            fileLogger = new FileLogger(runtime);
-            fileLogger.open();
-            fileLogger.write("Time,SysMS,Thread,Event,Desc");
-            fileLogger.writeEvent(TAG, "Log Started");
-            runtime.reset();
-            telemetry.addData("FileLogger: ", runtime.toString());
-            telemetry.addData("FileLogger Op Out File: ", fileLogger.getFilename());
-        }
+
+        //create logging based on initial settings, sharepreferences will adjust levels
+        fileLogger = new FileLogger(runtime, 1, true);
+        fileLogger.open();
+        fileLogger.write("Time,SysMS,Thread,Event,Desc");
+        fileLogger.writeEvent(TAG, "Log Started");
+        runtime.reset();
+        dashboard.displayPrintf(1, "FileLogger: Started");
 
         //init openCV
         initOpenCv();
         dashboard.displayPrintf(1, "initRobot OpenCV!");
 
-        if (debug >= 3) {fileLogger.writeEvent(TAG, "OpenCV Started");}
+        {
+            fileLogger.writeEvent(3, TAG, "OpenCV Started");
+        }
 
         //load menu settings and setup robot and debug level
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(hardwareMap.appContext);
@@ -460,14 +466,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         robotConfig = sharedPreferences.getString("club.towr5291.Autonomous.RobotConfig", "TileRunnerMecanum2x40");
         debug = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Debug", "1"));
 
-        dashboard.displayPrintf(2, "robotConfigTeam # " + teamNumber);
-        dashboard.displayPrintf(3, "Alliance          " + allianceColor);
-        dashboard.displayPrintf(4, "Start Pos         " + allianceStartPosition);
-        dashboard.displayPrintf(5, "Start Del         " + delay);
-        dashboard.displayPrintf(6, "Robot             " + robotConfig);
-
         //adjust debug level
-        if (debug >= 1) fileLogger.setDebugLevel(debug);
+        fileLogger.setDebugLevel(debug);
+
+        dashboard.displayPrintf(3, "robotConfigTeam # " + teamNumber);
+        dashboard.displayPrintf(4, "Alliance          " + allianceColor);
+        dashboard.displayPrintf(5, "Start Pos         " + allianceStartPosition);
+        dashboard.displayPrintf(6, "Start Del         " + delay);
+        dashboard.displayPrintf(7, "Robot             " + robotConfig);
+        dashboard.displayPrintf(7, "Debug Level       " + debug);
 
         dashboard.displayPrintf(1, "initRobot SharePreferences!");
 
@@ -502,79 +509,74 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         //to add more config options edit strings.xml and AutonomousConfiguration.java
         switch (robotConfig) {
             case "TileRunner-2x40":   //Velocity Vortex Competition Base
-                REVERSE_DIRECTION       = 1;                                                       // Reverse the direction without significant code changes, (using motor FORWARD REVERSE will affect the driver station as we use same robotconfig file
-                COUNTS_PER_MOTOR_REV    = 1120 ;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-                DRIVE_GEAR_REDUCTION    = 0.7 ;                                                    // This is < 1.0 if geared UP, Tilerunner is geared up
-                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
-                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
-                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
-                ROBOT_TRACK             = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-                WHEEL_TURN_FUDGE        = 1.0;                                                        // Fine tuning amount
-                COUNTS_PER_DEGREE       = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
+                REVERSE_DIRECTION = 1;                                                       // Reverse the direction without significant code changes, (using motor FORWARD REVERSE will affect the driver station as we use same robotconfig file
+                COUNTS_PER_MOTOR_REV = 1120;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+                DRIVE_GEAR_REDUCTION = 0.7;                                                    // This is < 1.0 if geared UP, Tilerunner is geared up
+                WHEEL_DIAMETER_INCHES = 4.0;                                                     // For figuring circumference
+                WHEEL_ACTUAL_FUDGE = 1;                                                        // Fine tuning amount
+                COUNTS_PER_INCH = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
+                ROBOT_TRACK = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+                WHEEL_TURN_FUDGE = 1.0;                                                        // Fine tuning amount
+                COUNTS_PER_DEGREE = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
                 loadPowerTableTileRunner();                                                         //load the power table
                 break;
             case "5291 Tank Tread-2x40 Custom":   //for tank tread base
-                REVERSE_DIRECTION       = 1;
-                COUNTS_PER_MOTOR_REV    = 1120 ;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-                DRIVE_GEAR_REDUCTION    = 1.0 ;                                                     // Tank Tread is 1:1 ration
-                WHEEL_DIAMETER_INCHES   = 3.75 ;                                                     // For figuring circumference
-                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
-                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION ;
-                ROBOT_TRACK             = 18;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-                WHEEL_TURN_FUDGE        = 1.12;                                                        // Fine tuning amount
-                COUNTS_PER_DEGREE       = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
+                REVERSE_DIRECTION = 1;
+                COUNTS_PER_MOTOR_REV = 1120;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+                DRIVE_GEAR_REDUCTION = 1.0;                                                     // Tank Tread is 1:1 ration
+                WHEEL_DIAMETER_INCHES = 3.75;                                                     // For figuring circumference
+                WHEEL_ACTUAL_FUDGE = 1;                                                        // Fine tuning amount
+                COUNTS_PER_INCH = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
+                ROBOT_TRACK = 18;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+                WHEEL_TURN_FUDGE = 1.12;                                                        // Fine tuning amount
+                COUNTS_PER_DEGREE = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
                 loadPowerTableTankTread();                                                          //load the power table
                 break;
             case "TileRunnerMecanum2x40":
-                REVERSE_DIRECTION       = 1;                                                        // Reverse the direction without significant code changes, (using motor FORWARD REVERSE will affect the driver station as we use same robotconfig file
-                COUNTS_PER_MOTOR_REV    = 1120 ;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-                DRIVE_GEAR_REDUCTION    = 1.0 ;                                                     // This is < 1.0 if geared UP, Tilerunner is geared up
-                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
-                WHEEL_ACTUAL_FUDGE      = 1.02;                                                     // Fine tuning amount
-                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
-                ROBOT_TRACK             = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-                WHEEL_TURN_FUDGE        = 1.0;                                                        // Fine tuning amount
-                COUNTS_PER_DEGREE       = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
+                REVERSE_DIRECTION = 1;                                                        // Reverse the direction without significant code changes, (using motor FORWARD REVERSE will affect the driver station as we use same robotconfig file
+                COUNTS_PER_MOTOR_REV = 1120;                                                    // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+                DRIVE_GEAR_REDUCTION = 1.0;                                                     // This is < 1.0 if geared UP, Tilerunner is geared up
+                WHEEL_DIAMETER_INCHES = 4.0;                                                     // For figuring circumference
+                WHEEL_ACTUAL_FUDGE = 1.02;                                                     // Fine tuning amount
+                COUNTS_PER_INCH = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
+                ROBOT_TRACK = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+                WHEEL_TURN_FUDGE = 1.0;                                                        // Fine tuning amount
+                COUNTS_PER_DEGREE = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
+                LIFTMAIN_COUNTS_PER_INCH = 420;                                                   //number of encoder counts per inch
+                LIFTTOP_COUNTS_PER_INCH = -420;                                                   //number of encoder counts per inch
                 break;
             case "11231 2016 Custom": //2016 - 11231 Drivetrain
-                COUNTS_PER_MOTOR_REV    = 1120;                                                     // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-                DRIVE_GEAR_REDUCTION    = .667;                                                   // (.665) UP INCREASES THE DISTANCE This is < 1.0 if geared UP, Tilerunner is geared up
-                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
-                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
-                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415926535)) * WHEEL_ACTUAL_FUDGE ;
-                ROBOT_TRACK             = 18;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-                COUNTS_PER_DEGREE       = ((2 * 3.1415926535 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360;
+                COUNTS_PER_MOTOR_REV = 1120;                                                     // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+                DRIVE_GEAR_REDUCTION = .667;                                                   // (.665) UP INCREASES THE DISTANCE This is < 1.0 if geared UP, Tilerunner is geared up
+                WHEEL_DIAMETER_INCHES = 4.0;                                                     // For figuring circumference
+                WHEEL_ACTUAL_FUDGE = 1;                                                        // Fine tuning amount
+                COUNTS_PER_INCH = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415926535)) * WHEEL_ACTUAL_FUDGE;
+                ROBOT_TRACK = 18;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+                COUNTS_PER_DEGREE = ((2 * 3.1415926535 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360;
                 //loadPowerTableTileRunner();                                                         //load the power table
                 break;
             default:  //default for competition TileRunner-2x40
-                REVERSE_DIRECTION       = 1;
-                COUNTS_PER_MOTOR_REV    = 1120 ;                                                     // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
-                DRIVE_GEAR_REDUCTION    = 1.28 ;                                                    // This is < 1.0 if geared UP, Tilerunner is geared up
-                WHEEL_DIAMETER_INCHES   = 4.0 ;                                                     // For figuring circumference
-                WHEEL_ACTUAL_FUDGE      = 1;                                                        // Fine tuning amount
-                COUNTS_PER_INCH         = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION ;
-                ROBOT_TRACK             = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
-                COUNTS_PER_DEGREE       = ((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360;
+                REVERSE_DIRECTION = 1;
+                COUNTS_PER_MOTOR_REV = 1120;                                                     // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
+                DRIVE_GEAR_REDUCTION = 1.28;                                                    // This is < 1.0 if geared UP, Tilerunner is geared up
+                WHEEL_DIAMETER_INCHES = 4.0;                                                     // For figuring circumference
+                WHEEL_ACTUAL_FUDGE = 1;                                                        // Fine tuning amount
+                COUNTS_PER_INCH = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
+                ROBOT_TRACK = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
+                COUNTS_PER_DEGREE = ((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360;
                 loadPowerTableTileRunner();                                                         //load the power table
                 break;
         }
 
         dashboard.displayPrintf(1, "initRobot Robot Settings Loaded" + robotConfig);
 
-        if (debug >= 1)
-        {
-            fileLogger.writeEvent(TAG, "robotConfigTeam #             " +  teamNumber);
-            fileLogger.writeEvent(TAG, "Alliance Colour    " +  allianceColor);
-            fileLogger.writeEvent(TAG, "Alliance Start Pos " +  allianceStartPosition);
-            fileLogger.writeEvent(TAG, "Alliance Delay     " +  delay);
-            fileLogger.writeEvent(TAG, "Robot Config       " +  robotConfig);
-        }
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Robot Parameters - Finished");
-            fileLogger.writeEvent(TAG, "Loading Autonomous Steps - Start");
-        }
+        fileLogger.writeEvent(1, TAG, "robotConfigTeam #  " + teamNumber);
+        fileLogger.writeEvent(1, TAG, "Alliance Colour    " + allianceColor);
+        fileLogger.writeEvent(1, TAG, "Alliance Start Pos " + allianceStartPosition);
+        fileLogger.writeEvent(1, TAG, "Alliance Delay     " + delay);
+        fileLogger.writeEvent(1, TAG, "Robot Config       " + robotConfig);
+        fileLogger.writeEvent(3, TAG, "Configuring Robot Parameters - Finished");
+        fileLogger.writeEvent(3, TAG, "Loading Autonomous Steps - Start");
 
         dashboard.displayPrintf(1, "initRobot Loading Steps " + allianceColor + " Team " + teamNumber);
 
@@ -586,10 +588,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         LedState(LedOff, LedOn, LedOff, LedOff, LedOn, LedOff);
                         switch (allianceStartPosition) {
                             case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291RedLeft.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291RedLeft.csv", "none", "none");
                                 break;
                             case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291RedRight.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291RedRight.csv", "none", "none");
                                 break;
                         }
                         break;
@@ -597,15 +599,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
                         switch (allianceStartPosition) {
                             case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueLeft.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueLeft.csv", "none", "none");
                                 break;
                             case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv", "none", "none");
                                 break;
                         }
                         break;
                     case "Test":
-                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291Test.csv" , "none", "none");
+                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291Test.csv", "none", "none");
                         break;
                 }
                 break;
@@ -615,25 +617,25 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     case "Red":
                         switch (allianceStartPosition) {
                             case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230RedLeft.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230RedLeft.csv", "none", "none");
                                 break;
                             case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230RedRight.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230RedRight.csv", "none", "none");
                                 break;
                         }
                         break;
                     case "Blue":
                         switch (allianceStartPosition) {
                             case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv", "none", "none");
                                 break;
                             case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("5291BlueRight.csv", "none", "none");
                                 break;
                         }
                         break;
                     case "Test":
-                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230Test.csv" , "none", "none");
+                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11230Test.csv", "none", "none");
                         break;
                 }
                 break;
@@ -643,25 +645,25 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     case "Red":
                         switch (allianceStartPosition) {
                             case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231RedLeft.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231RedLeft.csv", "none", "none");
                                 break;
                             case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231RedRight.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231RedRight.csv", "none", "none");
                                 break;
                         }
                         break;
                     case "Blue":
                         switch (allianceStartPosition) {
                             case "Left":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231BleLeft.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231BleLeft.csv", "none", "none");
                                 break;
                             case "Right":
-                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231BlueRight.csv" , "none", "none");
+                                autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231BlueRight.csv", "none", "none");
                                 break;
                         }
                         break;
                     case "Test":
-                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231Test.csv" , "none", "none");
+                        autonomousSteps = autonomousStepsFile.ReadStepFileRelicRecovery("11231Test.csv", "none", "none");
                         break;
                 }
                 break;
@@ -672,23 +674,20 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         dashboard.displayPrintf(1, "initRobot STEPS LOADED");
 
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Loading Autonomous Steps - Finished");
-            fileLogger.writeEvent(TAG, "Configuring Adafruit IMU - Start");
-        }
+        fileLogger.writeEvent(3, TAG, "Loading Autonomous Steps - Finished");
+        fileLogger.writeEvent(3, TAG, "Configuring Adafruit IMU - Start");
 
         dashboard.displayPrintf(1, "initRobot IMU Loading");
 
         // Set up the parameters with which we will use our IMU. Note that integration
         // algorithm here just reports accelerations to the logcat log; it doesn't actually
         // provide positional information.
-        BNO055IMU.Parameters parametersAdafruitImu  = new BNO055IMU.Parameters();
-        parametersAdafruitImu.angleUnit             = BNO055IMU.AngleUnit.DEGREES;
-        parametersAdafruitImu.accelUnit             = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
-        parametersAdafruitImu.calibrationDataFile   = "AdafruitIMUCalibration.json"; // see the calibration sample opmode
-        parametersAdafruitImu.loggingEnabled        = true;
-        parametersAdafruitImu.loggingTag            = "IMU";
+        BNO055IMU.Parameters parametersAdafruitImu = new BNO055IMU.Parameters();
+        parametersAdafruitImu.angleUnit = BNO055IMU.AngleUnit.DEGREES;
+        parametersAdafruitImu.accelUnit = BNO055IMU.AccelUnit.METERS_PERSEC_PERSEC;
+        parametersAdafruitImu.calibrationDataFile = "AdafruitIMUCalibration.json"; // see the calibration sample opmode
+        parametersAdafruitImu.loggingEnabled = true;
+        parametersAdafruitImu.loggingTag = "IMU";
         parametersAdafruitImu.accelerationIntegrationAlgorithm = new JustLoggingAccelerationIntegrator();
 
         // Retrieve and initialize the IMU. We expect the IMU to be attached to an I2C port
@@ -699,11 +698,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         dashboard.displayPrintf(1, "initRobot IMU Configured");
 
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Adafruit IMU - Finished");
-            fileLogger.writeEvent(TAG, "Configuring Motors Base - Start");
-        }
+        fileLogger.writeEvent(3, TAG, "Configuring Adafruit IMU - Finished");
+        fileLogger.writeEvent(3, TAG, "Configuring Motors Base - Start");
 
         dashboard.displayPrintf(1, "initRobot BaseDrive Loading");
 
@@ -714,17 +710,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         dashboard.displayPrintf(1, "initRobot BaseDrive Loaded");
 
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Motors Base - Finish");
-            fileLogger.writeEvent(TAG, "Configuring Motors Arms - Start");
-        }
+        fileLogger.writeEvent(3, TAG, "Configuring Motors Base - Finish");
+        fileLogger.writeEvent(3, TAG, "Configuring Motors Arms - Start");
 
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Motors Arms - Finish");
-            fileLogger.writeEvent(TAG, "Configuring Range Sensors - Start");
-        }
+        armDrive.init(fileLogger, hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig), "lifttop", "liftbot", null, null);
+        armDrive.setHardwareDriveResetEncoders();
+        armDrive.setHardwareDriveRunUsingEncoders();
+
+        fileLogger.writeEvent(3, TAG, "Configuring Motors Lifts - Finish");
+        fileLogger.writeEvent(3, TAG, "Configuring Range Sensors - Start");
 
         dashboard.displayPrintf(1, "initRobot Range Sensors Loading");
 
@@ -737,17 +731,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         dashboard.displayPrintf(1, "initRobot Range Sensors Loaded");
 
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Range Sensors - Finish");
-            fileLogger.writeEvent(TAG, "Configuring Servos - Start");
-        }
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Servos - Finish");
-            fileLogger.writeEvent(TAG, "Resetting State Engine - Start");
-        }
+        fileLogger.writeEvent(3, TAG, "Configuring Range Sensors - Finish");
+        fileLogger.writeEvent(3, TAG, "Resetting State Engine - Start");
 
         mintCurrentStateStep = stepState.STATE_INIT;
         mintCurrentStateTankTurn = stepState.STATE_COMPLETE;
@@ -760,6 +745,13 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         mintCurStVuforiaMove5291 = stepState.STATE_COMPLETE;
         mintCurStVuforiaTurn5291 = stepState.STATE_COMPLETE;
         mintCurrentStateEyes5291 = stepState.STATE_COMPLETE;
+        mintCurrentStateJewelColour5291 = stepState.STATE_COMPLETE;
+        mintCurrentStateJewelArm5291 = stepState.STATE_COMPLETE;
+        mintCurrentStateTopGripperMove5291 = stepState.STATE_COMPLETE;
+        mintCurrentStateBotGripperMove5291 = stepState.STATE_COMPLETE;
+        mintCurrentStateTopLiftMove5291 = stepState.STATE_COMPLETE;
+        mintCurrentStateMainLiftMove5291 = stepState.STATE_COMPLETE;
+        mintCurrentStateJewelArmClose5291 = stepState.STATE_COMPLETE;
         mintCurrentStateTankTurnGyroHeading = stepState.STATE_COMPLETE;
         mintCurrentStateMecanumStrafe = stepState.STATE_COMPLETE;
         mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_COMPLETE;
@@ -767,17 +759,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         mint5291LEDStatus = LEDState.STATE_TEAM;
         mblnNextStepLastPos = false;
 
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Resetting State Engine - Finish");
-            fileLogger.writeEvent(TAG, "Vuforia Activate - Start");
-        }
-
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring LED Channels - Finished");
-            fileLogger.writeEvent(TAG, "Configuring Vuforia - Start");
-        }
+        fileLogger.writeEvent(3, TAG, "Resetting State Engine - Finish");
+        fileLogger.writeEvent(3, TAG, "Configuring Vuforia - Start");
 
         dashboard.displayPrintf(1, "initRobot VUFORIA Loading");
 
@@ -814,7 +797,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         VuforiaLocalizer vuforia = ClassFactory.createVuforiaLocalizer(parameters);
         Vuforia.setFrameFormat(PIXEL_FORMAT.RGB565, true);                                          //enables RGB565 format for the image
         vuforia.setFrameQueueCapacity(5);                                                           //tells VuforiaLocalizer to only store one frame at a time
-        Vuforia.setHint(HINT.HINT_MAX_SIMULTANEOUS_IMAGE_TARGETS,1);
+        Vuforia.setHint(HINT.HINT_MAX_SIMULTANEOUS_IMAGE_TARGETS, 1);
 
         /**
          * Load the data set containing the VuMarks for Relic Recovery. There's only one trackable
@@ -838,10 +821,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
          * You don't *have to* use mm here, but the units here and the units used in the XML
          * target configuration files *must* correspond for the math to work out correctly.
          */
-        float mmPerInch        = 25.4f;
-        float mmBotWidth       = 18 * mmPerInch;            // ... or whatever is right for your robot
-        float FTCFieldWidth    = (12*12 - 3);
-        float mmFTCFieldWidth  = FTCFieldWidth * mmPerInch;   // the FTC field is ~11'10" center-to-center of the glass panels
+        float mmPerInch = 25.4f;
+        float mmBotWidth = 18 * mmPerInch;            // ... or whatever is right for your robot
+        float FTCFieldWidth = (12 * 12 - 3);
+        float mmFTCFieldWidth = FTCFieldWidth * mmPerInch;   // the FTC field is ~11'10" center-to-center of the glass panels
 
         /**
          * In order for localization to work, we need to tell the system where each target we
@@ -896,30 +879,30 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         // Target Positions
         // position is approximately - (32inch, -70.5inch)
-        Point3 Red1Coord        = new Point3 (32, -FTCFieldWidth/2, 0);
-        Point3 Red1Angle        = new Point3 (-90, 0, 0);
-        Point3 Red1PhoneCoord   = new Point3 (0,0,200);
-        Point3 Red1PhoneAngle   = new Point3 (-90,0,90);
+        Point3 Red1Coord = new Point3(32, -FTCFieldWidth / 2, 0);
+        Point3 Red1Angle = new Point3(-90, 0, 0);
+        Point3 Red1PhoneCoord = new Point3(0, 0, 200);
+        Point3 Red1PhoneAngle = new Point3(-90, 0, 90);
 
-        Point3 Red2Coord        = new Point3 (-44.5, -FTCFieldWidth/2, 0);
-        Point3 Red2Angle        = new Point3 (-90, 0, 0);
-        Point3 Red2PhoneCoord   = new Point3 (0,0,200);
-        Point3 Red2PhoneAngle   = new Point3 (-90,0,90);
+        Point3 Red2Coord = new Point3(-44.5, -FTCFieldWidth / 2, 0);
+        Point3 Red2Angle = new Point3(-90, 0, 0);
+        Point3 Red2PhoneCoord = new Point3(0, 0, 200);
+        Point3 Red2PhoneAngle = new Point3(-90, 0, 90);
 
-        Point3 Blue1Coord       = new Point3 (15.25, FTCFieldWidth/2, 0);
-        Point3 Blue1Angle       = new Point3 (90, 0, 0);
-        Point3 Blue1PhoneCoord  = new Point3 (0,0,200);
-        Point3 Blue1PhoneAngle  = new Point3 (-90,0,-90);
+        Point3 Blue1Coord = new Point3(15.25, FTCFieldWidth / 2, 0);
+        Point3 Blue1Angle = new Point3(90, 0, 0);
+        Point3 Blue1PhoneCoord = new Point3(0, 0, 200);
+        Point3 Blue1PhoneAngle = new Point3(-90, 0, -90);
 
-        Point3 Blue2Coord       = new Point3 (-56, FTCFieldWidth/2, 0);
-        Point3 Blue2Angle       = new Point3 (90, 0, 0);
-        Point3 Blue2PhoneCoord  = new Point3 (0,0,200);
-        Point3 Blue2PhoneAngle  = new Point3 (-90,0,-90);
+        Point3 Blue2Coord = new Point3(-56, FTCFieldWidth / 2, 0);
+        Point3 Blue2Angle = new Point3(90, 0, 0);
+        Point3 Blue2PhoneCoord = new Point3(0, 0, 200);
+        Point3 Blue2PhoneAngle = new Point3(-90, 0, -90);
 
-        Point3 targetPoint      = new Point3 (0,0,0);
-        Point3 targetAngle      = new Point3 (0,0,0);
-        Point3 phonePoint       = new Point3 (0,0,200);
-        Point3 phoneAngle       = new Point3 (-90,0,0);
+        Point3 targetPoint = new Point3(0, 0, 0);
+        Point3 targetAngle = new Point3(0, 0, 0);
+        Point3 phonePoint = new Point3(0, 0, 200);
+        Point3 phoneAngle = new Point3(-90, 0, 0);
 
         if ((allianceColor == "Red") && (allianceStartPosition == "Left")) {
             targetPoint = Red1Coord;
@@ -946,11 +929,11 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         OpenGLMatrix relicVuMarkTemplateLocationOnField = OpenGLMatrix
                 /* Then we translate the target off to the RED WALL. Our translation here
                 is a negative translation in X.*/
-                .translation(mmPerInch * (float)targetPoint.x, mmPerInch * (float)targetPoint.y, mmPerInch * (float)targetPoint.z)
+                .translation(mmPerInch * (float) targetPoint.x, mmPerInch * (float) targetPoint.y, mmPerInch * (float) targetPoint.z)
                 .multiplied(Orientation.getRotationMatrix(
                         /* First, in the fixed (field) coordinate system, we rotate 90deg in X, then 90 in Z */
                         AxesReference.EXTRINSIC, AxesOrder.XZX,
-                        AngleUnit.DEGREES, (float)targetAngle.x, (float)targetAngle.y, (float)targetAngle.z));
+                        AngleUnit.DEGREES, (float) targetAngle.x, (float) targetAngle.y, (float) targetAngle.z));
 
         relicTemplate.setLocation(relicVuMarkTemplateLocationOnField);
 
@@ -967,17 +950,17 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
          * plane) is then CCW, as one would normally expect from the usual classic 2D geometry.
          */
         OpenGLMatrix phoneLocationOnRobot = OpenGLMatrix
-                .translation((mmBotWidth/2) * (float)phonePoint.x, (mmBotWidth/2) * (float)phonePoint.x, (mmBotWidth/2) * (float)phonePoint.x)
+                .translation((mmBotWidth / 2) * (float) phonePoint.x, (mmBotWidth / 2) * (float) phonePoint.x, (mmBotWidth / 2) * (float) phonePoint.x)
                 .multiplied(Orientation.getRotationMatrix(
                         AxesReference.EXTRINSIC, AxesOrder.YZY,
-                        AngleUnit.DEGREES, (float)phoneAngle.x, (float)phoneAngle.y, (float)phoneAngle.z));
+                        AngleUnit.DEGREES, (float) phoneAngle.x, (float) phoneAngle.y, (float) phoneAngle.z));
 
         /**
          * Let the trackable listeners we care about know where the phone is. We know that each
          * listener is a {@link VuforiaTrackableDefaultListener} and can so safely cast because
          * we have not ourselves installed a listener of a different type.
          */
-        ((VuforiaTrackableDefaultListener)relicTemplate.getListener()).setPhoneInformation(phoneLocationOnRobot, parameters.cameraDirection);
+        ((VuforiaTrackableDefaultListener) relicTemplate.getListener()).setPhoneInformation(phoneLocationOnRobot, parameters.cameraDirection);
 
         /**
          * A brief tutorial: here's how all the math is going to work:
@@ -1004,13 +987,83 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         Image rgb = null;
 
         dashboard.displayPrintf(1, "initRobot VUFORIA Loaded");
+        fileLogger.writeEvent(3, TAG, "Configuring Servos - Start");
 
-        if (debug >= 3)
-        {
-            fileLogger.writeEvent(TAG, "Configuring Vuforia - Finished");
-            fileLogger.writeEvent(TAG, "Configuring Robot Parameters - Start");
+        //config the servos
+        servoGlyphGripTopLeft = hardwareMap.servo.get("griptopleft");
+        servoGlyphGripBotLeft = hardwareMap.servo.get("gripbotleft");
+        servoGlyphGripTopLeft.setDirection(Servo.Direction.REVERSE);
+        servoGlyphGripBotLeft.setDirection(Servo.Direction.REVERSE);
+        servoGlyphGripTopRight = hardwareMap.servo.get("griptopright");
+        servoGlyphGripBotRight = hardwareMap.servo.get("gripbotright");
+        servoJewelLeft = hardwareMap.servo.get("jewelleft");
+        servoJewelRight = hardwareMap.servo.get("jewelright");
+
+        //lock the jewel arms home
+        sendServosHome(servoGlyphGripTopLeft, servoGlyphGripBotLeft, servoGlyphGripTopRight, servoGlyphGripBotRight, servoJewelLeft, servoJewelRight);
+        fileLogger.writeEvent(3, TAG, "Configuring Servos - Finish");
+
+        dashboard.displayPrintf(1, "initRobot Servos Loaded");
+
+        // get a reference to our digitalTouch object.
+        limitswitch1 = hardwareMap.get(DigitalChannel.class, "limittop");
+        limitswitch2 = hardwareMap.get(DigitalChannel.class, "limitbot");
+
+        // set the digital channel to input.
+        limitswitch1.setMode(DigitalChannel.Mode.INPUT);
+        limitswitch2.setMode(DigitalChannel.Mode.INPUT);
+
+        fileLogger.writeEvent(1, TAG, "Set Limit Switches");
+
+        dashboard.displayPrintf(1, "initRobot Limit Switches Configured");
+
+        //vuMark will be the position to load the glyph
+        //lets try to get colour during init and the vumark while waiting for start
+        int vuMarkLoop = 0;
+
+        RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
+        while (vuMarkLoop < 5) {
+            vuMark = RelicRecoveryVuMark.from(relicTemplate);
+            if (vuMark.toString().equals("UNKNOWN")) {
+                vuMarkLoop++;
+                Thread.sleep(100);
+            } else
+                break;
         }
 
+        Mat tmp = new Mat();
+
+//        try {
+//            VuforiaLocalizer.CloseableFrame frame = vuforia.getFrameQueue().take(); //takes the frame at the head of the queue
+//            long numImages = frame.getNumImages();
+//
+//            for (int i = 0; i < numImages; i++) {
+//                if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
+//                    rgb = frame.getImage(i);
+//                    break;
+//                }
+//            }
+//
+//            /*rgb is now the Image object that we’ve used in the video*/
+//            Bitmap bm = Bitmap.createBitmap(rgb.getWidth(), rgb.getHeight(), Bitmap.Config.RGB_565);
+//            bm.copyPixelsFromBuffer(rgb.getPixels());
+//
+//            //put the image into a MAT for OpenCV
+//            tmp = new Mat(rgb.getWidth(), rgb.getHeight(), CvType.CV_8UC4);
+//            Utils.bitmapToMat(bm, tmp);
+//            //close the frame, prevents memory leaks and crashing
+//            frame.close();
+//            mColour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, 1);
+//            fileLogger.writeEvent(3, TAG, "Init Colour Returned " + mColour + " Column " + vuMark.toString());
+//        } catch (InterruptedException e) {
+//            dashboard.displayPrintf(1, "VUFORIA --- ERROR ERROR ERROR");
+//            dashboard.displayPrintf(2, "VUFORIA --- ERROR ERROR ERROR");
+//            fileLogger.writeEvent(3, TAG, "Init Colour Returned " + mColour + " Column " + vuMark.toString());
+//        }
+
+//        dashboard.displayPrintf(2, "Jewel Colour-" + mColour + " Column-" + vuMark.toString());
+        fileLogger.writeEvent(3, TAG, "Configuring Vuforia - Finished");
+        fileLogger.writeEvent(3, TAG, "Configuring Robot Parameters - Start");
         dashboard.displayPrintf(1, "Init - Complete, Wait for Start");
 
         // Wait for the game to start (driver presses PLAY)
@@ -1025,130 +1078,40 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             if (!mblnDisableVisionProcessing) {
                 //start capturing frames for analysis
                 if (mblnReadyToCapture) {
-
-                    boolean gotBeacomDims = false;
-                    boolean beacFound = false;
-                    Point beaconBotRight = new Point(0,0);
-                    Point beaconTopLeft = new Point(0,0);
-                    Point beaconMiddle = new Point(0,0);
-
-                    if (mStateTime.milliseconds() < 1000) {
-                        gotBeacomDims = true;
-                        beacFound = false;
-                    }
-
                     //vuMark will be the position to load the glyph
-                    RelicRecoveryVuMark vuMark = RelicRecoveryVuMark.from(relicTemplate);
+                    vuMark = RelicRecoveryVuMark.from(relicTemplate);
 
-                    if (!gotBeacomDims) {
-                        for (VuforiaTrackable jewels : RelicRecovery) {
+                    tmp = new Mat();
+                    try {
+                        VuforiaLocalizer.CloseableFrame frame = vuforia.getFrameQueue().take(); //takes the frame at the head of the queue
+                        long numImages = frame.getNumImages();
 
-                            OpenGLMatrix pose = ((VuforiaTrackableDefaultListener) jewels.getListener()).getRawPose();
-
-                            if (pose != null) {
-
-                                Matrix34F rawPose = new Matrix34F();
-                                float[] poseData = Arrays.copyOfRange(pose.transposed().getData(), 0, 12);
-                                rawPose.setData(poseData);
-
-                                //get the target corners
-                                Vec2F upperLeft = Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-TARGET_WIDTH / 2, TARGET_HEIGHT / 2, 0));
-                                Vec2F upperRight = Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(TARGET_WIDTH / 2, TARGET_HEIGHT / 2, 0));
-                                Vec2F lowerRight = Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(TARGET_WIDTH / 2, -TARGET_HEIGHT / 2, 0));
-                                Vec2F lowerLeft = Tool.projectPoint(vuforia.getCameraCalibration(), rawPose, new Vec3F(-TARGET_WIDTH / 2, -TARGET_HEIGHT / 2, 0));
-
-                                double dblMidPointTopx = (upperRight.getData()[0] + upperLeft.getData()[0]) / 2;
-                                double dblMidPointTopy = (upperRight.getData()[1] + upperLeft.getData()[1]) / 2;
-                                double dblMidPointBotx = (lowerRight.getData()[0] + lowerLeft.getData()[0]) / 2;
-                                double dblMidPointBoty = (lowerRight.getData()[1] + lowerLeft.getData()[1]) / 2;
-
-                                double width = Math.sqrt((Math.pow((upperRight.getData()[1] - upperLeft.getData()[1]), 2)) + (Math.pow((upperRight.getData()[0] - upperLeft.getData()[0]), 2)));
-                                double height = Math.sqrt((Math.pow((dblMidPointTopy - dblMidPointBoty), 2)) + (Math.pow((dblMidPointTopx - dblMidPointBotx), 2)));
-
-                                //width is equal to 254 mm, so width of beacon is 220mm, height of beacon is 150mm
-                                //pixels per mm width, using a known size of the target
-                                double dblWidthPixelsPermm = width / TARGET_WIDTH;
-                                double dblHeightPixelsPermm = height / TARGET_HEIGHT;
-
-                                //beacon base is about 25mm above top of target
-                                beaconBotRight = new Point((dblMidPointTopx + (110 * dblWidthPixelsPermm)), dblMidPointTopy - (30 * dblHeightPixelsPermm));
-                                beaconTopLeft = new Point((dblMidPointTopx - (110 * dblWidthPixelsPermm)), dblMidPointTopy - (160 * dblHeightPixelsPermm));
-
-                                beaconMiddle.x = dblMidPointTopx;
-                                beaconMiddle.y = dblMidPointTopy + (110 * dblHeightPixelsPermm);
-
-                                gotBeacomDims = true;
-                                beacFound = true;
-
-                                if (debug >= 1) {
-                                    fileLogger.writeEvent("Vuforia", "upperLeft 0 " + upperLeft.getData()[0]);
-                                    fileLogger.writeEvent("Vuforia", "upperLeft 1 " + upperLeft.getData()[1]);
-                                    fileLogger.writeEvent("Vuforia", "upperRight 0 " + upperRight.getData()[0]);
-                                    fileLogger.writeEvent("Vuforia", "upperRight 1 " + upperRight.getData()[1]);
-                                    fileLogger.writeEvent("Vuforia", "lowerLeft 0 " + lowerLeft.getData()[0]);
-                                    fileLogger.writeEvent("Vuforia", "lowerLeft 1 " + lowerLeft.getData()[1]);
-                                    fileLogger.writeEvent("Vuforia", "lowerRight 0 " + lowerRight.getData()[0]);
-                                    fileLogger.writeEvent("Vuforia", "lowerRight 1 " + lowerRight.getData()[1]);
-                                    fileLogger.writeEvent("Vuforia", "dblMidPointTopx " + dblMidPointTopx);
-                                    fileLogger.writeEvent("Vuforia", "dblMidPointTopy " + dblMidPointTopy);
-                                    fileLogger.writeEvent("Vuforia", "dblMidPointBotx " + dblMidPointBotx);
-                                    fileLogger.writeEvent("Vuforia", "dblMidPointBoty " + dblMidPointBoty);
-                                    fileLogger.writeEvent("Vuforia", "width in pixels " + width);
-                                    fileLogger.writeEvent("Vuforia", "height in pixels " + height);
-                                }
+                        for (int i = 0; i < numImages; i++) {
+                            if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
+                                rgb = frame.getImage(i);
+                                break;
                             }
                         }
+
+                        /*rgb is now the Image object that we’ve used in the video*/
+                        Bitmap bm = Bitmap.createBitmap(rgb.getWidth(), rgb.getHeight(), Bitmap.Config.RGB_565);
+                        bm.copyPixelsFromBuffer(rgb.getPixels());
+
+                        //put the image into a MAT for OpenCV
+                        tmp = new Mat(rgb.getWidth(), rgb.getHeight(), CvType.CV_8UC4);
+                        Utils.bitmapToMat(bm, tmp);
+                        //close the frame, prevents memory leaks and crashing
+                        frame.close();
+                    } catch (InterruptedException e) {
+                        dashboard.displayPrintf(1, "VUFORIA --- ERROR ERROR ERROR");
+                        dashboard.displayPrintf(2, "VUFORIA --- ERROR ERROR ERROR");
+                        fileLogger.writeEvent(3, TAG, "Init Colour Returned " + mColour + " Column " + vuMark.toString());
                     }
 
-                    if (gotBeacomDims) {
-                        Mat tmp = new Mat();
-                        try {
-                            VuforiaLocalizer.CloseableFrame frame = vuforia.getFrameQueue().take(); //takes the frame at the head of the queue
-                            long numImages = frame.getNumImages();
-
-                            for (int i = 0; i < numImages; i++) {
-                                if (frame.getImage(i).getFormat() == PIXEL_FORMAT.RGB565) {
-                                    rgb = frame.getImage(i);
-                                    break;
-                                }
-                            }
-
-                            /*rgb is now the Image object that we’ve used in the video*/
-                            Bitmap bm = Bitmap.createBitmap(rgb.getWidth(), rgb.getHeight(), Bitmap.Config.RGB_565);
-                            bm.copyPixelsFromBuffer(rgb.getPixels());
-
-                            //put the image into a MAT for OpenCV
-                            tmp = new Mat(rgb.getWidth(), rgb.getHeight(), CvType.CV_8UC4);
-                            Utils.bitmapToMat(bm, tmp);
-                            //close the frame, prevents memory leaks and crashing
-                            frame.close();
-                        }
-                            catch (InterruptedException e)
-                        {
-                            Thread.currentThread().interrupt();
-                        }
-
-
-                        if (beaconTopLeft.x < 0)
-                            beaconTopLeft.x = 0;
-                        if (beaconTopLeft.y < 0)
-                            beaconTopLeft.y = 0;
-                        if (beaconBotRight.x > rgb.getWidth())
-                            beaconBotRight.x = rgb.getWidth();
-                        if (beaconBotRight.y > rgb.getHeight())
-                            beaconBotRight.y = rgb.getHeight();
-
-                        //analyse the beacons
-                        //Constants.BeaconColours Colour = beaconColour.beaconAnalysisOCV(tmp, loop));
-                        //mColour = beaconColour.beaconAnalysisOCV(tmp, mintCaptureLoop);
-                        mColour = beaconColour.beaconAnalysisOCV2(debug, tmp, mintCaptureLoop, beaconTopLeft, beaconBotRight, beaconMiddle, beacFound);
-                        if (debug >= 1) {
-                            fileLogger.writeEvent("OPENCV","Returned " + mColour);
-                        }
-
-                        telemetry.addData("Beacon ", mColour);
-                        mintCaptureLoop ++;
-                    }
+                    mColour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, mintCaptureLoop);
+                    fileLogger.writeEvent(1, "OPENCV", "Returned " + mColour);
+                    dashboard.displayPrintf(1, "Object -" + mColour);
+                    mintCaptureLoop++;
                 }
 
                 //use vuforia to get locations informatio
@@ -1158,7 +1121,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                      * the last time that call was made, or if the trackable is not currently visible.
                      * getRobotLocation() will return null if the trackable is not currently visible.
                      */
-                    telemetry.addData(trackable.getName(), ((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible() ? "Visible" : "Not Visible");    //
+                    dashboard.displayPrintf(1, LABEL_WIDTH, trackable.getName(), ((VuforiaTrackableDefaultListener) trackable.getListener()).isVisible() ? "Visible" : "Not Visible");    //
 
                     OpenGLMatrix robotLocationTransform = ((VuforiaTrackableDefaultListener) trackable.getListener()).getUpdatedRobotLocation();
                     if (robotLocationTransform != null) {
@@ -1175,75 +1138,68 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     // Robot position is defined by the standard Matrix translation (x and y)
                     localisedRobotX = trans.get(0);
                     localisedRobotY = trans.get(1);
-
                     // Robot bearing (in Cartesian system) position is defined by the standard Matrix z rotation
                     localisedRobotBearing = rot.thirdAngle;
                     if (localisedRobotBearing < 0) {
                         localisedRobotBearing = 360 + localisedRobotBearing;
                     }
-
-                    telemetry.addData("Pos X ", localisedRobotX);
-                    telemetry.addData("Pos Y ", localisedRobotY);
-                    telemetry.addData("Bear  ", localisedRobotBearing);
-                    telemetry.addData("Pos   ", format(lastLocation));
+                    dashboard.displayPrintf(3, "Pos X " + localisedRobotX);
+                    dashboard.displayPrintf(4, "Pos Y ", localisedRobotY);
+                    dashboard.displayPrintf(5, "Bear  ", localisedRobotBearing);
+                    dashboard.displayPrintf(6, "Pos   ", format(lastLocation));
                     localiseRobotPos = true;
                 } else {
                     localiseRobotPos = false;
-                    telemetry.addData("Pos   ", "Unknown");
+                    dashboard.displayPrintf(3, "Pos   ", "Unknown");
                 }
             }
 
-            switch (mintCurrentStateStep)
-            {
+            switch (mintCurrentStateStep) {
                 case STATE_INIT:
-
-                    if (debug >= 1) {
-                        fileLogger.writeEvent(TAG, "mintCurrentStateStep:- " + mintCurrentStateStep + " mintCurrentStateStep " + mintCurrentStateStep);
-                        fileLogger.writeEvent(TAG, "About to check if step exists " + mintCurrentStep);
-                    }
+                    fileLogger.writeEvent(1, TAG, "mintCurrentStateStep:- " + mintCurrentStateStep + " mintCurrentStateStep " + mintCurrentStateStep);
+                    fileLogger.writeEvent(1, TAG, "About to check if step exists " + mintCurrentStep);
                     // get step from hashmap, send it to the initStep for decoding
                     if (autonomousSteps.containsKey(String.valueOf(mintCurrentStep))) {
-                        if (debug >= 1) {
-                            fileLogger.writeEvent(TAG, "Step Exists TRUE " + mintCurrentStep + " about to get the values from the step");
-                        }
+                        fileLogger.writeEvent(1, TAG, "Step Exists TRUE " + mintCurrentStep + " about to get the values from the step");
                         initStep();
-                    }
-                    else {
+                    } else {
                         mintCurrentStateStep = stepState.STATE_FINISHED;
                     }
-                break;
+                    break;
                 case STATE_START:
 
-                break;
+                    break;
                 case STATE_RUNNING:
 
                     loadParallelSteps();
                     for (String stKey : mintActiveStepsCopy.keySet()) {
-                        if (debug >= 1) {
-                            fileLogger.writeEvent("STATE_RUNNING", "Looping through Parallel steps, found " + stKey);
-                        }
+                        fileLogger.writeEvent(1, "STATE_RUNNING", "Looping through Parallel steps, found " + stKey);
                         mintStepNumber = mintActiveStepsCopy.get(stKey);
                         loadActiveStep(mintStepNumber);
-                        if (debug >= 1) {
-                            fileLogger.writeEvent("STATE_RUNNING", "About to run " + mstrRobotCommand.substring(0, 3));
-                        }
+                        fileLogger.writeEvent(1, "STATE_RUNNING", "About to run " + mstrRobotCommand.substring(0, 3));
                         processSteps(mstrRobotCommand.substring(0, 3));
                     }
 
                     if ((mintCurrentStepDelay == stepState.STATE_COMPLETE) &&
                             (mintCurStVuforiaTurn5291 == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateVuforiaLocalise5291 == stepState.STATE_COMPLETE) &&
-                            (mintCurStVuforiaMove5291 == stepState.STATE_COMPLETE)  &&
+                            (mintCurStVuforiaMove5291 == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateDrive == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateDriveHeading == stepState.STATE_COMPLETE) &&
                             (mintCurrentStatePivotTurn == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateTankTurn == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateEyes5291 == stepState.STATE_COMPLETE) &&
+                            (mintCurrentStateJewelColour5291 == stepState.STATE_COMPLETE) &&
+                            (mintCurrentStateJewelArm5291 == stepState.STATE_COMPLETE) &&
+                            (mintCurrentStateTopGripperMove5291 == stepState.STATE_COMPLETE) &&
+                            (mintCurrentStateBotGripperMove5291 == stepState.STATE_COMPLETE) &&
+                            (mintCurrentStateTopLiftMove5291 == stepState.STATE_COMPLETE) &&
+                            (mintCurrentStateMainLiftMove5291 == stepState.STATE_COMPLETE) &&
+                            (mintCurrentStateJewelArmClose5291 == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateGyroTurnEncoder5291 == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateTankTurnGyroHeading == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateMecanumStrafe == stepState.STATE_COMPLETE) &&
-                            (mintCurrentStateRadiusTurn == stepState.STATE_COMPLETE))
-                    {
+                            (mintCurrentStateRadiusTurn == stepState.STATE_COMPLETE)) {
                         mintCurrentStateStep = stepState.STATE_COMPLETE;
                     }
 
@@ -1264,56 +1220,47 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                                 mintCurrentStateStep = stepState.STATE_COMPLETE;
                         }
                     }
-                break;
+                    break;
                 case STATE_PAUSE:
-                break;
+                    break;
                 case STATE_COMPLETE:
-                    if (debug >= 1) {
-                        fileLogger.writeEvent(TAG, "Step Complete - Current Step:- " + mintCurrentStep);
-                    }
-
+                    fileLogger.writeEvent(1, TAG, "Step Complete - Current Step:- " + mintCurrentStep);
                     //  Transition to a new state and next step.
                     mintCurrentStep++;
                     mintCurrentStateStep = stepState.STATE_INIT;
-                break;
+                    break;
                 case STATE_TIMEOUT:
                     robotDrive.setHardwareDrivePower(0);
                     //  Transition to a new state.
                     mintCurrentStateStep = stepState.STATE_FINISHED;
-                break;
+                    break;
                 case STATE_ERROR:
-                    telemetry.addData("STATE", "ERROR WAITING TO FINISH " + mintCurrentStep);
-                break;
+                    dashboard.displayPrintf(2, "STATE", "ERROR WAITING TO FINISH " + mintCurrentStep);
+                    break;
                 case STATE_FINISHED:
                     robotDrive.setHardwareDrivePower(0);
                     //stop the logging
-                    if (debug >= 1)
-                    {
-                        if (fileLogger != null)
-                        {
-                            fileLogger.writeEvent(TAG, "Step FINISHED - FINISHED");
-                            fileLogger.writeEvent(TAG, "Stopped");
-                            Log.d(TAG, "FileLogger Stopped");
-                            fileLogger.close();
-                            fileLogger = null;
-                        }
+                    if (fileLogger != null) {
+                        fileLogger.writeEvent(1, TAG, "Step FINISHED - FINISHED");
+                        fileLogger.writeEvent(1, TAG, "Stopped");
+                        Log.d(TAG, "FileLogger Stopped");
+                        fileLogger.close();
+                        fileLogger = null;
                     }
                     //deactivate vuforia
                     RelicRecovery.deactivate();
-
-                    telemetry.addData("STATE", "FINISHED " + mintCurrentStep);
-
-                break;
+                    dashboard.displayPrintf(1, "STATE", "FINISHED " + mintCurrentStep);
+                    break;
                 case STATE_ASTAR_PRE_INIT:
                     mintCurrentStepAStar = 1;                                          //init the Step for AStar
                     //get start point
                     //get end point
-                    int startX = (int)processingSteps.getmRobotParm1();
-                    int startY = (int)processingSteps.getmRobotParm2();
-                    int startZ = (int)processingSteps.getmRobotParm3();
-                    int endX = (int)processingSteps.getmRobotParm4();
-                    int endY = (int)processingSteps.getmRobotParm5();
-                    int endDir = (int)processingSteps.getmRobotParm6();
+                    int startX = (int) processingSteps.getmRobotParm1();
+                    int startY = (int) processingSteps.getmRobotParm2();
+                    int startZ = (int) processingSteps.getmRobotParm3();
+                    int endX = (int) processingSteps.getmRobotParm4();
+                    int endY = (int) processingSteps.getmRobotParm5();
+                    int endDir = (int) processingSteps.getmRobotParm6();
 
                     //before using the path in the command lets check if we can localise
                     if (lastLocation != null) {
@@ -1322,10 +1269,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         //counter clockwise rotation (x,y) = (-x, y)
                         //origin is center of field
                         //Astar is top right so need to add in 6 feet to each value
-                        startX = (int)(localisedRobotX/25.4) + 72;
-                        startY = (int)(localisedRobotY/25.4) + 72;
+                        startX = (int) (localisedRobotX / 25.4) + 72;
+                        startY = (int) (localisedRobotY / 25.4) + 72;
                         //need to rotate the axis -90 degrees
-                        startZ = (int)localisedRobotBearing;
+                        startZ = (int) localisedRobotBearing;
 
                         if ((startZ > 357) && (startZ < 3))
                             startZ = 90;
@@ -1336,22 +1283,18 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         else if ((startZ > 87) && (startZ < 93))
                             startZ = 180;
 
-                        if (debug >= 1) {
-                            fileLogger.writeEvent(TAG, "AStar Init - Localised Values");
-                            fileLogger.writeEvent(TAG, "AStar Init - localisedRobotX:        " + localisedRobotX);
-                            fileLogger.writeEvent(TAG, "AStar Init - localisedRobotY:        " + localisedRobotY);
-                            fileLogger.writeEvent(TAG, "AStar Init - localisedRobotBearing:  " + localisedRobotBearing);
-                            fileLogger.writeEvent(TAG, "AStar Init - startX:                 " + startX);
-                            fileLogger.writeEvent(TAG, "AStar Init - startY:                 " + startY);
-                            fileLogger.writeEvent(TAG, "AStar Init - startZ:                 " + startZ);
-                        }
+                        fileLogger.writeEvent(1, TAG, "AStar Init - Localised Values");
+                        fileLogger.writeEvent(1, TAG, "AStar Init - localisedRobotX:        " + localisedRobotX);
+                        fileLogger.writeEvent(1, TAG, "AStar Init - localisedRobotY:        " + localisedRobotY);
+                        fileLogger.writeEvent(1, TAG, "AStar Init - localisedRobotBearing:  " + localisedRobotBearing);
+                        fileLogger.writeEvent(1, TAG, "AStar Init - startX:                 " + startX);
+                        fileLogger.writeEvent(1, TAG, "AStar Init - startY:                 " + startY);
+                        fileLogger.writeEvent(1, TAG, "AStar Init - startZ:                 " + startZ);
                     }
 
                     //process path
                     pathValues = getPathValues.findPathAStar(startX, startY, startZ, endX, endY, endDir);  //for enhanced
-                    if (debug >= 1) {
-                        fileLogger.writeEvent(TAG, "AStar Path - length:                 " + pathValues.length);
-                    }
+                    fileLogger.writeEvent(1, TAG, "AStar Path - length:                 " + pathValues.length);
 
                     String[][] mapComplete = new String[A0Star.FIELDWIDTH][A0Star.FIELDWIDTH];
 
@@ -1402,18 +1345,16 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                     //plot out path..
                     for (int i = 0; i < pathValues.length; i++) {
-                        if (debug >= 1) {
-                            fileLogger.writeEvent(TAG,"Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4 );
-                        }
-                        if (((int)pathValues[i].val1 == 0) && ((int)pathValues[i].val3 == 0) && ((int)pathValues[i].val2 == 0) && ((int)pathValues[i].val4 == 0))
+                        fileLogger.writeEvent(1, TAG, "Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4);
+                        if (((int) pathValues[i].val1 == 0) && ((int) pathValues[i].val3 == 0) && ((int) pathValues[i].val2 == 0) && ((int) pathValues[i].val4 == 0))
                             break;
-                        mapComplete[(int)pathValues[i].val3][(int)pathValues[i].val2] = "P";
+                        mapComplete[(int) pathValues[i].val3][(int) pathValues[i].val2] = "P";
                         if ((pathValues[i].val2 == startX) && (pathValues[i].val3 == startY)) {
                             mapComplete[(int) pathValues[i].val3][(int) pathValues[i].val2] = "S";
                         }
                     }
                     mapComplete[endY][endX] = "E";
-                    fieldOutput ="";
+                    fieldOutput = "";
 
                     for (int y = 0; y < a0Star.fieldLength; y++) {
                         for (int x = 0; x < a0Star.fieldWidth; x++) {
@@ -1432,22 +1373,18 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     int numberOfMoves;
                     int key = 0;
                     int lastDirection = 0;
-                    int lasti =0;
+                    int lasti = 0;
                     String strAngleChange = "RT00";
 
                     while (processingAStarSteps) {
                         numberOfMoves = 0;
                         for (int i = startSegment; i < pathValues.length; i++) {
-                            numberOfMoves ++;
-                            if (debug >= 2) {
-                                fileLogger.writeEvent(TAG,"Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4 );
-                            }
-                            if (((int)pathValues[i].val1 == 0) && ((int)pathValues[i].val2 == 0) && ((int)pathValues[i].val3 == 0)) {
-                                if (debug >= 2) {
-                                    fileLogger.writeEvent(TAG,"End Detected" );
-                                }
+                            numberOfMoves++;
+                            fileLogger.writeEvent(2, TAG, "Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4);
+                            if (((int) pathValues[i].val1 == 0) && ((int) pathValues[i].val2 == 0) && ((int) pathValues[i].val3 == 0)) {
+                                fileLogger.writeEvent(2, TAG, "End Detected");
                                 //end of the sequence,
-                                lastDirection = (int)pathValues[i-1].val4;
+                                lastDirection = (int) pathValues[i - 1].val4;
                                 processingAStarSteps = false;
                                 lasti = i;
                             }
@@ -1455,10 +1392,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                             if (i == 1) {
                                 if (startZ != pathValues[i].val4) {  //need to turn
                                     strAngleChange = getAngle(startZ, (int) pathValues[i].val4);
-                                    if (debug >= 2) {
-                                        fileLogger.writeEvent(TAG, "First Step Need to turn Robot " + strAngleChange + " Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4);
-                                        fileLogger.writeEvent(TAG, "Adding Command (" + key + ", 10, " + strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
-                                    }
+                                    fileLogger.writeEvent(2, TAG, "First Step Need to turn Robot " + strAngleChange + " Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4);
+                                    fileLogger.writeEvent(2, TAG, "Adding Command (" + key + ", 10, " + strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
                                     autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto(key, 10, strAngleChange, false, false, 0, 0, 0, 0, 0, 0, 1));
                                     key++;
                                     dirChanged = true;
@@ -1467,8 +1402,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                                 }
                             } else {
                                 //work out the sequence not the first step
-                                if (pathValues[i-1].val4 != pathValues[i].val4) {  //need to turn
-                                    strAngleChange = getAngle((int)pathValues[i-1].val4, (int)pathValues[i].val4);
+                                if (pathValues[i - 1].val4 != pathValues[i].val4) {  //need to turn
+                                    strAngleChange = getAngle((int) pathValues[i - 1].val4, (int) pathValues[i].val4);
                                     dirChanged = true;
                                 } else {
                                     dirChanged = false;    //no change in direction
@@ -1480,19 +1415,16 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                                 if (i == 1) {
                                     AStarPathAngle = startZ;
                                 } else {
-                                    AStarPathAngle = (int)pathValues[i-1].val4;
+                                    AStarPathAngle = (int) pathValues[i - 1].val4;
                                 }
-                                switch (AStarPathAngle)
-                                {
+                                switch (AStarPathAngle) {
                                     case 0:
                                     case 90:
                                     case 180:
                                     case 270:
-                                        if (debug >= 2) {
-                                            fileLogger.writeEvent(TAG,"Heading on a Straight line " + (numberOfMoves) + " Path");
-                                            fileLogger.writeEvent(TAG,"Adding Command (" + key +", 10, " + "FW" + (numberOfMoves) + ", false, false, 0, 0, 0, 0, 0, 0, 0.8, false) ");
-                                        }
-                                        autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto (key, 10, "FW" + numberOfMoves , false, false, 0, 0, 0, 0, 0, 0, 0.8));
+                                        fileLogger.writeEvent(2, TAG, "Heading on a Straight line " + (numberOfMoves) + " Path");
+                                        fileLogger.writeEvent(2, TAG, "Adding Command (" + key + ", 10, " + "FW" + (numberOfMoves) + ", false, false, 0, 0, 0, 0, 0, 0, 0.8, false) ");
+                                        autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto(key, 10, "FW" + numberOfMoves, false, false, 0, 0, 0, 0, 0, 0, 0.8));
                                         numberOfMoves = 0;
                                         key++;
                                         break;
@@ -1500,21 +1432,16 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                                     case 135:
                                     case 225:
                                     case 315:
-                                        if (debug >= 2)
-                                        {
-                                            fileLogger.writeEvent(TAG,"Heading on a Straight line " + (int) ((numberOfMoves) * 1.4142) + " Path");
-                                            fileLogger.writeEvent(TAG, "Adding Command (" + key + ", 10, " + "FW" + (int) ((numberOfMoves) * 1.4142) + ", false, false, 0, 0, 0, 0, 0, 0, .8, false) ");
-                                        }
-                                        autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto (key, 10, "FW" + (int)(numberOfMoves * 1.4142 ) , false, false, 0,    0,    0,    0,    0,    0,    1));
+                                        fileLogger.writeEvent(2, TAG, "Heading on a Straight line " + (int) ((numberOfMoves) * 1.4142) + " Path");
+                                        fileLogger.writeEvent(2, TAG, "Adding Command (" + key + ", 10, " + "FW" + (int) ((numberOfMoves) * 1.4142) + ", false, false, 0, 0, 0, 0, 0, 0, .8, false) ");
+                                        autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto(key, 10, "FW" + (int) (numberOfMoves * 1.4142), false, false, 0, 0, 0, 0, 0, 0, 1));
                                         numberOfMoves = 0;
                                         key++;
                                         break;
                                 }
-                                if (debug >= 2) {
-                                    fileLogger.writeEvent(TAG,"Need to turn Robot " + strAngleChange + " Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4 );
-                                    fileLogger.writeEvent(TAG,"Adding Command (" + key +", 10, "+ strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
-                                }
-                                autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto (key, 10, strAngleChange, false, false, 0, 0, 0, 0, 0, 0, 0.4));
+                                fileLogger.writeEvent(2, TAG, "Need to turn Robot " + strAngleChange + " Path " + pathValues[i].val1 + " " + pathValues[i].val2 + " " + pathValues[i].val3 + " Dir:= " + pathValues[i].val4);
+                                fileLogger.writeEvent(2, TAG, "Adding Command (" + key + ", 10, " + strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
+                                autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto(key, 10, strAngleChange, false, false, 0, 0, 0, 0, 0, 0, 0.4));
                                 key++;
                             }
                             if (!processingAStarSteps)
@@ -1523,33 +1450,24 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         }
                         //need to work out the direction we are facing and the required direction
                         if ((lastDirection != endDir) && (!processingAStarSteps)) {
-                            if (debug >= 2) {
-                                fileLogger.writeEvent(TAG,"Sraight Moves Robot End Of Sequence - Need to Trun Robot");
-                            }
-                            strAngleChange = getAngle((int)pathValues[lasti - 1].val4, endDir);
-                            fileLogger.writeEvent(TAG,"Adding Command (" + key +", 10, " + strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
-                            autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto (key, 10,  strAngleChange, false, false, 0, 0, 0, 0, 0, 0, 0.4));
+                            fileLogger.writeEvent(2, TAG, "Sraight Moves Robot End Of Sequence - Need to Trun Robot");
+                            strAngleChange = getAngle((int) pathValues[lasti - 1].val4, endDir);
+                            fileLogger.writeEvent(1, TAG, "Adding Command (" + key + ", 10, " + strAngleChange + ", 0, 0, 0, 0, 0, 0, 1, false) ");
+                            autonomousStepsAStar.put(String.valueOf(key), new LibraryStateSegAuto(key, 10, strAngleChange, false, false, 0, 0, 0, 0, 0, 0, 0.4));
                             key++;
                         }
                     }
                     mintCurrentStateStep = stepState.STATE_ASTAR_INIT;
 
-                break;
-                case STATE_ASTAR_INIT:
-                {
-                    if (debug >= 1) {
-                        fileLogger.writeEvent(TAG, "About to check if step exists " + mintCurrentStepAStar);
-                    }
+                    break;
+                case STATE_ASTAR_INIT: {
+                    fileLogger.writeEvent(1, TAG, "About to check if step exists " + mintCurrentStepAStar);
                     // get step from hashmap, send it to the initStep for decoding
                     if (autonomousStepsAStar.containsKey(String.valueOf(mintCurrentStepAStar))) {
-                        if (debug >= 1) {
-                            fileLogger.writeEvent(TAG, "Step Exists TRUE " + mintCurrentStepAStar + " about to get the values from the step");
-                        }
+                        fileLogger.writeEvent(1, TAG, "Step Exists TRUE " + mintCurrentStepAStar + " about to get the values from the step");
                         processingSteps = autonomousStepsAStar.get(String.valueOf(mintCurrentStepAStar));      //read the step from the hashmap
                         autonomousStepsAStar.remove(String.valueOf(mintCurrentStepAStar));                     //remove the step from the hashmap
-                        if (debug >= 1) {
-                            fileLogger.writeEvent(TAG, "Got the values for step " + mintCurrentStepAStar + " about to decode and removed them");
-                        }
+                        fileLogger.writeEvent(1, TAG, "Got the values for step " + mintCurrentStepAStar + " about to decode and removed them");
                         //decode the step from hashmap
                         initAStarStep(processingSteps);
                     } else {
@@ -1558,8 +1476,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     }
                 }
                 break;
-                case STATE_ASTAR_RUNNING:
-                {
+                case STATE_ASTAR_RUNNING: {
                     //move robot according AStar hashmap
                     TankTurnStep();
                     PivotTurnStep();
@@ -1568,8 +1485,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     if ((mintCurrentStateDriveHeading == stepState.STATE_COMPLETE) &&
                             (mintCurrentStatePivotTurn == stepState.STATE_COMPLETE) &&
                             (mintCurrentStateTankTurn == stepState.STATE_COMPLETE) &&
-                            (mintCurrentStateRadiusTurn == stepState.STATE_COMPLETE))
-                    {
+                            (mintCurrentStateRadiusTurn == stepState.STATE_COMPLETE)) {
                         //increment ASTar Steps Counter
                         mintCurrentStepAStar++;
                         mintCurrentStateStep = stepState.STATE_ASTAR_INIT;
@@ -1577,23 +1493,16 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                 }
                 break;
-                case STATE_ASTAR_ERROR:
-                {
+                case STATE_ASTAR_ERROR: {
                     //do something on error
                 }
                 break;
-                case STATE_ASTAR_COMPLETE:
-                {
+                case STATE_ASTAR_COMPLETE: {
                     //empty hashmap ready for next AStar processing.
                     //clear AStar step counter ready for next AStar process
                     mintCurrentStepAStar = 0;
-
                     //when complete, keep processing normal step
-                    if (debug >= 1)
-                    {
-                        fileLogger.writeEvent(TAG, "A* Path Completed:- " + mintCurrentStep);
-                    }
-
+                    fileLogger.writeEvent(1, TAG, "A* Path Completed:- " + mintCurrentStep);
                     //  Transition to a new state and next step.
                     mintCurrentStep++;
                     mintCurrentStateStep = stepState.STATE_INIT;
@@ -1621,7 +1530,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         mdblLastOn = mStateTime.milliseconds();
                         mblnLEDON = true;
                         LedState(LedOff, LedOn, LedOff, LedOff, LedOn, LedOff);
-                    } else  if ((mblnLEDON) && (mStateTime.milliseconds() > (mdblLastOn + 750))) {
+                    } else if ((mblnLEDON) && (mStateTime.milliseconds() > (mdblLastOn + 750))) {
                         mdblLastOff = mStateTime.milliseconds();
                         mblnLEDON = false;
                         LedState(LedOff, LedOff, LedOff, LedOff, LedOff, LedOff);
@@ -1632,44 +1541,40 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         mdblLastOn = mStateTime.milliseconds();
                         mblnLEDON = true;
                         LedState(LedOn, LedOff, LedOff, LedOn, LedOff, LedOff);
-                    } else  if ((mblnLEDON) && (mStateTime.milliseconds() > (mdblLastOn + 250))) {
+                    } else if ((mblnLEDON) && (mStateTime.milliseconds() > (mdblLastOn + 250))) {
                         mdblLastOff = mStateTime.milliseconds();
                         mblnLEDON = false;
                         LedState(LedOff, LedOff, LedOff, LedOff, LedOff, LedOff);
-                        mintCounts ++;
+                        mintCounts++;
                     }
                     if (mintCounts >= 5) {
                         mintCounts = 0;
                         mint5291LEDStatus = LEDState.STATE_TEAM;
                     }
                     break;
-                case STATE_BEACON:       //
+                case STATE_OBJECT:       //
 
                     if ((!mblnLEDON) && (mStateTime.milliseconds() > (mdblLastOff + 500))) {
                         mdblLastOn = mStateTime.milliseconds();
                         mblnLEDON = true;
-                        if (mColour == Constants.BeaconColours.BEACON_BLUE_RED) {    //means red is to the right
+                        if (mColour == Constants.ObjectColours.OBJECT_BLUE) {    //means red is to the right
                             LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOff);
-                        } else if (mColour == Constants.BeaconColours.BEACON_RED_BLUE) {
-                            LedState(LedOff, LedOn, LedOff, LedOff, LedOff, LedOff);
-                        } else if (mColour == Constants.BeaconColours.BEACON_BLUE) {
-                            LedState(LedOn, LedOff, LedOff, LedOff, LedOff, LedOff);
-                        } else if (mColour == Constants.BeaconColours.BEACON_BLUE) {
+                        } else if (mColour == Constants.ObjectColours.OBJECT_RED) {
                             LedState(LedOff, LedOn, LedOff, LedOff, LedOff, LedOff);
                         }
-                    } else  if ((mblnLEDON) && (mStateTime.milliseconds() > (mdblLastOn + 500))) {
+                    } else if ((mblnLEDON) && (mStateTime.milliseconds() > (mdblLastOn + 500))) {
                         mdblLastOff = mStateTime.milliseconds();
                         mblnLEDON = false;
-                        if (mColour == Constants.BeaconColours.BEACON_BLUE_RED) {    //means red is to the right
+                        if (mColour == Constants.ObjectColours.OBJECT_BLUE_RED) {    //means red is to the right
                             LedState(LedOff, LedOff, LedOff, LedOff, LedOn, LedOff);
-                        } else if (mColour == Constants.BeaconColours.BEACON_RED_BLUE) {
+                        } else if (mColour == Constants.ObjectColours.OBJECT_RED_BLUE) {
                             LedState(LedOff, LedOff, LedOff, LedOff, LedOff, LedOn);
-                        } else if (mColour == Constants.BeaconColours.BEACON_BLUE) {
+                        } else if (mColour == Constants.ObjectColours.OBJECT_BLUE) {
                             LedState(LedOff, LedOff, LedOff, LedOn, LedOff, LedOff);
-                        } else if (mColour == Constants.BeaconColours.BEACON_BLUE) {
+                        } else if (mColour == Constants.ObjectColours.OBJECT_BLUE) {
                             LedState(LedOff, LedOff, LedOff, LedOff, LedOn, LedOff);
                         }
-                        mintCounts ++;
+                        mintCounts++;
                     }
                     if (mintCounts >= 10) {
                         mintCounts = 0;
@@ -1688,48 +1593,41 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     private void loadActiveStep(int step) {
 
         LibraryStateSegAuto mStateSegAuto = autonomousSteps.get(String.valueOf(step));
-        if (debug >= 1) {
-            fileLogger.writeEvent("loadActiveStep()", "Got the values for step " + step + " about to decode");
-        }
-        mdblStepDistance  = 0;
-        mdblStepTimeout   = mStateSegAuto.getmRobotTimeOut();
-        mdblStepSpeed     = mStateSegAuto.getmRobotSpeed();
-        mstrRobotCommand  = mStateSegAuto.getmRobotCommand();
-        mdblRobotParm1    = mStateSegAuto.getmRobotParm1();
-        mdblRobotParm2    = mStateSegAuto.getmRobotParm2();
-        mdblRobotParm3    = mStateSegAuto.getmRobotParm3();
-        mdblRobotParm4    = mStateSegAuto.getmRobotParm4();
-        mdblRobotParm5    = mStateSegAuto.getmRobotParm5();
-        mdblRobotParm6    = mStateSegAuto.getmRobotParm6();
-        mblnParallel      = mStateSegAuto.getmRobotParallel();
-        mblnRobotLastPos  = mStateSegAuto.getmRobotLastPos();
+        fileLogger.writeEvent(1, "loadActiveStep()", "Got the values for step " + step + " about to decode");
+        mdblStepDistance = 0;
+        mdblStepTimeout = mStateSegAuto.getmRobotTimeOut();
+        mdblStepSpeed = mStateSegAuto.getmRobotSpeed();
+        mstrRobotCommand = mStateSegAuto.getmRobotCommand();
+        mdblRobotParm1 = mStateSegAuto.getmRobotParm1();
+        mdblRobotParm2 = mStateSegAuto.getmRobotParm2();
+        mdblRobotParm3 = mStateSegAuto.getmRobotParm3();
+        mdblRobotParm4 = mStateSegAuto.getmRobotParm4();
+        mdblRobotParm5 = mStateSegAuto.getmRobotParm5();
+        mdblRobotParm6 = mStateSegAuto.getmRobotParm6();
+        mblnParallel = mStateSegAuto.getmRobotParallel();
+        mblnRobotLastPos = mStateSegAuto.getmRobotLastPos();
     }
 
-    private void loadParallelSteps () {
+    private void loadParallelSteps() {
         mintActiveStepsCopy.clear();
         for (String stKey : mintActiveSteps.keySet()) {
-            if (debug >= 2) {
-                fileLogger.writeEvent("loadParallelSteps()", "Loading Active Parallel Step " + stKey );
-            }
+            fileLogger.writeEvent(2, "loadParallelSteps()", "Loading Active Parallel Step " + stKey);
             mintActiveStepsCopy.put(stKey, mintActiveSteps.get(stKey));
         }
     }
 
-    private void deleteParallelStep () {
+    private void deleteParallelStep() {
         for (String stKey : mintActiveStepsCopy.keySet()) {
             int tempStep = mintActiveStepsCopy.get(stKey);
             if (mintStepNumber == tempStep) {
-                if (debug >= 2) {
-                    fileLogger.writeEvent("deleteParallelStep()", "Removing Parallel Step " + tempStep );
-                }
-
+                fileLogger.writeEvent(2, "deleteParallelStep()", "Removing Parallel Step " + tempStep);
                 if (mintActiveSteps.containsKey(stKey))
                     mintActiveSteps.remove(stKey);
             }
         }
     }
 
-    private void processSteps (String stepName) {
+    private void processSteps(String stepName) {
 
         switch (stepName) {
             case "DEL":
@@ -1765,7 +1663,30 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             case "VTE":  // Turn the Robot using information from Vuforia and Pythag
                 VuforiaTurn();
                 break;
-
+            case "JWA":  // Use the Camera to detect the colour of the Jewel
+                DetectJewelColour();
+                break;
+            case "JWO":  // Open The Jewel Arms and create step to move robot
+                OpenJewelServo();
+                break;
+            case "JWC":  // Close the Jewel Arms
+                CloseJewelServo();
+                break;
+            case "MLF":  // Main Lift UP
+                MainLiftMove();
+                break;
+            case "TLF":  // Main Lift UP
+                TopLiftMove();
+                break;
+            case "TGR":  // Main Lift UP
+                TopGripperMove();
+                break;
+            case "BGR":  // Main Lift UP
+                BotGripperMove();
+                break;
+            case "MST":
+                MecanumStrafe();
+                break;
         }
     }
 
@@ -1773,28 +1694,20 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     //  Initialise the state.
     //--------------------------------------------------------------------------
     //private void initStep (LibraryStateSegAuto mStateSegAuto) {
-    private void initStep ()
-    {
-        if (debug >= 3) {
-            fileLogger.writeEvent("initstep()", "Starting to Decode Step " + mintCurrentStep);
-        }
+    private void initStep() {
+        fileLogger.writeEvent(3, "initstep()", "Starting to Decode Step " + mintCurrentStep);
 
         if (!(mintActiveSteps.containsValue(mintCurrentStep))) {
             mintActiveSteps.put(String.valueOf(mintCurrentStep), mintCurrentStep);
-            if (debug >= 3) {
-                fileLogger.writeEvent("initstep()", "Put step into hashmap mintActiveSteps " + mintCurrentStep);
-            }
+            fileLogger.writeEvent(3, "initstep()", "Put step into hashmap mintActiveSteps " + mintCurrentStep);
         }
 
         loadActiveStep(mintCurrentStep);
-
         mintCurrentStateStep = stepState.STATE_RUNNING;
-
         // Reset the state time, and then change to next state.
         mStateTime.reset();
 
-        switch (mstrRobotCommand.substring(0, 3))
-        {
+        switch (mstrRobotCommand.substring(0, 3)) {
             case "DEL":
                 mintCurrentStepDelay = stepState.STATE_INIT;
                 break;
@@ -1846,34 +1759,49 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             case "FNC":  //  Run a special Function with Parms
 
                 break;
+            case "JWA":
+                mintCurrentStateJewelColour5291 = stepState.STATE_INIT;
+                break;
+            case "JWO":  //Open the Jewel Arms
+                mintCurrentStateJewelArm5291 = stepState.STATE_INIT;
+                break;
+            case "JWC":  //close the jewel Arms
+                mintCurrentStateJewelArmClose5291 = stepState.STATE_INIT;
+                break;
+            case "MLF":  // Main Lift UP
+                mintCurrentStateMainLiftMove5291 = stepState.STATE_INIT;
+                break;
+            case "TLF":  // Main Lift UP
+                mintCurrentStateTopLiftMove5291 = stepState.STATE_INIT;
+                break;
+            case "TGR":  //Top Gripper Position
+                mintCurrentStateTopGripperMove5291 = stepState.STATE_INIT;
+                break;
+            case "BGR":  //Bottom Gripper Position
+                mintCurrentStateBotGripperMove5291 = stepState.STATE_INIT;
+                break;
         }
 
-        if (debug >= 2) {
-            fileLogger.writeEvent("initStep()", "Current Step          :- " + mintCurrentStep);
-            fileLogger.writeEvent("initStep()", "mdblStepTimeout       :- " + mdblStepTimeout);
-            fileLogger.writeEvent("initStep()", "mdblStepSpeed         :- " + mdblStepSpeed);
-            fileLogger.writeEvent("initStep()", "mstrRobotCommand      :- " + mstrRobotCommand);
-            fileLogger.writeEvent("initStep()", "mblnParallel          :- " + mblnParallel);
-            fileLogger.writeEvent("initStep()", "mblnRobotLastPos      :- " + mblnRobotLastPos);
-            fileLogger.writeEvent("initStep()", "mdblRobotParm1        :- " + mdblRobotParm1);
-            fileLogger.writeEvent("initStep()", "mdblRobotParm2        :- " + mdblRobotParm2);
-            fileLogger.writeEvent("initStep()", "mdblRobotParm3        :- " + mdblRobotParm3);
-            fileLogger.writeEvent("initStep()", "mdblRobotParm4        :- " + mdblRobotParm4);
-            fileLogger.writeEvent("initStep()", "mdblRobotParm5        :- " + mdblRobotParm5);
-            fileLogger.writeEvent("initStep()", "mdblRobotParm6        :- " + mdblRobotParm6);
-            fileLogger.writeEvent("initStep()", "mdblStepDistance      :- " + mdblStepDistance);
-            fileLogger.writeEvent("initStep()", "mdblStepTurnL         :- " + mdblStepTurnL);
-            fileLogger.writeEvent("initStep()", "mdblStepTurnR         :- " + mdblStepTurnR);
-        }
+        fileLogger.writeEvent(2, "initStep()", "Current Step          :- " + mintCurrentStep);
+        fileLogger.writeEvent(2, "initStep()", "mdblStepTimeout       :- " + mdblStepTimeout);
+        fileLogger.writeEvent(2, "initStep()", "mdblStepSpeed         :- " + mdblStepSpeed);
+        fileLogger.writeEvent(2, "initStep()", "mstrRobotCommand      :- " + mstrRobotCommand);
+        fileLogger.writeEvent(2, "initStep()", "mblnParallel          :- " + mblnParallel);
+        fileLogger.writeEvent(2, "initStep()", "mblnRobotLastPos      :- " + mblnRobotLastPos);
+        fileLogger.writeEvent(2, "initStep()", "mdblRobotParm1        :- " + mdblRobotParm1);
+        fileLogger.writeEvent(2, "initStep()", "mdblRobotParm2        :- " + mdblRobotParm2);
+        fileLogger.writeEvent(2, "initStep()", "mdblRobotParm3        :- " + mdblRobotParm3);
+        fileLogger.writeEvent(2, "initStep()", "mdblRobotParm4        :- " + mdblRobotParm4);
+        fileLogger.writeEvent(2, "initStep()", "mdblRobotParm5        :- " + mdblRobotParm5);
+        fileLogger.writeEvent(2, "initStep()", "mdblRobotParm6        :- " + mdblRobotParm6);
+        fileLogger.writeEvent(2, "initStep()", "mdblStepDistance      :- " + mdblStepDistance);
+        fileLogger.writeEvent(2, "initStep()", "mdblStepTurnL         :- " + mdblStepTurnL);
+        fileLogger.writeEvent(2, "initStep()", "mdblStepTurnR         :- " + mdblStepTurnR);
     }
 
-    private void initAStarStep (LibraryStateSegAuto mStateSegAuto) {
+    private void initAStarStep(LibraryStateSegAuto mStateSegAuto) {
         mdblStepDistance = 0;
-
-        if (debug >= 3) {
-            fileLogger.writeEvent("initAStarStep", "Starting to Decode AStar Step ");
-        }
-
+        fileLogger.writeEvent(3, "initAStarStep", "Starting to Decode AStar Step ");
         // Reset the state time, and then change to next state.
         mStateTime.reset();
 
@@ -1889,8 +1817,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         mintCurrentStateStep = stepState.STATE_ASTAR_RUNNING;
 
-        switch (mstrRobotCommand.substring(0, 3))
-        {
+        switch (mstrRobotCommand.substring(0, 3)) {
             case "DEL":
                 mintCurrentStepDelay = stepState.STATE_INIT;
                 break;
@@ -1922,26 +1849,22 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                 break;
         }
-
-        if (debug >= 2) {
-            fileLogger.writeEvent("initAStarStep()", "Current Step          :- " + mintCurrentStep);
-            fileLogger.writeEvent("initAStarStep()", "mdblStepTimeout       :- " + mdblStepTimeout);
-            fileLogger.writeEvent("initAStarStep()", "mdblStepSpeed         :- " + mdblStepSpeed);
-            fileLogger.writeEvent("initAStarStep()", "mstrRobotCommand      :- " + mstrRobotCommand);
-            fileLogger.writeEvent("initAStarStep()", "mdblRobotParm1        :- " + mdblRobotParm1);
-            fileLogger.writeEvent("initAStarStep()", "mdblRobotParm2        :- " + mdblRobotParm2);
-            fileLogger.writeEvent("initAStarStep()", "mdblRobotParm3        :- " + mdblRobotParm3);
-            fileLogger.writeEvent("initAStarStep()", "mdblRobotParm4        :- " + mdblRobotParm4);
-            fileLogger.writeEvent("initAStarStep()", "mdblRobotParm5        :- " + mdblRobotParm5);
-            fileLogger.writeEvent("initAStarStep()", "mdblRobotParm6        :- " + mdblRobotParm6);
-            fileLogger.writeEvent("initAStarStep()", "mdblStepDistance      :- " + mdblStepDistance);
-            fileLogger.writeEvent("initAStarStep()", "mdblStepTurnL         :- " + mdblStepTurnL);
-            fileLogger.writeEvent("initAStarStep()", "mdblStepTurnR         :- " + mdblStepTurnR);
-        }
+        fileLogger.writeEvent(2, "initAStarStep()", "Current Step          :- " + mintCurrentStep);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblStepTimeout       :- " + mdblStepTimeout);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblStepSpeed         :- " + mdblStepSpeed);
+        fileLogger.writeEvent(2, "initAStarStep()", "mstrRobotCommand      :- " + mstrRobotCommand);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblRobotParm1        :- " + mdblRobotParm1);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblRobotParm2        :- " + mdblRobotParm2);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblRobotParm3        :- " + mdblRobotParm3);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblRobotParm4        :- " + mdblRobotParm4);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblRobotParm5        :- " + mdblRobotParm5);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblRobotParm6        :- " + mdblRobotParm6);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblStepDistance      :- " + mdblStepDistance);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblStepTurnL         :- " + mdblStepTurnL);
+        fileLogger.writeEvent(2, "initAStarStep()", "mdblStepTurnR         :- " + mdblStepTurnR);
     }
 
-    private void DriveStepHeading()
-    {
+    private void DriveStepHeading() {
         double dblStepSpeedTemp;
         double dblDistanceToEndLeft1;
         double dblDistanceToEndLeft2;
@@ -1957,25 +1880,20 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         int intLeft2MotorEncoderPosition;
         int intRight1MotorEncoderPosition;
         int intRight2MotorEncoderPosition;
-        double  dblMaxSpeed;
-        double  dblError;
-        double  dblSteer;
-        double  dblLeftSpeed;
-        double  dblRightSpeed;
+        double dblMaxSpeed;
+        double dblError;
+        double dblSteer;
+        double dblLeftSpeed;
+        double dblRightSpeed;
 
-        switch (mintCurrentStateDriveHeading)
-        {
+        switch (mintCurrentStateDriveHeading) {
             case STATE_INIT:
 
                 // set motor controller to mode
                 robotDrive.setHardwareDriveRunUsingEncoders();
-
                 mblnDisableVisionProcessing = true;  //disable vision processing
                 mdblStepDistance = Double.parseDouble(mstrRobotCommand.substring(3));
-
-                if (debug >= 2) {
-                    fileLogger.writeEvent("runningDriveHeadingStep", "mdblStepDistance   :- " + mdblStepDistance);
-                }
+                fileLogger.writeEvent(2, "runningDriveHeadingStep", "mdblStepDistance   :- " + mdblStepDistance);
                 // Determine new target position
 
                 if (mblnNextStepLastPos) {
@@ -2008,10 +1926,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 robotDrive.baseMotor3.setTargetPosition(mintStepRightTarget1);
                 robotDrive.baseMotor4.setTargetPosition(mintStepRightTarget2);
 
-                if (debug >= 2) {
-                    fileLogger.writeEvent("runningDriveHeadingStep", "mStepLeftTarget1 :- " + mintStepLeftTarget1 +  " mStepLeftTarget2 :- " + mintStepLeftTarget2);
-                    fileLogger.writeEvent("runningDriveHeadingStep", "mStepRightTarget1:- " + mintStepRightTarget1 + " mStepRightTarget2:- " + mintStepRightTarget2);
-                }
+                fileLogger.writeEvent(2, "runningDriveHeadingStep", "mStepLeftTarget1 :- " + mintStepLeftTarget1 + " mStepLeftTarget2 :- " + mintStepLeftTarget2);
+                fileLogger.writeEvent(2, "runningDriveHeadingStep", "mStepRightTarget1:- " + mintStepRightTarget1 + " mStepRightTarget2:- " + mintStepRightTarget2);
 
                 if (!(robotDrive.baseMotor1.getMode().equals(DcMotor.RunMode.RUN_TO_POSITION))) {
                     // set motor controller to mode, Turn On RUN_TO_POSITION
@@ -2021,7 +1937,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mintCurrentStateDriveHeading = stepState.STATE_RUNNING;
                 robotDrive.setHardwareDrivePower(Math.abs(mdblStepSpeed));
 
-            break;
+                break;
             case STATE_RUNNING:
 
                 int gyroDelay;
@@ -2066,15 +1982,12 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     dblRightSpeed = dblStepSpeedTemp;
                     //use Gyro to run heading
                     // adjust relative speed based on heading error.
-                    if ((mStateTime.milliseconds() > gyroDelay )) {
+                    if ((mStateTime.milliseconds() > gyroDelay)) {
                         dblError = getDriveError(mdblRobotParm2);
                         dblSteer = getDriveSteer(dblError, mdblRobotParm3);
-
-                        if (debug >= 3) {
-                            fileLogger.writeEvent("runningDriveHeadingStep", "dblError " + dblError);
-                            fileLogger.writeEvent("runningDriveHeadingStep", "dblSteer " + dblSteer);
-                            fileLogger.writeEvent("runningDriveHeadingStep", "Heading " + mdblRobotParm2);
-                        }
+                        fileLogger.writeEvent(3, "runningDriveHeadingStep", "dblError " + dblError);
+                        fileLogger.writeEvent(3, "runningDriveHeadingStep", "dblSteer " + dblSteer);
+                        fileLogger.writeEvent(3, "runningDriveHeadingStep", "Heading " + mdblRobotParm2);
 
                         // if driving in reverse, the motor correction also needs to be reversed
                         if (mdblStepDistance < 0)
@@ -2094,17 +2007,11 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     dblLeftSpeed = dblStepSpeedTemp;
                     dblRightSpeed = dblStepSpeedTemp;
                 }
-
-                if (debug >= 2) {
-                    fileLogger.writeEvent("runningDriveHeadingStep", "dblDistanceToEnd " + dblDistanceToEnd);
-                }
+                fileLogger.writeEvent(3, "runningDriveHeadingStep", "dblDistanceToEnd " + dblDistanceToEnd);
 
                 if (mblnRobotLastPos) {
                     if (dblDistanceToEnd <= 3.0) {
-                        if (debug >= 2)
-                        {
-                            fileLogger.writeEvent("runningDriveHeadingStep", "mblnRobotLastPos Complete         ");
-                        }
+                        fileLogger.writeEvent(3, "runningDriveHeadingStep", "mblnRobotLastPos Complete         ");
                         mblnNextStepLastPos = true;
                         mblnDisableVisionProcessing = false;  //enable vision processing
                         mintCurrentStateDriveHeading = stepState.STATE_COMPLETE;
@@ -2115,24 +2022,18 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 //if within error margin stop
                 //if (robotDrive.leftMotor1.isBusy() && robotDrive.rightMotor1.isBusy()) {
                 //get motor busy state bitmap is right2, right1, left2, left1
-                if (((robotDrive.getHardwareDriveIsBusy() & (robotConfigSettings.motors.leftMotor1.toInt() | robotConfigSettings.motors.rightMotor1.toInt() )) == (robotConfigSettings.motors.leftMotor1.toInt() | robotConfigSettings.motors.rightMotor1.toInt() )))
-                {
-                    if (debug >= 3) {
-                        fileLogger.writeEvent("runningDriveHeadingStep", "Encoder counts per inch = " + COUNTS_PER_INCH + " dblDistanceFromStart " + dblDistanceFromStart + " dblDistanceToEnd " + dblDistanceToEnd + " Power Level " + dblStepSpeedTemp + " Running to target  L1, L2, R1, R2  " + mintStepLeftTarget1 + ", " + mintStepLeftTarget2 + ", " + mintStepRightTarget1 + ",  " + mintStepRightTarget2 + ", " + " Running at position L1 " + intLeft1MotorEncoderPosition + " L2 " + intLeft2MotorEncoderPosition + " R1 " + intRight1MotorEncoderPosition + " R2 " + intRight2MotorEncoderPosition);
-                    }
-                    telemetry.addData("Path1", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
-                    telemetry.addData("Path2", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intRight1MotorEncoderPosition);
-                    telemetry.addData("Path3", "Running at %7d :%7d", intLeft2MotorEncoderPosition, intRight2MotorEncoderPosition);
+                if (((robotDrive.getHardwareDriveIsBusy() & (robotConfigSettings.motors.leftMotor1.toInt() | robotConfigSettings.motors.rightMotor1.toInt())) == (robotConfigSettings.motors.leftMotor1.toInt() | robotConfigSettings.motors.rightMotor1.toInt()))) {
+                    fileLogger.writeEvent(3, "runningDriveHeadingStep", "Encoder counts per inch = " + COUNTS_PER_INCH + " dblDistanceFromStart " + dblDistanceFromStart + " dblDistanceToEnd " + dblDistanceToEnd + " Power Level " + dblStepSpeedTemp + " Running to target  L1, L2, R1, R2  " + mintStepLeftTarget1 + ", " + mintStepLeftTarget2 + ", " + mintStepRightTarget1 + ",  " + mintStepRightTarget2 + ", " + " Running at position L1 " + intLeft1MotorEncoderPosition + " L2 " + intLeft2MotorEncoderPosition + " R1 " + intRight1MotorEncoderPosition + " R2 " + intRight2MotorEncoderPosition);
+                    dashboard.displayPrintf(3, "Path1", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
+                    dashboard.displayPrintf(4, "Path2", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intRight1MotorEncoderPosition);
+                    dashboard.displayPrintf(5, "Path3", "Running at %7d :%7d", intLeft2MotorEncoderPosition, intRight2MotorEncoderPosition);
                     // set power on motor controller to update speeds
                     robotDrive.setHardwareDriveLeftMotorPower(dblLeftSpeed);
                     robotDrive.setHardwareDriveRightMotorPower(dblRightSpeed);
                 } else {
                     // Stop all motion;
                     robotDrive.setHardwareDrivePower(0);
-                    if (debug >= 2)
-                    {
-                        fileLogger.writeEvent("runningDriveHeadingStep", "Complete         ");
-                    }
+                    fileLogger.writeEvent(2, "runningDriveHeadingStep", "Complete         ");
                     mblnDisableVisionProcessing = false;  //enable vision processing
                     mintCurrentStateDriveHeading = stepState.STATE_COMPLETE;
                     deleteParallelStep();
@@ -2140,21 +2041,19 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                 //check timeout value
                 if (mStateTime.seconds() > mdblStepTimeout) {
-                    if (debug >= 1) {
-                        fileLogger.writeEvent("runningDriveHeadingStep", "Timeout:- ");
-                    }
+                    fileLogger.writeEvent(1, "runningDriveHeadingStep", "Timeout:- " + mStateTime.seconds());
                     //  Transition to a new state.
                     mintCurrentStateDriveHeading = stepState.STATE_COMPLETE;
                     deleteParallelStep();
                 }
-            break;
+                break;
         }
     }
     //--------------------------------------------------------------------------
     //  Execute the state.
     //--------------------------------------------------------------------------
 
-    private void PivotTurnStep ()  //should be same as radius turn with radius of 1/2 robot width, so this function can be deleted once radius turn is completed
+    private void PivotTurnStep()  //should be same as radius turn with radius of 1/2 robot width, so this function can be deleted once radius turn is completed
     {
 
         double dblDistanceToEndLeft1;
@@ -2166,8 +2065,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         int intRight1MotorEncoderPosition;
         int intRight2MotorEncoderPosition;
 
-        switch (mintCurrentStatePivotTurn)
-        {
+        switch (mintCurrentStatePivotTurn) {
             case STATE_INIT: {
                 // set motor controller to mode
                 robotDrive.setHardwareDriveRunUsingEncoders();
@@ -2186,17 +2084,13 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         break;
                 }
 
-                if (debug >= 2) {
-                    fileLogger.writeEvent("PivotTurnStep", "mdblStepTurnL      :- " + mdblStepTurnL);
-                    fileLogger.writeEvent("PivotTurnStep", "mdblStepTurnR      :- " + mdblStepTurnR);
-                }
+                fileLogger.writeEvent(2, "PivotTurnStep", "mdblStepTurnL      :- " + mdblStepTurnL);
+                fileLogger.writeEvent(2, "PivotTurnStep", "mdblStepTurnR      :- " + mdblStepTurnR);
 
                 // Turn On RUN_TO_POSITION
-                if(mdblStepTurnR == 0) {
+                if (mdblStepTurnR == 0) {
                     // Determine new target position
-                    if (debug >= 2) {
-                        fileLogger.writeEvent("PivotTurnStep", "Current LPosition:-" + robotDrive.baseMotor1.getCurrentPosition());
-                    }
+                    fileLogger.writeEvent(2, "PivotTurnStep", "Current LPosition:-" + robotDrive.baseMotor1.getCurrentPosition());
 
                     // Get Current Encoder positions
                     if (mblnNextStepLastPos) {
@@ -2223,10 +2117,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     mintLastEncoderDestinationLeft2 = mintStepLeftTarget2;
                     mintLastEncoderDestinationRight1 = mintStepRightTarget1;
                     mintLastEncoderDestinationRight2 = mintStepRightTarget2;
+                    fileLogger.writeEvent(2, "PivotTurnStep", "mintStepLeftTarget1:-  " + mintStepLeftTarget1 + " mintStepLeftTarget2:-  " + mintStepLeftTarget2);
 
-                    if (debug >= 2) {
-                        fileLogger.writeEvent("PivotTurnStep", "mintStepLeftTarget1:-  " + mintStepLeftTarget1 + " mintStepLeftTarget2:-  " + mintStepLeftTarget2);
-                    }
                     // pass target position to motor controller
                     robotDrive.baseMotor1.setTargetPosition(mintStepLeftTarget1);
                     robotDrive.baseMotor2.setTargetPosition(mintStepLeftTarget2);
@@ -2236,12 +2128,9 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                     // set power on motor controller to start moving
                     robotDrive.setHardwareDriveLeftMotorPower(Math.abs(mdblStepSpeed));
-                }
-                else {
+                } else {
                     // Determine new target position
-                    if (debug >= 2) {
-                        fileLogger.writeEvent("PivotTurnStep", "Current RPosition:-" + robotDrive.baseMotor3.getCurrentPosition());
-                    }
+                    fileLogger.writeEvent(2, "PivotTurnStep", "Current RPosition:-" + robotDrive.baseMotor3.getCurrentPosition());
 
                     // Get Current Encoder positions
                     if (mblnNextStepLastPos) {
@@ -2269,9 +2158,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     mintLastEncoderDestinationRight1 = mintStepRightTarget1;
                     mintLastEncoderDestinationRight2 = mintStepRightTarget2;
 
-                    if (debug >= 2) {
-                        fileLogger.writeEvent("PivotTurnStep", "mintStepRightTarget1:- " + mintStepRightTarget1 + " mintStepRightTarget2:- " + mintStepRightTarget2);
-                    }
+                    fileLogger.writeEvent(3, "PivotTurnStep", "mintStepRightTarget1:- " + mintStepRightTarget1 + " mintStepRightTarget2:- " + mintStepRightTarget2);
+
                     // pass target position to motor controller
                     robotDrive.baseMotor3.setTargetPosition(mintStepRightTarget1);
                     robotDrive.baseMotor4.setTargetPosition(mintStepRightTarget2);
@@ -2289,10 +2177,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mintLastEncoderDestinationRight1 = mintStepRightTarget1;
                 mintLastEncoderDestinationRight2 = mintStepRightTarget2;
 
-                if (debug >= 3) {
-                    fileLogger.writeEvent("PivotTurnStep", "gblStepLeftTarget :- " + mintStepLeftTarget1 +  " mintStepLeftTarget2 :- " + mintStepLeftTarget2);
-                    fileLogger.writeEvent("PivotTurnStep", "gblStepRightTarget:- " + mintStepRightTarget1 + " mintStepRightTarget2:- " + mintStepRightTarget2);
-                }
+                fileLogger.writeEvent(3, "PivotTurnStep", "gblStepLeftTarget :- " + mintStepLeftTarget1 + " mintStepLeftTarget2 :- " + mintStepLeftTarget2);
+                fileLogger.writeEvent(3, "PivotTurnStep", "gblStepRightTarget:- " + mintStepRightTarget1 + " mintStepRightTarget2:- " + mintStepRightTarget2);
                 mintCurrentStatePivotTurn = stepState.STATE_RUNNING;
             }
             break;
@@ -2309,18 +2195,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 dblDistanceToEndRight1 = (mintStepRightTarget1 - intRight1MotorEncoderPosition) / COUNTS_PER_INCH;
                 dblDistanceToEndRight2 = (mintStepRightTarget2 - intRight2MotorEncoderPosition) / COUNTS_PER_INCH;
 
-                if (debug >= 3) {
-                    fileLogger.writeEvent("PivotTurnStep", "Current LPosition1:-" + robotDrive.baseMotor1.getCurrentPosition() + " LTarget:- " + mintStepLeftTarget1 + " LPosition2:-" + robotDrive.baseMotor2.getCurrentPosition() + " LTarget2:- " + mintStepLeftTarget2);
-                    fileLogger.writeEvent("PivotTurnStep", "Current RPosition1:-" + robotDrive.baseMotor3.getCurrentPosition() + " RTarget:- " + mintStepRightTarget1 + " RPosition2:-" + robotDrive.baseMotor4.getCurrentPosition() + " RTarget2:- " + mintStepRightTarget2);
-                }
+                fileLogger.writeEvent(3, "PivotTurnStep", "Current LPosition1:-" + robotDrive.baseMotor1.getCurrentPosition() + " LTarget:- " + mintStepLeftTarget1 + " LPosition2:-" + robotDrive.baseMotor2.getCurrentPosition() + " LTarget2:- " + mintStepLeftTarget2);
+                fileLogger.writeEvent(3, "PivotTurnStep", "Current RPosition1:-" + robotDrive.baseMotor3.getCurrentPosition() + " RTarget:- " + mintStepRightTarget1 + " RPosition2:-" + robotDrive.baseMotor4.getCurrentPosition() + " RTarget2:- " + mintStepRightTarget2);
 
                 if (mdblStepTurnR == 0) {
-                    if (debug >= 3) {
-                        fileLogger.writeEvent("PivotTurnStep()", "Running         ");
-                    }
-                    telemetry.addData("Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
-                    telemetry.addData("Actual_Left", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
-                    telemetry.addData("ActualRight", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
+                    fileLogger.writeEvent(3, "PivotTurnStep()", "Running         ");
+                    dashboard.displayPrintf(3, "Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
+                    dashboard.displayPrintf(4, "Actual_Left", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
+                    dashboard.displayPrintf(5, "ActualRight", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
+
                     if (mblnRobotLastPos) {
                         if (((dblDistanceToEndLeft1 + dblDistanceToEndLeft2) / 2) < 2.0) {
                             mblnNextStepLastPos = true;
@@ -2332,21 +2215,16 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                     //if (!robotDrive.leftMotor1.isBusy()) {
                     //get motor busy state bitmap is right2, right1, left2, left1
                     if (((robotDrive.getHardwareDriveIsBusy() & robotConfigSettings.motors.leftMotor1.toInt()) == robotConfigSettings.motors.leftMotor1.toInt())) {
-                        if (debug >= 1) {
-                            fileLogger.writeEvent("PivotTurnStep()","Complete         " );
-                        }
+                        fileLogger.writeEvent(1, "PivotTurnStep()", "Complete         ");
                         mblnDisableVisionProcessing = false;  //enable vision processing
                         mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
                         deleteParallelStep();
                     }
                 } else if (mdblStepTurnL == 0) {
-                    if (debug >= 3) {
-                        fileLogger.writeEvent("PivotTurnStep()","Running         " );
-                    }
-
-                    telemetry.addData("Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
-                    telemetry.addData("Actual_Left", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
-                    telemetry.addData("ActualRight", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
+                    fileLogger.writeEvent(3, "PivotTurnStep()", "Running         ");
+                    dashboard.displayPrintf(3, "Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
+                    dashboard.displayPrintf(4, "Actual_Left", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
+                    dashboard.displayPrintf(5, "ActualRight", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
 
                     if (mblnRobotLastPos) {
                         if (((dblDistanceToEndRight1 + dblDistanceToEndRight2) / 2) < 2.2) {
@@ -2355,13 +2233,11 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                             mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
                             deleteParallelStep();
                         }
-                    }                    
+                    }
                     //if (!robotDrive.rightMotor1.isBusy()) {
                     //get motor busy state bitmap is right2, right1, left2, left1
                     if (((robotDrive.getHardwareDriveIsBusy() & robotConfigSettings.motors.rightMotor1.toInt()) == robotConfigSettings.motors.rightMotor1.toInt())) {
-                        if (debug >= 1) {
-                            fileLogger.writeEvent("PivotTurnStep()","Complete         " );
-                        }
+                        fileLogger.writeEvent(1, "PivotTurnStep()", "Complete         ");
                         mblnDisableVisionProcessing = false;  //enable vision processing
                         mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
                         deleteParallelStep();
@@ -2369,20 +2245,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 } else {
                     // Stop all motion by setting power to 0
                     robotDrive.setHardwareDrivePower(0);
-                    if (debug >= 1) {
-                        fileLogger.writeEvent("PivotTurnStep()","Complete         " );
-                    }
+                    fileLogger.writeEvent(1, "PivotTurnStep()", "Complete         ");
                     mblnDisableVisionProcessing = false;  //enable vision processing
                     mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
                     deleteParallelStep();
                 }
             }
             //check timeout value
-            if (mStateTime.seconds() > mdblStepTimeout)
-            {
-                if (debug >= 1) {
-                    fileLogger.writeEvent("PivotTurnStep()", "Timeout:- ");
-                }
+            if (mStateTime.seconds() > mdblStepTimeout) {
+                fileLogger.writeEvent(1, "PivotTurnStep()", "Timeout:- " + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurrentStatePivotTurn = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -2391,8 +2262,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         }
     }
 
-    private void TankTurnStep ()
-    {
+    private void TankTurnStep() {
         double dblDistanceToEndLeft1;
         double dblDistanceToEndLeft2;
         double dblDistanceToEndRight1;
@@ -2429,16 +2299,16 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 // Determine new target position
                 switch (mstrRobotCommand.substring(0, 3)) {
                     case "LTE":
-                        mintStepLeftTarget1 = mintStartPositionLeft1 - (int)(0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepLeftTarget2 = mintStartPositionLeft2 - (int)(0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepRightTarget1 = mintStartPositionRight1 + (int)(0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepRightTarget2 = mintStartPositionRight2 + (int)(0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepLeftTarget1 = mintStartPositionLeft1 - (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepLeftTarget2 = mintStartPositionLeft2 - (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepRightTarget1 = mintStartPositionRight1 + (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepRightTarget2 = mintStartPositionRight2 + (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
                         break;
                     case "RTE":
-                        mintStepLeftTarget1 = mintStartPositionLeft1 + (int)(0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepLeftTarget2 = mintStartPositionLeft2 + (int)(0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepRightTarget1 = mintStartPositionRight1 - (int)(0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepRightTarget2 = mintStartPositionRight2 - (int)(0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepLeftTarget1 = mintStartPositionLeft1 + (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepLeftTarget2 = mintStartPositionLeft2 + (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepRightTarget1 = mintStartPositionRight1 - (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepRightTarget2 = mintStartPositionRight2 - (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
                         break;
                 }
 
@@ -2448,12 +2318,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mintLastEncoderDestinationRight1 = mintStepRightTarget1;
                 mintLastEncoderDestinationRight2 = mintStepRightTarget2;
 
-                if (debug >= 3) {
-                    fileLogger.writeEvent("TankTurnStep()","Current LPosition1:- " + robotDrive.baseMotor1.getCurrentPosition() + " mintStepLeftTarget1:-   " + mintStepLeftTarget1 );
-                    fileLogger.writeEvent("TankTurnStep()","Current LPosition2:- " + robotDrive.baseMotor2.getCurrentPosition() + " mintStepLeftTarget2:-   " + mintStepLeftTarget2 );
-                    fileLogger.writeEvent("TankTurnStep()","Current RPosition1:- " + robotDrive.baseMotor3.getCurrentPosition() + " mintStepRightTarget1:- " + mintStepRightTarget1 );
-                    fileLogger.writeEvent("TankTurnStep()","Current RPosition2:- " + robotDrive.baseMotor4.getCurrentPosition() + " mintStepRightTarget2:- " + mintStepRightTarget2 );
-                }
+                fileLogger.writeEvent(3, "TankTurnStep()", "Current LPosition1:- " + robotDrive.baseMotor1.getCurrentPosition() + " mintStepLeftTarget1:-   " + mintStepLeftTarget1);
+                fileLogger.writeEvent(3, "TankTurnStep()", "Current LPosition2:- " + robotDrive.baseMotor2.getCurrentPosition() + " mintStepLeftTarget2:-   " + mintStepLeftTarget2);
+                fileLogger.writeEvent(3, "TankTurnStep()", "Current RPosition1:- " + robotDrive.baseMotor3.getCurrentPosition() + " mintStepRightTarget1:- " + mintStepRightTarget1);
+                fileLogger.writeEvent(3, "TankTurnStep()", "Current RPosition2:- " + robotDrive.baseMotor4.getCurrentPosition() + " mintStepRightTarget2:- " + mintStepRightTarget2);
 
                 // pass target position to motor controller
                 robotDrive.baseMotor1.setTargetPosition(mintStepLeftTarget1);
@@ -2464,12 +2332,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 robotDrive.setHardwareDriveRunToPosition();
                 // set power on motor controller to start moving
                 robotDrive.setHardwareDrivePower(Math.abs(mdblStepSpeed));
-                if (debug >= 2) {
-                    fileLogger.writeEvent("TankTurnStep()","mintStepLeftTarget1 :- " + mintStepLeftTarget1  );
-                    fileLogger.writeEvent("TankTurnStep()","mintStepLeftTarget2 :- " + mintStepLeftTarget2  );
-                    fileLogger.writeEvent("TankTurnStep()","mintStepRightTarget1:- " + mintStepRightTarget1  );
-                    fileLogger.writeEvent("TankTurnStep()","mintStepRightTarget2:- " + mintStepRightTarget2  );
-                }
+                fileLogger.writeEvent(2, "TankTurnStep()", "mintStepLeftTarget1 :- " + mintStepLeftTarget1);
+                fileLogger.writeEvent(2, "TankTurnStep()", "mintStepLeftTarget2 :- " + mintStepLeftTarget2);
+                fileLogger.writeEvent(2, "TankTurnStep()", "mintStepRightTarget1:- " + mintStepRightTarget1);
+                fileLogger.writeEvent(2, "TankTurnStep()", "mintStepRightTarget2:- " + mintStepRightTarget2);
 
                 mintCurrentStateTankTurn = stepState.STATE_RUNNING;
             }
@@ -2487,16 +2353,13 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 dblDistanceToEndRight1 = (mintStepRightTarget1 - intRight1MotorEncoderPosition) / COUNTS_PER_INCH;
                 dblDistanceToEndRight2 = (mintStepRightTarget2 - intRight2MotorEncoderPosition) / COUNTS_PER_INCH;
 
-                if (debug >= 3) {
-                    fileLogger.writeEvent("TankTurnStep()","Current LPosition1:- " + intLeft1MotorEncoderPosition + " LTarget1:- " + mintStepLeftTarget1);
-                    fileLogger.writeEvent("TankTurnStep()","Current LPosition2:- " + intLeft2MotorEncoderPosition + " LTarget2:- " + mintStepLeftTarget2);
-                    fileLogger.writeEvent("TankTurnStep()","Current RPosition1:- " + intRight1MotorEncoderPosition + " RTarget1:- " + mintStepRightTarget1);
-                    fileLogger.writeEvent("TankTurnStep()","Current RPosition2:- " + intRight2MotorEncoderPosition + " RTarget2:- " + mintStepRightTarget2);
-                }
-
-                telemetry.addData("Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
-                telemetry.addData("Actual_Left", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
-                telemetry.addData("ActualRight", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
+                fileLogger.writeEvent(3, "TankTurnStep()", "Current LPosition1:- " + intLeft1MotorEncoderPosition + " LTarget1:- " + mintStepLeftTarget1);
+                fileLogger.writeEvent(3, "TankTurnStep()", "Current LPosition2:- " + intLeft2MotorEncoderPosition + " LTarget2:- " + mintStepLeftTarget2);
+                fileLogger.writeEvent(3, "TankTurnStep()", "Current RPosition1:- " + intRight1MotorEncoderPosition + " RTarget1:- " + mintStepRightTarget1);
+                fileLogger.writeEvent(3, "TankTurnStep()", "Current RPosition2:- " + intRight2MotorEncoderPosition + " RTarget2:- " + mintStepRightTarget2);
+                dashboard.displayPrintf(3, "Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
+                dashboard.displayPrintf(4, "Actual_Left", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
+                dashboard.displayPrintf(5, "ActualRight", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
 
                 if (mblnRobotLastPos) {
                     if (((Math.abs(dblDistanceToEndRight1 + dblDistanceToEndRight2) / 2) < 2.2) && ((Math.abs(dblDistanceToEndLeft1 + dblDistanceToEndLeft2) / 2) < 2.2)) {
@@ -2510,10 +2373,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 //if within error margin stop
                 //get motor busy state bitmap is right2, right1, left2, left1
                 if (!robotDrive.baseMotor1.isBusy() || (!robotDrive.baseMotor3.isBusy())) {
-
-                    if (debug >= 3) {
-                        fileLogger.writeEvent("TankTurnStep()","Complete         " );
-                    }
+                    fileLogger.writeEvent(3, "TankTurnStep()", "Complete         ");
                     robotDrive.setHardwareDrivePower(0);
                     mblnDisableVisionProcessing = false;  //enable vision processing
                     mintCurrentStateTankTurn = stepState.STATE_COMPLETE;
@@ -2522,9 +2382,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             }
             //check timeout value
             if (mStateTime.seconds() > mdblStepTimeout) {
-                if (debug >= 1) {
-                    fileLogger.writeEvent("TankTurnStep()", "Timeout:- ");
-                }
+                fileLogger.writeEvent(1, "TankTurnStep()", "Timeout:- " + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurrentStateTankTurn = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -2534,8 +2392,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
     }
 
     //this has not been programmed, do not use
-    private void RadiusTurnStep ()
-    {
+    private void RadiusTurnStep() {
         double dblDistanceToEndLeft1;
         double dblDistanceToEndLeft2;
         double dblDistanceToEndRight1;
@@ -2556,29 +2413,24 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mblnDisableVisionProcessing = true;  //disable vision processing
 
                 mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
-                if (debug >= 3) {
-                    fileLogger.writeEvent("RadiusTurnStep()","mdblRobotTurnAngle" + mdblRobotTurnAngle );
-                }
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "mdblRobotTurnAngle" + mdblRobotTurnAngle);
 
                 //calculate the distance to travel based on the angle we are turning
                 // length = radius x angle (in radians)
-                rdblArcLengthRadiusTurnOuter = ((Double.parseDouble(mstrRobotCommand.substring(3)) / 180) *  Math.PI) * mdblRobotParm1;
-                dblArcLengthRadiusTurnInner = ((Double.parseDouble(mstrRobotCommand.substring(3)) / 180) *  Math.PI) * (mdblRobotParm1 - (ROBOT_TRACK));
+                rdblArcLengthRadiusTurnOuter = ((Double.parseDouble(mstrRobotCommand.substring(3)) / 180) * Math.PI) * mdblRobotParm1;
+                dblArcLengthRadiusTurnInner = ((Double.parseDouble(mstrRobotCommand.substring(3)) / 180) * Math.PI) * (mdblRobotParm1 - (ROBOT_TRACK));
                 //rdblArcLengthRadiusTurnOuter = ((Double.parseDouble(mstrRobotCommand.substring(3)) / 180) *  Math.PI) * (mdblRobotParm1 + (0.5 * ROBOT_TRACK));
 
-                rdblSpeedOuter =  mdblStepSpeed;
+                rdblSpeedOuter = mdblStepSpeed;
 
                 if (rdblSpeedOuter >= 0.58) {
                     rdblSpeedOuter = 0.58;  //This is the maximum speed, anything above 0.6 is the same as a speed of 1 for drive to position
                 }
                 rdblSpeedInner = dblArcLengthRadiusTurnInner / rdblArcLengthRadiusTurnOuter * rdblSpeedOuter * 0.96;
-
-                if (debug >= 3) {
-                    fileLogger.writeEvent("RadiusTurnStep()","dblArcLengthRadiusTurnInner " + dblArcLengthRadiusTurnInner );
-                    fileLogger.writeEvent("RadiusTurnStep()","rdblArcLengthRadiusTurnOuter " + rdblArcLengthRadiusTurnOuter );
-                    fileLogger.writeEvent("RadiusTurnStep()","rdblSpeedOuter " + rdblSpeedOuter );
-                    fileLogger.writeEvent("RadiusTurnStep()","rdblSpeedInner " + rdblSpeedInner );
-                }
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "dblArcLengthRadiusTurnInner " + dblArcLengthRadiusTurnInner);
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "rdblArcLengthRadiusTurnOuter " + rdblArcLengthRadiusTurnOuter);
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "rdblSpeedOuter " + rdblSpeedOuter);
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "rdblSpeedInner " + rdblSpeedInner);
 
                 // Get Current Encoder positions
                 if (mblnNextStepLastPos) {
@@ -2597,10 +2449,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 // Determine new target position
                 switch (mstrRobotCommand.substring(0, 3)) {
                     case "LRE":
-                        mintStepLeftTarget1 = mintStartPositionLeft1 + (int)(dblArcLengthRadiusTurnInner * COUNTS_PER_INCH);
-                        mintStepLeftTarget2 = mintStartPositionLeft2 + (int)(dblArcLengthRadiusTurnInner * COUNTS_PER_INCH);
-                        mintStepRightTarget1 = mintStartPositionRight1 + (int)(rdblArcLengthRadiusTurnOuter * COUNTS_PER_INCH);
-                        mintStepRightTarget2 = mintStartPositionRight2 + (int)(rdblArcLengthRadiusTurnOuter * COUNTS_PER_INCH);
+                        mintStepLeftTarget1 = mintStartPositionLeft1 + (int) (dblArcLengthRadiusTurnInner * COUNTS_PER_INCH);
+                        mintStepLeftTarget2 = mintStartPositionLeft2 + (int) (dblArcLengthRadiusTurnInner * COUNTS_PER_INCH);
+                        mintStepRightTarget1 = mintStartPositionRight1 + (int) (rdblArcLengthRadiusTurnOuter * COUNTS_PER_INCH);
+                        mintStepRightTarget2 = mintStartPositionRight2 + (int) (rdblArcLengthRadiusTurnOuter * COUNTS_PER_INCH);
 
                         //store the encoder positions so next step can calculate destination
                         mintLastEncoderDestinationLeft1 = mintStepLeftTarget1;
@@ -2622,10 +2474,10 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         robotDrive.setHardwareDriveRightMotorPower(rdblSpeedOuter);  //right side is outer when turning left
                         break;
                     case "RRE":
-                        mintStepLeftTarget1 = mintStartPositionLeft1 + (int)(rdblArcLengthRadiusTurnOuter * COUNTS_PER_INCH);
-                        mintStepLeftTarget2 = mintStartPositionLeft2 + (int)(rdblArcLengthRadiusTurnOuter * COUNTS_PER_INCH);
-                        mintStepRightTarget1 = mintStartPositionRight1 + (int)(dblArcLengthRadiusTurnInner * COUNTS_PER_INCH);
-                        mintStepRightTarget2 = mintStartPositionRight2 + (int)(dblArcLengthRadiusTurnInner * COUNTS_PER_INCH);
+                        mintStepLeftTarget1 = mintStartPositionLeft1 + (int) (rdblArcLengthRadiusTurnOuter * COUNTS_PER_INCH);
+                        mintStepLeftTarget2 = mintStartPositionLeft2 + (int) (rdblArcLengthRadiusTurnOuter * COUNTS_PER_INCH);
+                        mintStepRightTarget1 = mintStartPositionRight1 + (int) (dblArcLengthRadiusTurnInner * COUNTS_PER_INCH);
+                        mintStepRightTarget2 = mintStartPositionRight2 + (int) (dblArcLengthRadiusTurnInner * COUNTS_PER_INCH);
 
                         //store the encoder positions so next step can calculate destination
                         mintLastEncoderDestinationLeft1 = mintStepLeftTarget1;
@@ -2648,17 +2500,14 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         break;
                 }
 
-                if (debug >= 3) {
-                    fileLogger.writeEvent("RadiusTurnStep()","Current LPosition1:- " + robotDrive.baseMotor1.getCurrentPosition() + " mintStepLeftTarget1:-   " + mintStepLeftTarget1 );
-                    fileLogger.writeEvent("RadiusTurnStep()","Current LPosition2:- " + robotDrive.baseMotor2.getCurrentPosition() + " mintStepLeftTarget2:-   " + mintStepLeftTarget2 );
-                    fileLogger.writeEvent("RadiusTurnStep()","Current RPosition1:- " + robotDrive.baseMotor3.getCurrentPosition() + " mintStepRightTarget1:- " + mintStepRightTarget1 );
-                    fileLogger.writeEvent("RadiusTurnStep()","Current RPosition2:- " + robotDrive.baseMotor4.getCurrentPosition() + " mintStepRightTarget2:- " + mintStepRightTarget2 );
-                }
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "Current LPosition1:- " + robotDrive.baseMotor1.getCurrentPosition() + " mintStepLeftTarget1:-   " + mintStepLeftTarget1);
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "Current LPosition2:- " + robotDrive.baseMotor2.getCurrentPosition() + " mintStepLeftTarget2:-   " + mintStepLeftTarget2);
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "Current RPosition1:- " + robotDrive.baseMotor3.getCurrentPosition() + " mintStepRightTarget1:- " + mintStepRightTarget1);
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "Current RPosition2:- " + robotDrive.baseMotor4.getCurrentPosition() + " mintStepRightTarget2:- " + mintStepRightTarget2);
                 mintCurrentStateRadiusTurn = stepState.STATE_RUNNING;
             }
             break;
-            case STATE_RUNNING:
-            {
+            case STATE_RUNNING: {
                 intLeft1MotorEncoderPosition = robotDrive.baseMotor1.getCurrentPosition();
                 intLeft2MotorEncoderPosition = robotDrive.baseMotor2.getCurrentPosition();
                 intRight1MotorEncoderPosition = robotDrive.baseMotor3.getCurrentPosition();
@@ -2669,17 +2518,13 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 dblDistanceToEndLeft2 = (mintStepLeftTarget2 - intLeft2MotorEncoderPosition) / COUNTS_PER_INCH;
                 dblDistanceToEndRight1 = (mintStepRightTarget1 - intRight1MotorEncoderPosition) / COUNTS_PER_INCH;
                 dblDistanceToEndRight2 = (mintStepRightTarget2 - intRight2MotorEncoderPosition) / COUNTS_PER_INCH;
-
-                if (debug >= 3) {
-                    fileLogger.writeEvent("RadiusTurnStep()","Current LPosition1:- " + intLeft1MotorEncoderPosition + " LTarget1:- " + mintStepLeftTarget1);
-                    fileLogger.writeEvent("RadiusTurnStep()","Current LPosition2:- " + intLeft2MotorEncoderPosition + " LTarget2:- " + mintStepLeftTarget2);
-                    fileLogger.writeEvent("RadiusTurnStep()","Current RPosition1:- " + intRight1MotorEncoderPosition + " RTarget1:- " + mintStepRightTarget1);
-                    fileLogger.writeEvent("RadiusTurnStep()","Current RPosition2:- " + intRight2MotorEncoderPosition + " RTarget2:- " + mintStepRightTarget2);
-                }
-
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "Current LPosition1:- " + intLeft1MotorEncoderPosition + " LTarget1:- " + mintStepLeftTarget1);
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "Current LPosition2:- " + intLeft2MotorEncoderPosition + " LTarget2:- " + mintStepLeftTarget2);
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "Current RPosition1:- " + intRight1MotorEncoderPosition + " RTarget1:- " + mintStepRightTarget1);
+                fileLogger.writeEvent(3, "RadiusTurnStep()", "Current RPosition2:- " + intRight2MotorEncoderPosition + " RTarget2:- " + mintStepRightTarget2);
                 dashboard.displayPrintf(1, LABEL_WIDTH, "Target: ", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
                 dashboard.displayPrintf(2, LABEL_WIDTH, "Actual_Left: ", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
-                dashboard.displayPrintf(3, LABEL_WIDTH, "ActualRight: ", "Running at %7d :%7d",  intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
+                dashboard.displayPrintf(3, LABEL_WIDTH, "ActualRight: ", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
 
                 if (mblnRobotLastPos) {
                     if ((((dblDistanceToEndRight1 + dblDistanceToEndRight2) / 2) < 2) && (((dblDistanceToEndLeft1 + dblDistanceToEndLeft2) / 2) < 2)) {
@@ -2692,9 +2537,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                 if (!robotDrive.baseMotor1.isBusy() || (!robotDrive.baseMotor3.isBusy())) {
                     robotDrive.setHardwareDrivePower(0);
-                    if (debug >= 1) {
-                        fileLogger.writeEvent("RadiusTurnStep()","Complete         " );
-                    }
+                    fileLogger.writeEvent(1, "RadiusTurnStep()", "Complete         ");
                     mblnDisableVisionProcessing = false;  //enable vision processing
                     mintCurrentStateRadiusTurn = stepState.STATE_COMPLETE;
                     deleteParallelStep();
@@ -2702,9 +2545,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             }
             //check timeout value
             if (mStateTime.seconds() > mdblStepTimeout) {
-                if (debug >= 1) {
-                    fileLogger.writeEvent("RadiusTurnStep()", "Timeout:- ");
-                }
+                fileLogger.writeEvent(1, "RadiusTurnStep()", "Timeout:- " + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurrentStateRadiusTurn = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -2713,26 +2554,19 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         }
     }
 
-    private void MecanumStrafe()
-    {
-        switch (mintCurrentStateMecanumStrafe){
-            case STATE_INIT:
-            {
+    private void MecanumStrafe() {
+        int direction;
+        switch (mintCurrentStateMecanumStrafe) {
+            case STATE_INIT: {
                 double adafruitIMUHeading;
                 double currentHeading;
 
                 adafruitIMUHeading = getAdafruitHeading();
                 currentHeading = adafruitIMUHeading;
-
-                mdblPowerBoost = 0;
-                mintStableCount = 0;
-                mstrWiggleDir = "";
-                mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
-                if (debug >= 3) {
-                    fileLogger.writeEvent("MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    fileLogger.writeEvent("MecanumStrafe()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " currentHeading " + currentHeading);
-                }
-                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection ((int)currentHeading, (int)mdblRobotTurnAngle).substring(3));
+                //mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
+                //fileLogger.writeEvent(3, "MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
+                //fileLogger.writeEvent(3, "MecanumStrafe()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " currentHeading " + currentHeading);
+                //mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection((int) currentHeading, (int) mdblRobotTurnAngle).substring(3));
                 robotDrive.setHardwareDriveRunWithoutEncoders();
                 mintCurrentStateMecanumStrafe = stepState.STATE_RUNNING;
             }
@@ -2743,103 +2577,34 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 adafruitIMUHeading = getAdafruitHeading();
                 mdblGyrozAccumulated = adafruitIMUHeading;
                 mdblGyrozAccumulated = teamAngleAdjust(mdblGyrozAccumulated);//Set variables to MRgyro readings
-                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(3));
-                String mstrDirection = (newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(0, 3));
-                if (debug >= 3) {
-                    fileLogger.writeEvent("MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    fileLogger.writeEvent("MecanumStrafe()", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
-                    fileLogger.writeEvent("MecanumStrafe()", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
-                    fileLogger.writeEvent("MecanumStrafe()", "Running, mstrDirection        = " + mstrDirection);
-                    fileLogger.writeEvent("MecanumStrafe()", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
-                }
+                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirectionGyro((int) mdblGyrozAccumulated, (int) mdblRobotTurnAngle).substring(3));
+                String mstrDirection = (newAngleDirectionGyro((int) mdblGyrozAccumulated, (int) mdblRobotTurnAngle).substring(0, 3));
+                fileLogger.writeEvent(3, "MecanumStrafe", "USING HEADING FROM IMU=" + useAdafruitIMU);
+                fileLogger.writeEvent(3, "MecanumStrafe()", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
+                fileLogger.writeEvent(3, "MecanumStrafe()", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
+                fileLogger.writeEvent(3, "MecanumStrafe()", "Running, mstrDirection        = " + mstrDirection);
+                fileLogger.writeEvent(3, "MecanumStrafe()", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
 
-                if (Math.abs(mdblTurnAbsoluteGyro) > 21) {  //Continue while the robot direction is further than three degrees from the target
-                    mintStableCount = 0;
-                    if (debug >= 3) {
-                        fileLogger.writeEvent("MecanumStrafe()","High Speed.....");
-                    }
-                    if (mstrDirection.equals("LTE")) {
-                        //want to turn left
-                        if (debug >= 3) {
-                            fileLogger.writeEvent("MecanumStrafe()","Left Turn.....");
-                        }
-                        if (mstrWiggleDir.equals("RTE")) {
-                            mdblPowerBoost = mdblPowerBoost - 0.01;
-                            mintPowerBoostCount = 0;
-                        }
-                        mstrWiggleDir = "LTE";
-                        robotDrive.setHardwareDriveLeftMotorPower(mdblStepSpeed);
-                        robotDrive.setHardwareDriveRightMotorPower(-mdblStepSpeed);
-                    }
-                    else if (mstrDirection.equals("RTE")) {
-                        //want to turn left
-                        if (mstrWiggleDir.equals("LTE")) {
-                            mdblPowerBoost = mdblPowerBoost - 0.01;
-                            mintPowerBoostCount = 0;
-                        }
-                        mstrWiggleDir = "RTE";
-                        if (debug >= 3) {
-                            fileLogger.writeEvent("MecanumStrafe()","Right Turn.....");
-                        }
-                        robotDrive.setHardwareDriveLeftMotorPower(-mdblStepSpeed);
-                        robotDrive.setHardwareDriveRightMotorPower(mdblStepSpeed);
-                    }
-                }
-                else if (Math.abs(mdblTurnAbsoluteGyro) > mdblRobotParm1) {  //Continue while the robot direction is further than three degrees from the target
-                    mintStableCount = 0;
-                    mintPowerBoostCount++;
-                    if (mintPowerBoostCount > 50) {
-                        mdblPowerBoost = mdblPowerBoost + 0.01;
-                        mintPowerBoostCount = 0;
-                    }
-                    if (debug >= 3) {
-                        fileLogger.writeEvent("MecanumStrafe()","Slow Speed Nearing final angle.....");
-                    }
-                    if (mstrDirection.equals("LTE") ) {
-                        //want to turn left
-                        if (mstrWiggleDir.equals("RTE")) {
-                            mdblPowerBoost = mdblPowerBoost - 0.01;
-                            mintPowerBoostCount = 0;
-                        }
-                        mstrWiggleDir = "LTE";
+                readRangeSensors();
+                if (mdblRobotParm1 > 0)
+                    direction = 1;
+                else
+                    direction = -1;
+                double dblLeftMotor1 = Range.clip(mdblStepSpeed*direction, -1, 1);
+                double dblLeftMotor2 = Range.clip(-mdblStepSpeed*direction, -1, 1);
+                double dblRightMotor1 = Range.clip(-mdblStepSpeed*direction, -1, 1);
+                double dblRightMotor2 = Range.clip(mdblStepSpeed*direction, -1, 1);
 
-                        if (debug >= 3) {
-                            fileLogger.writeEvent("TankTurnGyro()","Left Turn.....");
-                        }
-                        robotDrive.setHardwareDriveLeftMotorPower(.12 + mdblPowerBoost);
-                        robotDrive.setHardwareDriveRightMotorPower(-(0.12 + mdblPowerBoost));
-                    } else if (mstrDirection.equals("RTE") ) {
-                        //want to turn left
-                        if (mstrWiggleDir.equals("LTE")) {
-                            mdblPowerBoost = mdblPowerBoost - 0.01;
-                            mintPowerBoostCount = 0;
-                        }
-                        mstrWiggleDir = "RTE";
-                        if (debug >= 3)
-                        {
-                            fileLogger.writeEvent("TankTurnGyro()","Right Turn.....");
-                        }
-                        robotDrive.setHardwareDriveLeftMotorPower(-(0.12 + mdblPowerBoost));
-                        robotDrive.setHardwareDriveRightMotorPower(0.12 + mdblPowerBoost);
-                    }
-                } else {
-                    mintStableCount++;
-                    if (mintStableCount > 20) {
-                        if (debug >= 3) {
-                            fileLogger.writeEvent("TankTurnGyro()", "Complete.....");
-                        }
-                        robotDrive.setHardwareDriveRunUsingEncoders();
-                        robotDrive.setHardwareDrivePower(0);
-                        mintCurrentStateMecanumStrafe = stepState.STATE_COMPLETE;
-                        deleteParallelStep();
-                    }
-                }
+                robotDrive.setHardwareDrivePower(dblLeftMotor1, dblLeftMotor2, dblRightMotor1, dblRightMotor2);
+
+                fileLogger.writeEvent(3, "MecanumStrafe()", "Range Sensor2= " + mdblRangeSensor1);
+                fileLogger.writeEvent(3, "MecanumStrafe()", "Range Sensor2= " + mdblRangeSensor2);
+
+
             } //end Case Running
             //check timeout value
             if (mStateTime.seconds() > mdblStepTimeout) {
-                if (debug >= 1) {
-                    fileLogger.writeEvent("TankTurnGyro()", "Timeout:- ");
-                }
+                fileLogger.writeEvent(1, "TankTurnGyro()", "Timeout:- " + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurrentStateMecanumStrafe = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -2848,11 +2613,9 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         }
     }
 
-    private void TankTurnGyroHeading()
-    {
-        switch (mintCurrentStateTankTurnGyroHeading){
-            case STATE_INIT:
-            {
+    private void TankTurnGyroHeading() {
+        switch (mintCurrentStateTankTurnGyroHeading) {
+            case STATE_INIT: {
                 double adafruitIMUHeading;
 
                 adafruitIMUHeading = getAdafruitHeading();
@@ -2861,11 +2624,9 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mintStableCount = 0;
                 mstrWiggleDir = "";
                 mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
-                if (debug >= 3) {
-                    fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    fileLogger.writeEvent("TankTurnGyro()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
-                }
-                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection ((int)adafruitIMUHeading, (int)mdblRobotTurnAngle).substring(3));
+                fileLogger.writeEvent(3, "TankTurnGyroHeadingEncoder", "USING HEADING FROM IMU=" + useAdafruitIMU);
+                fileLogger.writeEvent(3, "TankTurnGyro()", "mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
+                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection((int) adafruitIMUHeading, (int) mdblRobotTurnAngle).substring(3));
                 robotDrive.setHardwareDriveRunWithoutEncoders();
 
                 mintCurrentStateTankTurnGyroHeading = stepState.STATE_RUNNING;
@@ -2878,26 +2639,20 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                 mdblGyrozAccumulated = adafruitIMUHeading;
                 mdblGyrozAccumulated = teamAngleAdjust(mdblGyrozAccumulated);//Set variables to MRgyro readings
-                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(3));
-                String mstrDirection = (newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(0, 3));
-                if (debug >= 3) {
-                    fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    fileLogger.writeEvent("TankTurnGyro()", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
-                    fileLogger.writeEvent("TankTurnGyro()", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
-                    fileLogger.writeEvent("TankTurnGyro()", "Running, mstrDirection        = " + mstrDirection);
-                    fileLogger.writeEvent("TankTurnGyro()", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
-                }
+                mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirectionGyro((int) mdblGyrozAccumulated, (int) mdblRobotTurnAngle).substring(3));
+                String mstrDirection = (newAngleDirectionGyro((int) mdblGyrozAccumulated, (int) mdblRobotTurnAngle).substring(0, 3));
+                fileLogger.writeEvent(3, "TankTurnGyroHeadingEncoder", "USING HEADING FROM IMU=" + useAdafruitIMU);
+                fileLogger.writeEvent(3, "TankTurnGyro()", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
+                fileLogger.writeEvent(3, "TankTurnGyro()", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
+                fileLogger.writeEvent(3, "TankTurnGyro()", "Running, mstrDirection        = " + mstrDirection);
+                fileLogger.writeEvent(3, "TankTurnGyro()", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
 
                 if (Math.abs(mdblTurnAbsoluteGyro) > 21) {  //Continue while the robot direction is further than three degrees from the target
                     mintStableCount = 0;
-                    if (debug >= 3) {
-                        fileLogger.writeEvent("TankTurnGyro()","High Speed.....");
-                    }
+                    fileLogger.writeEvent(3, "TankTurnGyro()", "High Speed.....");
                     if (mstrDirection.equals("LTE")) {
                         //want to turn left
-                        if (debug >= 3) {
-                            fileLogger.writeEvent("TankTurnGyro()","Left Turn.....");
-                        }
+                        if (debug >= 3) fileLogger.writeEvent("TankTurnGyro()", "Left Turn.....");
                         if (mstrWiggleDir.equals("RTE")) {
                             mdblPowerBoost = mdblPowerBoost - 0.01;
                             mintPowerBoostCount = 0;
@@ -2905,64 +2660,50 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         mstrWiggleDir = "LTE";
                         robotDrive.setHardwareDriveLeftMotorPower(mdblStepSpeed);
                         robotDrive.setHardwareDriveRightMotorPower(-mdblStepSpeed);
-                    }
-                    else if (mstrDirection.equals("RTE")) {
+                    } else if (mstrDirection.equals("RTE")) {
                         //want to turn left
                         if (mstrWiggleDir.equals("LTE")) {
                             mdblPowerBoost = mdblPowerBoost - 0.01;
                             mintPowerBoostCount = 0;
                         }
                         mstrWiggleDir = "RTE";
-                        if (debug >= 3) {
-                            fileLogger.writeEvent("TankTurnGyro()","Right Turn.....");
-                        }
+                        fileLogger.writeEvent(3, "TankTurnGyro()", "Right Turn.....");
                         robotDrive.setHardwareDriveLeftMotorPower(-mdblStepSpeed);
                         robotDrive.setHardwareDriveRightMotorPower(mdblStepSpeed);
                     }
-                }
-                else if (Math.abs(mdblTurnAbsoluteGyro) > mdblRobotParm1) {  //Continue while the robot direction is further than three degrees from the target
+                } else if (Math.abs(mdblTurnAbsoluteGyro) > mdblRobotParm1) {  //Continue while the robot direction is further than three degrees from the target
                     mintStableCount = 0;
                     mintPowerBoostCount++;
                     if (mintPowerBoostCount > 50) {
                         mdblPowerBoost = mdblPowerBoost + 0.01;
                         mintPowerBoostCount = 0;
                     }
-                    if (debug >= 3) {
-                        fileLogger.writeEvent("TankTurnGyro()","Slow Speed Nearing final angle.....");
-                    }
-                    if (mstrDirection.equals("LTE") ) {
+                    fileLogger.writeEvent(3, "TankTurnGyro()", "Slow Speed Nearing final angle.....");
+                    if (mstrDirection.equals("LTE")) {
                         //want to turn left
                         if (mstrWiggleDir.equals("RTE")) {
                             mdblPowerBoost = mdblPowerBoost - 0.01;
                             mintPowerBoostCount = 0;
                         }
                         mstrWiggleDir = "LTE";
-
-                        if (debug >= 3) {
-                            fileLogger.writeEvent("TankTurnGyro()","Left Turn.....");
-                        }
+                        fileLogger.writeEvent(3, "TankTurnGyro()", "Left Turn.....");
                         robotDrive.setHardwareDriveLeftMotorPower(.12 + mdblPowerBoost);
                         robotDrive.setHardwareDriveRightMotorPower(-(0.12 + mdblPowerBoost));
-                    } else if (mstrDirection.equals("RTE") ) {
+                    } else if (mstrDirection.equals("RTE")) {
                         //want to turn left
                         if (mstrWiggleDir.equals("LTE")) {
                             mdblPowerBoost = mdblPowerBoost - 0.01;
                             mintPowerBoostCount = 0;
                         }
                         mstrWiggleDir = "RTE";
-                        if (debug >= 3)
-                        {
-                            fileLogger.writeEvent("TankTurnGyro()","Right Turn.....");
-                        }
+                        fileLogger.writeEvent(3, "TankTurnGyro()", "Right Turn.....");
                         robotDrive.setHardwareDriveLeftMotorPower(-(0.12 + mdblPowerBoost));
                         robotDrive.setHardwareDriveRightMotorPower(0.12 + mdblPowerBoost);
                     }
                 } else {
                     mintStableCount++;
                     if (mintStableCount > 20) {
-                        if (debug >= 3) {
-                            fileLogger.writeEvent("TankTurnGyro()", "Complete.....");
-                        }
+                        fileLogger.writeEvent(3, "TankTurnGyro()", "Complete.....");
                         robotDrive.setHardwareDriveRunUsingEncoders();
                         robotDrive.setHardwareDrivePower(0);
                         mintCurrentStateTankTurnGyroHeading = stepState.STATE_COMPLETE;
@@ -2972,14 +2713,332 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             } //end Case Running
             //check timeout value
             if (mStateTime.seconds() > mdblStepTimeout) {
-                if (debug >= 1) {
-                    fileLogger.writeEvent("TankTurnGyro()", "Timeout:- ");
-                }
+                fileLogger.writeEvent(1, "TankTurnGyro()", "Timeout:- " + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurrentStateTankTurnGyroHeading = stepState.STATE_COMPLETE;
                 deleteParallelStep();
             }
             break;
+        }
+    }
+
+    private void MainLiftMove(){
+        switch (mintCurrentStateMainLiftMove5291) {
+            case STATE_INIT: {
+                mintStartPositionMain = armDrive.baseMotor2.getCurrentPosition();
+                mintTargetPositionMain = mintStartPositionMain + (int)(mdblRobotParm1 * LIFTMAIN_COUNTS_PER_INCH);
+                mintCurrentStateMainLiftMove5291 = stepState.STATE_RUNNING;
+                armDrive.baseMotor2.setMode(DcMotor.RunMode.RUN_USING_ENCODER);
+                armDrive.baseMotor2.setMode(DcMotor.RunMode.RUN_TO_POSITION);
+                armDrive.baseMotor2.setTargetPosition(mintTargetPositionMain);
+                armDrive.setHardwareDriveLeft2MotorPower(mdblStepSpeed);
+
+                fileLogger.writeEvent(2,"MainLiftMove()", "Initialised");
+            }
+            break;
+            case STATE_RUNNING: {
+                fileLogger.writeEvent(2,"MainLiftMove()", "Running");
+                if ((limitswitch2.getState() == false) && (mdblRobotParm1 < 0)){
+                    armDrive.setHardwareDriveLeft2MotorPower(0);
+                    armDrive.baseMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    armDrive.baseMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    fileLogger.writeEvent(1,"MainLiftMove()", "all way down:- " );
+                    //  Transition to a new state.
+                    mintCurrentStateMainLiftMove5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                    mintStartPositionMain = 0;
+                    mintTargetPositionMain = 0;
+                }
+
+                if (!(armDrive.baseMotor2.isBusy())) {
+                    armDrive.setHardwareDriveLeft2MotorPower(0);
+                    //  Transition to a new state.
+                    mintCurrentStateMainLiftMove5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                }
+
+                //check timeout value
+                if (mStateTime.seconds() > mdblStepTimeout) {
+                    fileLogger.writeEvent(1,"MainLiftMove()", "Timeout:- " + mStateTime.seconds());
+                    armDrive.setHardwareDriveLeft2MotorPower(0);
+                    armDrive.baseMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    armDrive.baseMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                    //  Transition to a new state.
+                    mintCurrentStateMainLiftMove5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                }
+            }
+        }
+    }
+
+    private void TopLiftMove(){
+        switch (mintCurrentStateTopLiftMove5291) {
+            case STATE_INIT: {
+                mintCurrentStateTopLiftMove5291 = stepState.STATE_RUNNING;
+                fileLogger.writeEvent(2,"TopLiftMove()", "Initialised");
+            }
+            break;
+            case STATE_RUNNING: {
+                if (debug >= 2) fileLogger.writeEvent("TopLiftMove()", "Running");
+
+                //  Transition to a new state.
+                mintCurrentStateTopLiftMove5291 = stepState.STATE_COMPLETE;
+                deleteParallelStep();
+
+                //check timeout value
+                if (mStateTime.seconds() > mdblStepTimeout) {
+                    fileLogger.writeEvent(1,"TopLiftMove()", "Timeout:- " + mStateTime.seconds());
+                    //  Transition to a new state.
+                    mintCurrentStateTopLiftMove5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                }
+            }
+        }
+
+    }
+
+    private void TopGripperMove(){
+        switch (mintCurrentStateTopGripperMove5291) {
+            case STATE_INIT: {
+                mintCurrentStateTopGripperMove5291 = stepState.STATE_RUNNING;
+                fileLogger.writeEvent(2,"TopGripperMove()", "Initialised");
+            }
+            break;
+            case STATE_RUNNING: {
+                if (debug >= 2) fileLogger.writeEvent("TopGripperMove()", "Running");
+
+                switch ((int)mdblRobotParm1) {
+                    case 1:
+                        moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_HOME, SERVOLIFTRIGHTTOP_HOME);
+                        break;
+                    case 2:
+                        moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_START, SERVOLIFTRIGHTTOP_GLYPH_START);
+                        break;
+                    case 3:
+                        moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_RELEASE, SERVOLIFTRIGHTTOP_GLYPH_RELEASE);
+                        break;
+                    case 4:
+                        moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_GRAB, SERVOLIFTRIGHTTOP_GLYPH_GRAB);
+                        break;
+                }
+
+
+                //  Transition to a new state.
+                mintCurrentStateTopGripperMove5291 = stepState.STATE_COMPLETE;
+                deleteParallelStep();
+
+                //check timeout value
+                if (mStateTime.seconds() > mdblStepTimeout) {
+                    fileLogger.writeEvent(1,"TopGripperMove()", "Timeout:- " + mStateTime.seconds());
+                    //  Transition to a new state.
+                    mintCurrentStateTopGripperMove5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                }
+            }
+        }
+
+    }
+
+
+    private void BotGripperMove(){
+        switch (mintCurrentStateBotGripperMove5291) {
+            case STATE_INIT: {
+                mintCurrentStateBotGripperMove5291 = stepState.STATE_RUNNING;
+                fileLogger.writeEvent(2,"BotGripperMove()", "Initialised");
+            }
+            break;
+            case STATE_RUNNING: {
+                if (debug >= 2) fileLogger.writeEvent("BotGripperMove()", "Running");
+                switch ((int)mdblRobotParm1) {
+                    case 1:
+                        moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_HOME, SERVOLIFTRIGHTBOT_HOME);
+                        break;
+                    case 2:
+                        moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_START, SERVOLIFTRIGHTBOT_GLYPH_START);
+                        break;
+                    case 3:
+                        moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_RELEASE, SERVOLIFTRIGHTBOT_GLYPH_RELEASE);
+                        break;
+                    case 4:
+                        moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_GRAB, SERVOLIFTRIGHTBOT_GLYPH_GRAB);
+                        break;
+                }
+
+                //  Transition to a new state.
+                mintCurrentStateBotGripperMove5291 = stepState.STATE_COMPLETE;
+                deleteParallelStep();
+
+                //check timeout value
+                if (mStateTime.seconds() > mdblStepTimeout) {
+                    fileLogger.writeEvent(1,"BotGripperMove()", "Timeout:- " + mStateTime.seconds());
+                    //  Transition to a new state.
+                    mintCurrentStateBotGripperMove5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                }
+            }
+        }
+
+    }
+
+    private void OpenJewelServo() {
+        switch (mintCurrentStateJewelArm5291) {
+            case STATE_INIT: {
+                mintCurrentStateJewelArm5291 = stepState.STATE_RUNNING;
+                fileLogger.writeEvent(2, "MoveJewelServo()", "Initialised");
+            }
+            break;
+            case STATE_RUNNING: {
+                fileLogger.writeEvent(2, "MoveJewelServo()", "Running");
+
+                moveServosPair(servoJewelLeft, servoJewelRight, SERVOJEWELLEFT_MIN_RANGE, SERVOJEWELRIGHT_MIN_RANGE);
+                if (allianceColor.equals("Blue")) {
+                    if (mColour == Constants.ObjectColours.OBJECT_BLUE) {
+                        autonomousStepsFile.insertSteps(3, "FWE27", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "FWE-2", true, false, 0, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                    } else if (mColour == Constants.ObjectColours.OBJECT_RED) {
+                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "FWE24", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                    } else {
+                        //don't know colour so don't push any Jewel
+                        autonomousStepsFile.insertSteps(3, "FWE24", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                    }
+                } else if (allianceColor.equals("Red")) {
+                    if (mColour == Constants.ObjectColours.OBJECT_BLUE) {
+                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "FWE24", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                    } else if (mColour == Constants.ObjectColours.OBJECT_RED) {
+                        //need to move backwards
+                        autonomousStepsFile.insertSteps(3, "FWE27", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "FWE-2", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                    } else {
+                        //don't know colour so don't push any Jewel
+                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "FWE24", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                    }
+                }
+
+                fileLogger.writeEvent(1, "MoveJewelServo()", "Complete:- " + mColour);
+                mblnDisableVisionProcessing = true;  //disable vision processing
+                mblnReadyToCapture = false; //stop OpenCV from doing its thing
+                //  Transition to a new state.
+                mintCurrentStateJewelArm5291 = stepState.STATE_COMPLETE;
+                deleteParallelStep();
+
+                //check timeout value
+                if (mStateTime.seconds() > mdblStepTimeout) {
+                    fileLogger.writeEvent(1, "MoveJewelServo()", "Timeout:- " + mStateTime.seconds());
+                    //  Transition to a new state.
+                    mintCurrentStateJewelArm5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                }
+            }
+        }
+    }
+
+    private void CloseJewelServo()
+    {
+        switch (mintCurrentStateJewelArmClose5291) {
+            case STATE_INIT: {
+                mintCurrentStateJewelArmClose5291 = stepState.STATE_RUNNING;
+                fileLogger.writeEvent(2,"CloseJewelServo()", "Initialised");
+            }
+            break;
+            case STATE_RUNNING: {
+                if (debug >= 2) fileLogger.writeEvent("CloseJewelServo()", "Running");
+
+                if (mStateTime.milliseconds() > mdblRobotParm1) {
+                    moveServosPair(servoJewelLeft, servoJewelRight, SERVOJEWELLEFT_HOME, SERVOJEWELRIGHT_HOME);
+                    fileLogger.writeEvent(2,"CloseJewelServo()", "Returning Servos");
+                    //  Transition to a new state.
+                    mintCurrentStateJewelArmClose5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                }
+
+                //check timeout value
+                if (mStateTime.seconds() > mdblStepTimeout) {
+                    fileLogger.writeEvent(1,"CloseJewelServo()", "Timeout:- " + mStateTime.seconds());
+                    //  Transition to a new state.
+                    mintCurrentStateJewelArmClose5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                }
+            }
+        }
+    }
+
+    private void DetectJewelColour()
+    {
+        boolean blnColourOK = false;
+
+        switch (mintCurrentStateJewelColour5291) {
+            case STATE_INIT: {
+                fileLogger.writeEvent(2,"DetectJewelColour()", "Initialising");
+                if (!((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_RED))) {
+                    //ensure vision processing is enable
+                    mblnDisableVisionProcessing     = false;    //enable vision processing
+                    mblnReadyToCapture              = true;     //let OpenCV start doing its thing
+                    mintNumberColourTries           = 0;
+                    mintCaptureLoop                 = 0;
+                    fileLogger.writeEvent(2,"DetectJewelColour()", "Don't have colour, not bypassing");
+                    mintCurrentStateJewelColour5291 = stepState.STATE_RUNNING;
+                    fileLogger.writeEvent(2,"DetectJewelColour()", "Initialised");
+                } else {
+                    fileLogger.writeEvent(2,"DetectJewelColour()", "have colour, bypassing");
+
+                    //  Transition to a new state.
+                    mintCurrentStateJewelColour5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                }
+            }
+            break;
+            case STATE_RUNNING: {
+                if (!((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_RED))) {
+                    mblnDisableVisionProcessing     = false;    //enable vision processing
+                    mblnReadyToCapture              = true;     //let OpenCV start doing its thing
+                }
+                fileLogger.writeEvent(2,"DetectJewelColour()", "Running");
+                mintNumberColourTries++;
+
+                if (mColour == Constants.ObjectColours.OBJECT_BLUE) {    //means blue is to the right
+                    blnColourOK = true;
+                } else if (mColour == Constants.ObjectColours.OBJECT_RED) { //means blue is to the right
+                    blnColourOK = true;
+                }
+
+                fileLogger.writeEvent(2,"DetectJewelColour()", "Returned mColour " + mColour);
+                mint5291LEDStatus = LEDState.STATE_OBJECT;
+
+                if ((blnColourOK) && (mintNumberColourTries < 2 ))
+                {
+                    fileLogger.writeEvent(1,"DetectJewelColour()", "Complete:- " + mColour);
+                    mblnDisableVisionProcessing     = true;  //disable vision processing
+                    mblnReadyToCapture              = false; //stop OpenCV from doing its thing
+                    //  Transition to a new state.
+                    mintCurrentStateJewelColour5291 = stepState.STATE_COMPLETE;
+                    deleteParallelStep();
+                }
+
+                if (mintNumberColourTries >= 2) {
+                    mblnReadyToCapture              = false;
+                    mblnDisableVisionProcessing     = true;  //disable vision processing
+                    mintCurrentStateJewelColour5291 = stepState.STATE_COMPLETE;
+                    fileLogger.writeEvent(2,"DetectJewelColour()", "FAILED too many attempts");
+                    mblnReadyToCapture = false; //stop OpenCV from doing its thing
+                    deleteParallelStep();
+                }
+            }
+            //check timeout value
+            if (mStateTime.seconds() > mdblStepTimeout)
+            {
+                fileLogger.writeEvent(1,"DetectJewelColour()", "Timeout:- " + mStateTime.seconds());
+                mblnDisableVisionProcessing         = true;  //disable vision processing
+                mblnReadyToCapture                  = false; //stop OpenCV from doing its thing
+                //  Transition to a new state.
+                mintCurrentStateJewelColour5291     = stepState.STATE_COMPLETE;
+                deleteParallelStep();
+            }
         }
     }
 
@@ -2990,15 +3049,11 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             {
                 double adafruitIMUHeading;
                 adafruitIMUHeading = getAdafruitHeading();
-
                 mdblPowerBoost = 0;
                 mintStableCount = 0;
                 mstrWiggleDir = "";
-
                 mdblRobotTurnAngle = Double.parseDouble(mstrRobotCommand.substring(3));
-                if (debug >= 3) {
-                    fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USE ADAFRUIT IMU = " + useAdafruitIMU + ",mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
-                }
+                fileLogger.writeEvent(3,"TankTurnGyroHeadingEncoder", "USE ADAFRUIT IMU = " + useAdafruitIMU + ",mdblRobotTurnAngle " + mdblRobotTurnAngle + " adafruitIMUHeading " + adafruitIMUHeading);
                 mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirection((int)adafruitIMUHeading, (int) mdblRobotTurnAngle).substring(3));
                 mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_RUNNING;
             }
@@ -3007,26 +3062,21 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
                 double adafruitIMUHeading;
                 adafruitIMUHeading = getAdafruitHeading();
-
                 mdblGyrozAccumulated = teamAngleAdjust(mdblGyrozAccumulated); //Set variables to MRgyro readings
                 mdblTurnAbsoluteGyro = Double.parseDouble(newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(3));
                 String mstrDirection = (newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle).substring(0, 3));
-                if (debug >= 3) {
-                    fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "USING HEADING FROM IMU=" + useAdafruitIMU);
-                    fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
-                    fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
-                    fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "Running, mstrDirection        = " + mstrDirection);
-                    fileLogger.writeEvent("TankTurnGyroHeadingEncoder", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
-                }
+                fileLogger.writeEvent(3,"TankTurnGyroHeadingEncoder", "USING HEADING FROM IMU=" + useAdafruitIMU);
+                fileLogger.writeEvent(3,"TankTurnGyroHeadingEncoder", "Running, mdblGyrozAccumulated = " + mdblGyrozAccumulated);
+                fileLogger.writeEvent(3,"TankTurnGyroHeadingEncoder", "Running, mdblTurnAbsoluteGyro = " + mdblTurnAbsoluteGyro);
+                fileLogger.writeEvent(3,"TankTurnGyroHeadingEncoder", "Running, mstrDirection        = " + mstrDirection);
+                fileLogger.writeEvent(3,"TankTurnGyroHeadingEncoder", "Running, adafruitIMUHeading   = " + adafruitIMUHeading);
                 autonomousStepsFile.insertSteps(3, newAngleDirectionGyro ((int)mdblGyrozAccumulated, (int)mdblRobotTurnAngle), false, false, 0, 0, 0, 0, 0, 0, mdblStepSpeed, mintCurrentStep + 1);
                 mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_COMPLETE;
                 deleteParallelStep();
             }
             //check timeout value
             if (mStateTime.seconds() > mdblStepTimeout) {
-                if (debug >= 1) {
-                    fileLogger.writeEvent("TankTurnGyroHeadingEnc", "Timeout:- ");
-                }
+                fileLogger.writeEvent(1,"TankTurnGyroHeadingEnc", "Timeout:- " + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurrentStateGyroTurnEncoder5291 = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -3042,24 +3092,18 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 //ensure vision processing is enabled
                 mblnDisableVisionProcessing = false;  //enable vision processing
                 mintCurrentStateVuforiaLocalise5291 = stepState.STATE_RUNNING;
-                if (debug >= 2) {
-                    fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "Initialised");
-                }
+                fileLogger.writeEvent(3,"mintCurrentStateVuforiaLocalise5291", "Initialised");
             }
             break;
             case STATE_RUNNING:
             {
                 String strCorrectionAngle;
-                if (debug >= 2) {
-                    fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "Running" );
-                    fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "localiseRobotPos " + localiseRobotPos );
-                }
+                fileLogger.writeEvent(3, "mintCurrentStateVuforiaLocalise5291", "Running" );
+                fileLogger.writeEvent(3, "mintCurrentStateVuforiaLocalise5291", "localiseRobotPos " + localiseRobotPos );
                 if (!localiseRobotPos) {
                     //need to rerun this step as we cannot get localisation and need to adjust robot to see if we can see a target
                     autonomousStepsFile.insertSteps(3, "VFL", false, false, 0,    0,    0,    0,    0,    0,  0.5, mintCurrentStep + 1);
-                    if (debug >= 2) {
-                        fileLogger.writeEvent("mintCurStVuforiaLoc5291", "Not Localised, inserting a new step" );
-                    }
+                    fileLogger.writeEvent(3,"mintCurStVuforiaLoc5291", "Not Localised, inserting a new step" );
                     //need a delay, as Vuforia is slow to update
                     autonomousStepsFile.insertSteps(2, "DEL500", false, false, 0, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
 
@@ -3077,10 +3121,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 }
 
                 int intLocalisedRobotBearing = (int)localisedRobotBearing;
-
-                if (debug >= 2) {
-                    fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "Localised, determining angles.... intLocalisedRobotBearing= " + intLocalisedRobotBearing + " Alliancecolour= " + allianceColor);
-                }
+                fileLogger.writeEvent(3,"mintCurrentStateVuforiaLocalise5291", "Localised, determining angles.... intLocalisedRobotBearing= " + intLocalisedRobotBearing + " Alliancecolour= " + allianceColor);
                 //vuforia angles or 0 towards the BLUE drivers, AStar 0 is to the BLUE beacons
                 if (allianceColor.equals("Red")) {
                     //double check localisation
@@ -3094,9 +3135,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                         break;
                     }
                     //double check localisation
-                    if (debug >= 2) {
-                        fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "Inserting Steps VFL 0 0 0 mintCurrentStep " + mintCurrentStep);
-                    }
+                    fileLogger.writeEvent(3,"mintCurrentStateVuforiaLocalise5291", "Inserting Steps VFL 0 0 0 mintCurrentStep " + mintCurrentStep);
                     autonomousStepsFile.insertSteps(3, "VFL", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
                     //need a delay, as Vuforia is slow to update
                     autonomousStepsFile.insertSteps(2, "DEL500", false, false, 0, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
@@ -3132,9 +3171,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             //check timeout value
             if (mStateTime.seconds() > mdblStepTimeout)
             {
-                if (debug >= 1) {
-                    fileLogger.writeEvent("mintCurrentStateVuforiaLocalise5291", "Timeout:- ");
-                }
+                fileLogger.writeEvent(1,"mintCurrentStateVuforiaLocalise5291", "Timeout:- " + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurrentStateVuforiaLocalise5291 = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -3151,18 +3188,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mblnDisableVisionProcessing = false;  //enable vision processing
 
                 mintCurStVuforiaMove5291 = stepState.STATE_RUNNING;
-                if (debug >= 2) {
-                    fileLogger.writeEvent("VuforiaMove()", "Initialised");
-                }
+                fileLogger.writeEvent(2,"VuforiaMove()", "Initialised");
             }
             break;
             case STATE_RUNNING:
             {
                 String strCorrectionAngle;
-                if (debug >= 2) {
-                    fileLogger.writeEvent("VuforiaMove()", "Running" );
-                    fileLogger.writeEvent("VuforiaMove()", "localiseRobotPos " + localiseRobotPos );
-                }
+                fileLogger.writeEvent(2,"VuforiaMove()", "Running" );
+                fileLogger.writeEvent(2,"VuforiaMove()", "localiseRobotPos " + localiseRobotPos );
+
                 if (!localiseRobotPos)
                 {
                     //need to do something gere to try and get localise
@@ -3183,13 +3217,11 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 double requiredMoveAngletemp3 = Math.toDegrees(requiredMoveAngletemp2);
                 int requiredMoveAngle = (int)Math.abs(requiredMoveAngletemp3);
 
-                if (debug >= 2) {
-                    fileLogger.writeEvent("VuforiaMove()", "Temp Values requiredMoveAngletemp1 " + requiredMoveAngletemp1 + " requiredMoveAngletemp2 " + requiredMoveAngletemp2 + " requiredMoveAngletemp3 " + requiredMoveAngletemp3);
-                    fileLogger.writeEvent("VuforiaMove()", "Temp Values currentX " + currentX + " currentY " + currentY);
-                    fileLogger.writeEvent("VuforiaMove()", "Localised, determining angles....Alliancecolour= " + allianceColor + " intLocalisedRobotBearing= " + intLocalisedRobotBearing + " CurrentX= " + currentX + " CurrentY= " + currentY);
-                    fileLogger.writeEvent("VuforiaMove()", "Localised, determining angles....requiredMoveX " + requiredMoveX + " requiredMoveY " + requiredMoveY);
-                    fileLogger.writeEvent("VuforiaMove()", "Localised, determining angles....requiredMoveDistance " + requiredMoveDistance + " requiredMoveAngle " + requiredMoveAngle);
-                }
+                fileLogger.writeEvent(2,"VuforiaMove()", "Temp Values requiredMoveAngletemp1 " + requiredMoveAngletemp1 + " requiredMoveAngletemp2 " + requiredMoveAngletemp2 + " requiredMoveAngletemp3 " + requiredMoveAngletemp3);
+                fileLogger.writeEvent(2,"VuforiaMove()", "Temp Values currentX " + currentX + " currentY " + currentY);
+                fileLogger.writeEvent(2,"VuforiaMove()", "Localised, determining angles....Alliancecolour= " + allianceColor + " intLocalisedRobotBearing= " + intLocalisedRobotBearing + " CurrentX= " + currentX + " CurrentY= " + currentY);
+                fileLogger.writeEvent(2,"VuforiaMove()", "Localised, determining angles....requiredMoveX " + requiredMoveX + " requiredMoveY " + requiredMoveY);
+                fileLogger.writeEvent(2,"VuforiaMove()", "Localised, determining angles....requiredMoveDistance " + requiredMoveDistance + " requiredMoveAngle " + requiredMoveAngle);
 
                 if ((((int) mdblRobotParm5) > currentY) && ((int) mdblRobotParm4 > currentX)) {
                     requiredMoveAngle = 90 - requiredMoveAngle;
@@ -3202,20 +3234,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 }
 
                 strCorrectionAngle = newAngleDirection (intLocalisedRobotBearing, requiredMoveAngle);
-
                 autonomousStepsFile.insertSteps(3, "FWE"+requiredMoveDistance, false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
                 autonomousStepsFile.insertSteps(3, strCorrectionAngle, false, false, 0, 0, 0, 0, 0, 0, 0.4, mintCurrentStep + 1);
-
                 mintCurStVuforiaMove5291 = stepState.STATE_COMPLETE;
                 deleteParallelStep();
             }
             //check timeout value
             if (mStateTime.seconds() > mdblStepTimeout)
             {
-                if (debug >= 1)
-                {
-                    fileLogger.writeEvent("VuforiaMove()", "Timeout:- ");
-                }
+                fileLogger.writeEvent(1,"VuforiaMove()", "Timeout:- "  + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurStVuforiaMove5291 = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -3230,34 +3257,28 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         switch (mintCurStVuforiaTurn5291) {
             case STATE_INIT: {
                 //ensure vision processing is enabled
-                mblnDisableVisionProcessing = false;  //enable vision processing
-
-                mintCurStVuforiaTurn5291 = stepState.STATE_RUNNING;
-                if (debug >= 2) {
-                    fileLogger.writeEvent("VuforiaTurn()", "Initialised");
-                }
+                mblnDisableVisionProcessing     = false;  //enable vision processing
+                mintCurStVuforiaTurn5291        = stepState.STATE_RUNNING;
+                fileLogger.writeEvent(2,"VuforiaTurn()", "Initialised");
             }
             break;
             case STATE_RUNNING:
             {
-                if (debug >= 2) {
-                    fileLogger.writeEvent("VuforiaTurn()", "Running" );
-                    fileLogger.writeEvent("VuforiaTurn()", "localiseRobotPos " + localiseRobotPos );
-                }
+                fileLogger.writeEvent(2,"VuforiaTurn()", "Running" );
+                fileLogger.writeEvent(2,"VuforiaTurn()", "localiseRobotPos " + localiseRobotPos );
+
                 if (!localiseRobotPos)
                 {
                     //need to do something here to try and get localised
-                    mintCurStVuforiaTurn5291 = stepState.STATE_COMPLETE;
+                    mintCurStVuforiaTurn5291    = stepState.STATE_COMPLETE;
                     deleteParallelStep();
                     break;
                 }
-                int intLocalisedRobotBearing = (int)localisedRobotBearing;
-                double requiredMoveAngle = mdblRobotParm1;
-                strCorrectionAngle = newAngleDirection (intLocalisedRobotBearing, (int)requiredMoveAngle);
 
-                if (debug >= 2) {
-                    fileLogger.writeEvent("VuforiaTurn()", "Localised, determining angles....Alliancecolour= " + allianceColor + " intLocalisedRobotBearing= " + intLocalisedRobotBearing  + " requiredMoveAngle " + requiredMoveAngle);
-                }
+                int intLocalisedRobotBearing    = (int)localisedRobotBearing;
+                double requiredMoveAngle        = mdblRobotParm1;
+                strCorrectionAngle = newAngleDirection (intLocalisedRobotBearing, (int)requiredMoveAngle);
+                fileLogger.writeEvent(2,"VuforiaTurn()", "Localised, determining angles....Alliancecolour= " + allianceColor + " intLocalisedRobotBearing= " + intLocalisedRobotBearing  + " requiredMoveAngle " + requiredMoveAngle);
                 autonomousStepsFile.insertSteps(3, strCorrectionAngle, false, false, 0, 0, 0, 0, 0, 0, 0.4, mintCurrentStep + 1);
                 mintCurStVuforiaTurn5291 = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -3265,10 +3286,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             //check timeout value
             if (mStateTime.seconds() > mdblStepTimeout)
             {
-                if (debug >= 1)
-                {
-                    fileLogger.writeEvent("VuforiaTurn()", "Timeout:- ");
-                }
+                fileLogger.writeEvent(1,"VuforiaTurn()", "Timeout:- " + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurStVuforiaTurn5291 = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -3284,16 +3302,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
                 mintStepDelay = Integer.parseInt(mstrRobotCommand.substring(3));
                 mintCurrentStepDelay = stepState.STATE_RUNNING;
                 if (debug >= 2) {
-                    fileLogger.writeEvent("DelayStep()", "Init Delay Time    " + mintStepDelay);
+                    fileLogger.writeEvent(3,"DelayStep()", "Init Delay Time    " + mintStepDelay);
                 }
             }
             break;
             case STATE_RUNNING:
             {
-                if (mStateTime.milliseconds() >= mintStepDelay) {
-                    if (debug >= 1) {
-                        fileLogger.writeEvent("DelayStep()", "Complete         ");
-                    }
+                if (mStateTime.milliseconds() >= mintStepDelay)
+                {
+                    fileLogger.writeEvent(1,"DelayStep()", "Complete         ");
                     mintCurrentStepDelay = stepState.STATE_COMPLETE;
                     deleteParallelStep();
                 }
@@ -3301,10 +3318,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             //check timeout value
             if (mStateTime.seconds() > mdblStepTimeout)
             {
-                if (debug >= 1)
-                {
-                    fileLogger.writeEvent("DelayStep()", "Timeout:- ");
-                }
+                fileLogger.writeEvent(1,"DelayStep()", "Timeout:- " + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurrentStepDelay = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -3324,11 +3338,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
     private String getAngle(int angle1, int angle2)
     {
-        if (debug >= 2)
-        {
-            fileLogger.writeEvent(TAG, "Getangle - Current Angle1:= " + angle1 + " Desired Angle2:= " + angle2);
-        }
-
+        fileLogger.writeEvent(2,TAG, "Getangle - Current Angle1:= " + angle1 + " Desired Angle2:= " + angle2);
         switch (angle1)
         {
             case 0:
@@ -3497,10 +3507,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
     private double teamAngleAdjust ( double angle ) {
 
-        if (debug >= 2)
-        {
-            fileLogger.writeEvent("teamAngleAdjust", "teamAngleAdjust - angle " + angle + " allianceColor " + allianceColor);
-        }
+        fileLogger.writeEvent(2,"teamAngleAdjust", "teamAngleAdjust - angle " + angle + " allianceColor " + allianceColor);
 
         if (allianceColor.equals("Red")) {
             //angle = angle + 90;  if starting against the wall
@@ -3509,10 +3516,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             if (angle > 360) {
                 angle = angle - 360;
             }
-            if (debug >= 2)
-            {
-                fileLogger.writeEvent("teamAngleAdjust", "In RED Angle " + angle);
-            }
+            fileLogger.writeEvent(2,"teamAngleAdjust", "In RED Angle " + angle);
 
         } else
         if (allianceColor.equals("Blue")) {
@@ -3597,9 +3601,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
         range2Cache = RANGE2Reader.read(RANGE2_REG_START, RANGE2_READ_LENGTH);
         mdblRangeSensor1 = getDistance(range1Cache[0] & 0xFF, range1Cache[1] & 0xFF, DistanceUnit.CM);
         mdblRangeSensor2 = getDistance(range2Cache[0] & 0xFF, range2Cache[1] & 0xFF, DistanceUnit.CM);
-        if (debug >= 2) {
-            fileLogger.writeEvent("readRangeSensors()", "mdblRangeSensor1 " + mdblRangeSensor1 + ",mdblRangeSensor2 " + mdblRangeSensor2);
-        }
+        fileLogger.writeEvent(2,"readRangeSensors()", "mdblRangeSensor1 " + mdblRangeSensor1 + ",mdblRangeSensor2 " + mdblRangeSensor2);
     }
 
     /**
@@ -3618,28 +3620,21 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
         adafruitIMUHeading = getAdafruitHeading();
 
-        if (debug >= 2) {
-            fileLogger.writeEvent("getDriveError()", "targetAngle " + targetAngle);
-            fileLogger.writeEvent("getDriveError()", "Adafruit IMU Reading " + adafruitIMUHeading);
-        }
-
+        fileLogger.writeEvent(2,"getDriveError()", "targetAngle " + targetAngle);
+        fileLogger.writeEvent(2,"getDriveError()", "Adafruit IMU Reading " + adafruitIMUHeading);
         // calculate error in -179 to +180 range  (
         robotErrorIMU = targetAngle - teamAngleAdjust(adafruitIMUHeading);
-
         robotError = robotErrorIMU;
+        fileLogger.writeEvent(2,"getDriveError()", "USING HEADING FROM IMU=" + useAdafruitIMU);
+        fileLogger.writeEvent(2,"getDriveError()", "robotErrorIMU " + robotError + ", getAdafruitHeading() " + adafruitIMUHeading + " teamAngleAdjust(adafruitIMUHeading) "  + teamAngleAdjust(adafruitIMUHeading));
 
-        if (debug >= 3) {
-            fileLogger.writeEvent("getDriveError()", "USING HEADING FROM IMU=" + useAdafruitIMU);
-            fileLogger.writeEvent("getDriveError()", "robotErrorIMU " + robotError + ", getAdafruitHeading() " + adafruitIMUHeading + " teamAngleAdjust(adafruitIMUHeading) "  + teamAngleAdjust(adafruitIMUHeading));
-        }
         if (robotError > 180)
             robotError -= 360;
         if (robotError <= -180)
             robotError += 360;
 
-        if (debug >= 2) {
-            fileLogger.writeEvent("getDriveError()", "robotError2 " + robotError);
-        }
+        fileLogger.writeEvent(2,"getDriveError()", "robotError2 " + robotError);
+
         return -robotError;
     }
 
@@ -3666,7 +3661,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
 
     //for adafruit IMU as it returns z angle only
     private double angleToHeading(double z) {
-
         double angle = -z;
         if (angle < 0)
             return angle + 360;
@@ -3674,6 +3668,30 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear
             return angle - 360;
         else
             return angle;
+    }
+
+    private void sendServosHome(Servo servoGlyphGripTopLeft, Servo servoGlyphGripBotLeft, Servo servoGlyphGripTopRight, Servo servoGlyphGripBotRight, Servo servoJewelLeft, Servo servoJewelRight) {
+        moveServo(servoGlyphGripTopLeft, SERVOLIFTLEFTTOP_HOME, SERVOLIFTLEFTTOP_MIN_RANGE, SERVOLIFTLEFTTOP_MAX_RANGE);
+        moveServo(servoGlyphGripBotLeft, SERVOLIFTLEFTBOT_HOME, SERVOLIFTLEFTBOT_MIN_RANGE, SERVOLIFTLEFTBOT_MAX_RANGE);
+        moveServo(servoGlyphGripTopRight, SERVOLIFTRIGHTTOP_HOME, SERVOLIFTRIGHTTOP_MIN_RANGE, SERVOLIFTRIGHTTOP_MAX_RANGE);
+        moveServo(servoGlyphGripBotRight, SERVOLIFTRIGHTBOT_HOME, SERVOLIFTRIGHTBOT_MIN_RANGE, SERVOLIFTRIGHTBOT_MAX_RANGE);
+        moveServo(servoJewelLeft, SERVOJEWELLEFT_HOME, SERVOJEWELLEFT_MIN_RANGE, SERVOJEWELLEFT_MAX_RANGE);
+        moveServo(servoJewelRight, SERVOJEWELRIGHT_HOME, SERVOJEWELRIGHT_MIN_RANGE, SERVOJEWELRIGHT_MAX_RANGE);
+    }
+
+    private void moveTopServos(Servo servoGlyphGripTopLeft, Servo servoGlyphGripTopRight, double positionTopLeft, double positionTopRight) {
+        moveServo(servoGlyphGripTopLeft, positionTopLeft, SERVOLIFTLEFTTOP_MIN_RANGE, SERVOLIFTLEFTTOP_MAX_RANGE);
+        moveServo(servoGlyphGripTopRight, positionTopRight, SERVOLIFTRIGHTTOP_MIN_RANGE, SERVOLIFTRIGHTTOP_MAX_RANGE);
+    }
+
+    private void moveBotServos(Servo servoGlyphGripBotLeft, Servo servoGlyphGripBotRight, double positionBotLeft, double positionBotRight) {
+        moveServo(servoGlyphGripBotLeft, positionBotLeft, SERVOLIFTLEFTBOT_MIN_RANGE, SERVOLIFTLEFTBOT_MAX_RANGE);
+        moveServo(servoGlyphGripBotRight, positionBotRight, SERVOLIFTRIGHTBOT_MIN_RANGE, SERVOLIFTRIGHTBOT_MAX_RANGE);
+    }
+
+    private void moveServosPair(Servo servoLeft, Servo servoRight, double positionLeft, double positionRight) {
+        moveServo(servoLeft, positionLeft, 0, 180);
+        moveServo(servoRight, positionRight, 0, 180);
     }
 
     private boolean moveServo (Servo Servo, double Position, double RangeMin, double RangeMax ) {

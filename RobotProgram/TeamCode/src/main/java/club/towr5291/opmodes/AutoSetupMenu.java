@@ -97,7 +97,6 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
         robotConfig = sharedPreferences.getString("club.towr5291.Autonomous.RobotConfig", "TileRunner-Mecanum-2x40");
         debug = Integer.parseInt(sharedPreferences.getString("club.towr5291.Autonomous.Debug", "1"));
 
-
         //
         // Create the menus.
         //
@@ -359,7 +358,7 @@ public class AutoSetupMenu extends OpModeMasterLinear implements FtcMenu.MenuBut
     public void initRobot()
     {
         //start the log
-        fileLogger = new FileLogger(runtime);
+        fileLogger = new FileLogger(runtime,3,true);
         fileLogger.open();
         fileLogger.write("Time,SysMS,Thread,Event,Desc");
         fileLogger.writeEvent(TAG, "Log Started");

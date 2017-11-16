@@ -2,6 +2,7 @@ package club.towr5291.Concepts;
 
 import android.content.SharedPreferences;
 import android.graphics.Bitmap;
+import android.hardware.Camera;
 import android.os.Environment;
 import android.preference.PreferenceManager;
 import android.util.Log;
@@ -69,9 +70,7 @@ import club.towr5291.functions.JewelAnalysisOCV;
 import club.towr5291.opmodes.OpModeMasterLinear;
 import hallib.HalDashboard;
 
-import static club.towr5291.functions.Constants.BeaconColours.BEACON_BLUE_RED;
-import static club.towr5291.functions.Constants.BeaconColours.BEACON_RED_BLUE;
-import static club.towr5291.functions.Constants.BeaconColours.UNKNOWN;
+
 import static org.opencv.imgproc.Imgproc.contourArea;
 
 
@@ -392,14 +391,19 @@ public class ConceptVuforiaOpGrabImage extends OpModeMasterLinear
         waitForStart();
 
         int loop = 0;
-        Constants.BeaconColours Colour = Constants.BeaconColours.UNKNOWN;
-
+        Constants.ObjectColours Colour = Constants.ObjectColours.UNKNOWN;
+        //try {
+        //    Camera camera;
+        //    Camera.Parameters cameraparams;
+        //    camera = Camera.open();
+        //    cameraparams = camera.getParameters();
+        //    cameraparams = camera.getParameters();
+        //    cameraparams.setFlashMode(Camera.Parameters.FLASH_MODE_TORCH);
+        //    camera.setParameters(cameraparams);
+        //} catch (RuntimeException e) {
+        //    Log.e("Camera Error Open", e.getMessage());
+        //}
         while (opModeIsActive()) {
-
-            boolean gotBeacomDims = false;
-            Point beaconBotRight = new Point(0,0);
-            Point beaconTopLeft = new Point(0,0);
-            Point beaconMiddle = new Point(0,0);
 
             for (VuforiaTrackable jewel : RelicRecovery) {
 
@@ -428,15 +432,6 @@ public class ConceptVuforiaOpGrabImage extends OpModeMasterLinear
                     //pixels per mm width, using a known size of the target
                     double dblWidthPixelsPermm = width / TARGET_WIDTH;
                     double dblHeightPixelsPermm = height / TARGET_HEIGHT;
-
-                    //beacon base is about 25mm above top of target
-                    beaconBotRight = new Point ((dblMidPointTopx + (110 * dblWidthPixelsPermm)), dblMidPointTopy - (30 * dblHeightPixelsPermm));
-                    beaconTopLeft = new Point ((dblMidPointTopx - (110 * dblWidthPixelsPermm)), dblMidPointTopy - (160  * dblHeightPixelsPermm));
-
-                    beaconMiddle.x = dblMidPointTopx;
-                    beaconMiddle.y = dblMidPointTopy + (105  * dblHeightPixelsPermm);
-
-                    gotBeacomDims = true;
 
                     if (debug >= 1)
                     {
@@ -539,22 +534,28 @@ public class ConceptVuforiaOpGrabImage extends OpModeMasterLinear
             }
 
             switch (Colour) {
-                case BEACON_BLUE_RED:
+                case OBJECT_BLUE:
+                    dashboard.displayPrintf(9, "Colour Blue");
+                    break;
+                case OBJECT_RED:
+                    dashboard.displayPrintf(9, "Colour Red");
+                    break;
+                case OBJECT_BLUE_RED:
                     dashboard.displayPrintf(9, "Colour Blue Red");
                     break;
-                case BEACON_RED_BLUE:
+                case OBJECT_RED_BLUE:
                     dashboard.displayPrintf(9, "Colour Red Blue");
                     break;
-                case BEACON_BLUE_LEFT:
+                case OBJECT_BLUE_LEFT:
                     dashboard.displayPrintf(9, "Colour Blue XXXX");
                     break;
-                case BEACON_RED_LEFT:
+                case OBJECT_RED_LEFT:
                     dashboard.displayPrintf(9, "Colour Red XXXX");
                     break;
-                case BEACON_BLUE_RIGHT:
+                case OBJECT_BLUE_RIGHT:
                     dashboard.displayPrintf(9, "Colour XXXX Blue");
                     break;
-                case BEACON_RED_RIGHT:
+                case OBJECT_RED_RIGHT:
                     dashboard.displayPrintf(9, "Colour XXXX Red");
                     break;
                 case UNKNOWN:

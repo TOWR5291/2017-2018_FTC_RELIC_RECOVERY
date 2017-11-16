@@ -270,7 +270,8 @@ public class RRMecanumTestIan extends OpModeMasterLinear
 
         //lock the jewel arms home
         sendServosHome(servoGlyphGripTopLeft, servoGlyphGripBotLeft, servoGlyphGripTopRight, servoGlyphGripBotRight, servoJewelLeft, servoJewelRight);
-        
+
+
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
 
@@ -291,19 +292,25 @@ public class RRMecanumTestIan extends OpModeMasterLinear
 
             if ((limitswitch1.getState() == false) && (gamepad2.right_stick_y > 0)){
                 armDrive.setHardwareDriveLeft1MotorPower(0);
+                armDrive.baseMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                armDrive.baseMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             } else {
                 armDrive.setHardwareDriveLeft1MotorPower(gamepad2.right_stick_y);
             }
             if ((limitswitch2.getState() == false) && (gamepad2.left_stick_y > 0)){
                 armDrive.setHardwareDriveLeft2MotorPower(0);
+                armDrive.baseMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                armDrive.baseMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
             } else {
                 armDrive.setHardwareDriveLeft2MotorPower(-gamepad2.left_stick_y);
             }
+            dashboard.displayPrintf(5, "Main Position " + armDrive.baseMotor2.getCurrentPosition());
+            dashboard.displayPrintf(6, "Top Position " + armDrive.baseMotor1.getCurrentPosition());
 
-            if (gamepad2.left_trigger != 0) {
+            if ((gamepad2.left_trigger != 0) || (gamepad1.left_trigger != 0)){
                 LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
                 moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_GRAB, SERVOLIFTRIGHTTOP_GLYPH_GRAB);
-            } else if (gamepad2.left_bumper) {
+            } else if ((gamepad2.left_bumper) || (gamepad1.left_bumper)) {
                 LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
                 moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_START, SERVOLIFTRIGHTTOP_GLYPH_START);
             } else {
@@ -311,10 +318,10 @@ public class RRMecanumTestIan extends OpModeMasterLinear
                 moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_RELEASE, SERVOLIFTRIGHTTOP_GLYPH_RELEASE);
             }
 
-            if (gamepad2.right_trigger != 0) {
+            if ((gamepad2.right_trigger != 0) || (gamepad1.right_trigger != 0) ) {
                 LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
                 moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_GRAB, SERVOLIFTRIGHTBOT_GLYPH_GRAB);
-            } else if (gamepad2.right_bumper) {
+            } else if ((gamepad2.right_bumper) || (gamepad1.right_bumper)) {
                 LedState(LedOff, LedOn, LedOn, LedOff, LedOn, LedOn);
                 moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_START, SERVOLIFTRIGHTBOT_GLYPH_START);
             } else {
@@ -323,10 +330,10 @@ public class RRMecanumTestIan extends OpModeMasterLinear
             }
 
 
-            dblLeftMotor1 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -1.0, 1.0);
-            dblLeftMotor2 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -1.0, 1.0);
-            dblRightMotor1 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -1.0, 1.0);
-            dblRightMotor2 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x, -1.0, 1.0);
+            dblLeftMotor1 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -.6, .6);
+            dblLeftMotor2 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -.6, .6);
+            dblRightMotor1 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -.6, .6);
+            dblRightMotor2 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x, -.6, .6);
 
             if ((dblLeftMotor1 < 0) || (dblRightMotor1 < 0)) LedState(LedOff, LedOn, LedOff, LedOff, LedOn, LedOff);
             if ((dblLeftMotor1 > 0) || (dblRightMotor1 > 0)) LedState(LedOn, LedOff, LedOff, LedOn, LedOff, LedOff);

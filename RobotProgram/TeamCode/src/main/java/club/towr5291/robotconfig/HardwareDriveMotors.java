@@ -34,17 +34,20 @@ public class HardwareDriveMotors
 
     private boolean gyroAssistEnabled = false;
 
-    FileLogger filelogger;
-
+    //set up the variables for the logger
+    private FileLogger fileLogger;
+    private static final String TAG = "HardwareDriveMotors";
     /* Constructor */
     public HardwareDriveMotors(){
 
     }
 
     /* Initialize standard Hardware interfaces */
-    public void init(FileLogger fileloggerhandle, HardwareMap ahwMap, robotConfigSettings.robotConfigChoice baseConfig) {
+    public void init(FileLogger fileLoggerFromMaster, HardwareMap ahwMap, robotConfigSettings.robotConfigChoice baseConfig) {
         // Save reference to Hardware map
         hwMap = ahwMap;
+
+        this.fileLogger = fileLoggerFromMaster;
 
         // Define and Initialize Motors
         baseMotor1  = hwMap.dcMotor.get("leftMotor1");
@@ -145,7 +148,7 @@ public class HardwareDriveMotors
                 if (baseMotor3 != null)
                     baseMotor3.setDirection(DcMotor.Direction.FORWARD);
                 if (baseMotor4 != null)
-                    baseMotor4.setDirection(DcMotor.Direction.REVERSE);
+                    baseMotor4.setDirection(DcMotor.Direction.FORWARD);
                 break;
         }
     }

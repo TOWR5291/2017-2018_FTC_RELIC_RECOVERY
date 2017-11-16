@@ -61,7 +61,7 @@ public class BaseDriveLEDDisplay extends LinearOpMode {
     final int BLUE2_LED_CHANNEL = 5;
     final boolean LedOn = false;
     final boolean LedOff = true;
-    private Constants.BeaconColours mColour;
+    private Constants.ObjectColours mColour;
     private double mdblLastOn;
     private double mdblLastState;
     private boolean mblnLEDON;
@@ -108,7 +108,7 @@ public class BaseDriveLEDDisplay extends LinearOpMode {
         }
 
         mint5291LEDStatus = LEDState.STATE_FINISHED;
-        mColour = Constants.BeaconColours.BEACON_RED_BLUE;
+        mColour = Constants.ObjectColours.OBJECT_RED_BLUE;
 
         if (debug >= 1)
         {
@@ -195,25 +195,25 @@ public class BaseDriveLEDDisplay extends LinearOpMode {
                     if ((!mblnLEDON) && (mStateTime.milliseconds() > (mdblLastOn + 500))) {
                         mdblLastOn = mStateTime.milliseconds();
                         mblnLEDON = true;
-                        if (mColour == Constants.BeaconColours.BEACON_BLUE_RED) {    //means red is to the right
+                        if (mColour == Constants.ObjectColours.OBJECT_BLUE_RED) {    //means red is to the right
                             LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOff);
-                        } else if (mColour == Constants.BeaconColours.BEACON_RED_BLUE) {
+                        } else if (mColour == Constants.ObjectColours.OBJECT_RED_BLUE) {
                             LedState(LedOff, LedOn, LedOff, LedOff, LedOff, LedOff);
-                        } else if (mColour == Constants.BeaconColours.BEACON_BLUE) {
+                        } else if (mColour == Constants.ObjectColours.OBJECT_BLUE) {
                             LedState(LedOn, LedOff, LedOff, LedOff, LedOff, LedOff);
-                        } else if (mColour == Constants.BeaconColours.BEACON_BLUE) {
+                        } else if (mColour == Constants.ObjectColours.OBJECT_BLUE) {
                             LedState(LedOff, LedOn, LedOff, LedOff, LedOff, LedOff);
                         }
                     } else  if ((mblnLEDON) && (mStateTime.milliseconds() > (mdblLastOn + 500))) {
                         mdblLastOn = mStateTime.milliseconds();
                         mblnLEDON = false;
-                        if (mColour == Constants.BeaconColours.BEACON_BLUE_RED) {    //means red is to the right
+                        if (mColour == Constants.ObjectColours.OBJECT_BLUE_RED) {    //means red is to the right
                             LedState(LedOff, LedOff, LedOff, LedOff, LedOn, LedOff);
-                        } else if (mColour == Constants.BeaconColours.BEACON_RED_BLUE) {
+                        } else if (mColour == Constants.ObjectColours.OBJECT_RED_BLUE) {
                             LedState(LedOff, LedOff, LedOff, LedOff, LedOff, LedOn);
-                        } else if (mColour == Constants.BeaconColours.BEACON_BLUE) {
+                        } else if (mColour == Constants.ObjectColours.OBJECT_BLUE) {
                             LedState(LedOff, LedOff, LedOff, LedOn, LedOff, LedOff);
-                        } else if (mColour == Constants.BeaconColours.BEACON_BLUE) {
+                        } else if (mColour == Constants.ObjectColours.OBJECT_BLUE) {
                             LedState(LedOff, LedOff, LedOff, LedOff, LedOn, LedOff);
                         }
                     }
@@ -232,10 +232,10 @@ public class BaseDriveLEDDisplay extends LinearOpMode {
                         mblnLEDON = false;
                         mint5291LEDStatus = LEDState.STATE_TEAM;
 
-                        if ((mColour == Constants.BeaconColours.BEACON_BLUE_RED))
-                            mColour = Constants.BeaconColours.BEACON_RED_BLUE;
+                        if ((mColour == Constants.ObjectColours.OBJECT_BLUE_RED))
+                            mColour = Constants.ObjectColours.OBJECT_RED_BLUE;
                         else
-                            mColour = Constants.BeaconColours.BEACON_BLUE_RED;
+                            mColour = Constants.ObjectColours.OBJECT_BLUE_RED;
 
                         if (allianceColor.equals("Red"))
                             allianceColor = "Blue";

@@ -34,7 +34,7 @@ public class BeaconAnalysisOCV {
 
     }
 
-    public Constants.BeaconColours beaconAnalysisOCV(Mat tmp, int count) {
+    public Constants.ObjectColours beaconAnalysisOCV(Mat tmp, int count) {
         List<MatOfPoint> contoursRed = new ArrayList<MatOfPoint>();
         List<MatOfPoint> contoursBlue = new ArrayList<MatOfPoint>();
         List<MatOfInt> hullRed = new ArrayList<MatOfInt>();
@@ -317,26 +317,26 @@ public class BeaconAnalysisOCV {
             if ((centroidRed.x) < (centroidBlue.x))
             {
                 Log.d("OPENCV", "RED_BLUE");
-                return Constants.BeaconColours.BEACON_RED_BLUE;
+                return Constants.ObjectColours.OBJECT_RED_BLUE;
             } else
             {
                 Log.d("OPENCV", "BLUE_RED");
-                return Constants.BeaconColours.BEACON_BLUE_RED;
+                return Constants.ObjectColours.OBJECT_BLUE_RED;
             }
         }
 
         if ((areaBlue) > (areaRed))
         {
             Log.d("OPENCV", "BLUE_BLUE");
-            return Constants.BeaconColours.BEACON_BLUE;
+            return Constants.ObjectColours.OBJECT_BLUE;
         }
         if ((areaRed) > (areaBlue))
         {
             Log.d("OPENCV", "RED_RED");
-            return Constants.BeaconColours.BEACON_RED;
+            return Constants.ObjectColours.OBJECT_RED;
         }
         Log.d("OPENCV", "UNKNOWN");
-        return Constants.BeaconColours.UNKNOWN;
+        return Constants.ObjectColours.UNKNOWN;
     }
 
     private static int contoursLargestIndex(List<MatOfPoint> contours) {

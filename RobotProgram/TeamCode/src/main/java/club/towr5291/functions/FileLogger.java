@@ -152,12 +152,25 @@ public class FileLogger {
     public synchronized void writeEvent(String event, String desc) {
         if (this.enableLogd) {
             if (event.length() > 23) {
-                event = event.substring(0,22);
+                event = event.substring(0, 22);
             }
             Log.d(event.toUpperCase(), desc);
         }
         if (isOpen)
-            this.write(this.elapsedTime.toString()+","+System.currentTimeMillis()+","+Thread.currentThread().getId()+","+event+","+desc);
+            this.write(this.elapsedTime.toString() + "," + System.currentTimeMillis() + "," + Thread.currentThread().getId() + "," + event + "," + desc);
+    }
+
+    public synchronized void writeEvent(int debug, String event, String desc) {
+        if ( this.debugLevel >= debug ) {
+            if (this.enableLogd) {
+                if (event.length() > 23) {
+                    event = event.substring(0, 22);
+                }
+                Log.d(event.toUpperCase(), desc);
+            }
+            if (isOpen)
+                this.write(this.elapsedTime.toString() + "," + System.currentTimeMillis() + "," + Thread.currentThread().getId() + "," + event + "," + desc);
+        }
     }
 
     public synchronized void write(String line) {
