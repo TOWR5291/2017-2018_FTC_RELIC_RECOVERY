@@ -118,10 +118,10 @@ public class RRMecanumTestIan extends OpModeMasterLinear
 
     private final static double SERVOJEWELLEFT_MIN_RANGE        = 0;
     private final static double SERVOJEWELLEFT_MAX_RANGE        = 180;
-    private final static double SERVOJEWELLEFT_HOME             = 147;
+    private final static double SERVOJEWELLEFT_HOME             = 140;
     private final static double SERVOJEWELRIGHT_MIN_RANGE       = 4;
     private final static double SERVOJEWELRIGHT_MAX_RANGE       = 180;
-    private final static double SERVOJEWELRIGHT_HOME            = 150;
+    private final static double SERVOJEWELRIGHT_HOME            = 140;
     private Servo servoGlyphGripTopLeft;
     private Servo servoGlyphGripBotLeft;
     private Servo servoGlyphGripTopRight;
@@ -166,7 +166,14 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     @Override
     public void runOpMode() throws InterruptedException
     {
-
+        double dblDistanceToEndLeft1;
+        double dblDistanceToEndLeft2;
+        double dblDistanceToEndRight1;
+        double dblDistanceToEndRight2;
+        int intLeft1MotorEncoderPosition;
+        int intLeft2MotorEncoderPosition;
+        int intRight1MotorEncoderPosition;
+        int intRight2MotorEncoderPosition;
         dashboard = HalDashboard.createInstance(telemetry);
 
         FtcRobotControllerActivity act = (FtcRobotControllerActivity)(hardwareMap.appContext);
@@ -307,10 +314,10 @@ public class RRMecanumTestIan extends OpModeMasterLinear
             dashboard.displayPrintf(5, "Main Position " + armDrive.baseMotor2.getCurrentPosition());
             dashboard.displayPrintf(6, "Top Position " + armDrive.baseMotor1.getCurrentPosition());
 
-            if ((gamepad2.left_trigger != 0) || (gamepad1.left_trigger != 0)){
+            if ((gamepad2.right_trigger != 0) || (gamepad1.right_trigger != 0)){
                 LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
                 moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_GRAB, SERVOLIFTRIGHTTOP_GLYPH_GRAB);
-            } else if ((gamepad2.left_bumper) || (gamepad1.left_bumper)) {
+            } else if ((gamepad2.right_bumper) || (gamepad1.right_bumper)) {
                 LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
                 moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_START, SERVOLIFTRIGHTTOP_GLYPH_START);
             } else {
@@ -318,10 +325,10 @@ public class RRMecanumTestIan extends OpModeMasterLinear
                 moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_RELEASE, SERVOLIFTRIGHTTOP_GLYPH_RELEASE);
             }
 
-            if ((gamepad2.right_trigger != 0) || (gamepad1.right_trigger != 0) ) {
+            if ((gamepad2.left_trigger != 0) || (gamepad1.left_trigger != 0) ) {
                 LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
                 moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_GRAB, SERVOLIFTRIGHTBOT_GLYPH_GRAB);
-            } else if ((gamepad2.right_bumper) || (gamepad1.right_bumper)) {
+            } else if ((gamepad2.left_bumper) || (gamepad1.left_bumper)) {
                 LedState(LedOff, LedOn, LedOn, LedOff, LedOn, LedOn);
                 moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_START, SERVOLIFTRIGHTBOT_GLYPH_START);
             } else {
@@ -329,14 +336,26 @@ public class RRMecanumTestIan extends OpModeMasterLinear
                 moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_RELEASE, SERVOLIFTRIGHTBOT_GLYPH_RELEASE);
             }
 
-
-            dblLeftMotor1 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -.6, .6);
-            dblLeftMotor2 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -.6, .6);
-            dblRightMotor1 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -.6, .6);
-            dblRightMotor2 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x, -.6, .6);
+            dblLeftMotor1 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -1, 1);
+            dblLeftMotor2 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -1, 1);
+            dblRightMotor1 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -1, 1);
+            dblRightMotor2 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x, -1, 1);
 
             if ((dblLeftMotor1 < 0) || (dblRightMotor1 < 0)) LedState(LedOff, LedOn, LedOff, LedOff, LedOn, LedOff);
             if ((dblLeftMotor1 > 0) || (dblRightMotor1 > 0)) LedState(LedOn, LedOff, LedOff, LedOn, LedOff, LedOff);
+
+            intLeft1MotorEncoderPosition = robotDrive.baseMotor1.getCurrentPosition();
+            intLeft2MotorEncoderPosition = robotDrive.baseMotor2.getCurrentPosition();
+            intRight1MotorEncoderPosition = robotDrive.baseMotor3.getCurrentPosition();
+            intRight2MotorEncoderPosition = robotDrive.baseMotor4.getCurrentPosition();
+
+            fileLogger.writeEvent(3, "TankTurnStep()", "Current LPosition1:- " + intLeft1MotorEncoderPosition);
+            fileLogger.writeEvent(3, "TankTurnStep()", "Current LPosition2:- " + intLeft2MotorEncoderPosition);
+            fileLogger.writeEvent(3, "TankTurnStep()", "Current RPosition1:- " + intRight1MotorEncoderPosition);
+            fileLogger.writeEvent(3, "TankTurnStep()", "Current RPosition2:- " + intRight2MotorEncoderPosition);
+
+            dashboard.displayPrintf(6, 255, "Left  Actual: ", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
+            dashboard.displayPrintf(7, 255, "Right Actual: ", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
 
             robotDrive.setHardwareDrivePower(dblLeftMotor1, dblLeftMotor2, dblRightMotor1, dblRightMotor2);
         }

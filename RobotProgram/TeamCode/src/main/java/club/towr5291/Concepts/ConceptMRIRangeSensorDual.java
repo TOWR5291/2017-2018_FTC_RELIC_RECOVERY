@@ -14,6 +14,7 @@ Support is available by emailing support@modernroboticsinc.com.
 
 package club.towr5291.Concepts;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.I2cAddr;
@@ -25,6 +26,7 @@ import com.qualcomm.robotcore.hardware.I2cDeviceSynchImpl;
 // Based of the single MR Range Sensor Code
 
 @TeleOp(name = "Concept Range Sensor Dual", group = "MRI")
+@Disabled
 public class ConceptMRIRangeSensorDual extends OpMode {
 
     //set up range sensor1

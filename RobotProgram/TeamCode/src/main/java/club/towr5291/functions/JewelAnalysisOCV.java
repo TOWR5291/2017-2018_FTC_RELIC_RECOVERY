@@ -32,6 +32,8 @@ import java.util.List;
 
 import club.towr5291.libraries.LibraryOCVHSVFilter;
 
+import static org.opencv.core.Core.flip;
+
 /**
  * Created by LZTDD0 on 11/7/2016.
  */
@@ -109,7 +111,7 @@ public class JewelAnalysisOCV {
 
     }
 
-    public Constants.ObjectColours JewelAnalysisOCV(FileLogger fileLoggerFromMaster, Mat img, int count) {
+    public Constants.ObjectColours JewelAnalysisOCV(FileLogger fileLoggerFromMaster, Mat img, int count, boolean flipit) {
 
         this.fileLogger = fileLoggerFromMaster;
 
@@ -146,12 +148,20 @@ public class JewelAnalysisOCV {
         fileLogger.writeEvent(3, TAG, "HSV Filters loaded");
 
         imageCounter = count;
+        Rect roi = new Rect(img.width() / 2, img.height() / 2, img.width() / 2, img.height() / 2);
+
+        if (flipit) {
+            flip(img,img,-1);
+            // camera image size by default is 1280x720
+            // Just get where the Jewel is so we don't analyse the wrong items in the image
+            roi = new Rect(0, img.height() / 2, img.width() / 2, img.height() / 2);
+        } else {
+            // camera image size by default is 1280x720
+            // Just get where the Jewel is so we don't analyse the wrong items in the image
+            roi = new Rect(img.width() / 2, img.height() / 2, img.width() / 2, img.height() / 2);
+        }
 
         SaveImage(2,img, imageTimeStamp + "-01 initial " + imageCounter );
-
-        // camera image size by default is 1280x720
-        // Just get where the Jewel is so we don't analyse the wrong items in the image
-        Rect roi = new Rect(img.width()/2, img.height()/2, img.width()/2, img.height()/2);
 
         Mat cropped = new Mat(img, roi);
         original = cropped.clone();
@@ -526,6 +536,18 @@ public class JewelAnalysisOCV {
         }
         centroidBluePosition = centroidBlue.get(0);
         centroidRedPosition = centroidRed.get(0);
+
+        //can see 2 jewels, need to work out which one is left or right
+        if ((red_box.area() > 800) && (blue_box.area() > 800)) {
+            if (centroidBluePosition.x < centroidRedPosition.x) {
+                ObjectColourResult = Constants.ObjectColours.OBJECT_BLUE_RED;
+                return;
+            } else if (centroidBluePosition.x > centroidRedPosition.x) {
+                ObjectColourResult = Constants.ObjectColours.OBJECT_RED_BLUE;
+                return;
+            }
+
+        }
 
         if ( red_box.area()  > blue_box.area() ) {
             ObjectColourResult = Constants.ObjectColours.OBJECT_RED;

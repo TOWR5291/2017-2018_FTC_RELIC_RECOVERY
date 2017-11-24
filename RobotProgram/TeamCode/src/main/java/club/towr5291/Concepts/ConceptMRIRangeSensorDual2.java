@@ -15,6 +15,7 @@ Support is available by emailing support@modernroboticsinc.com.
 package club.towr5291.Concepts;
 
 import com.qualcomm.hardware.modernrobotics.ModernRoboticsI2cRangeSensor;
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.OpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 import com.qualcomm.robotcore.hardware.I2cAddr;
@@ -29,7 +30,7 @@ import org.firstinspires.ftc.robotcore.external.navigation.DistanceUnit;
 // Based of the single MR Range Sensor Code
 
 @TeleOp(name = "Concept Range Sensor Dual MR", group = "5291Concept")
-//@Disabled
+@Disabled
 public class ConceptMRIRangeSensorDual2 extends OpMode {
 
     //set up range sensor1

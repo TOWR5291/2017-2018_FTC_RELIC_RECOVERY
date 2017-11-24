@@ -29,7 +29,7 @@ import java.util.Locale;
 //import club.towr5291.robotconfig.HardwareArmMotorsRR;
 
 @TeleOp(name="RR Mecanum Test", group="RRTest")
-//@Disabled
+@Disabled
 public class RRMecanumTest extends OpMode {
 
     //motors

@@ -4,6 +4,7 @@ import android.content.SharedPreferences;
 import android.preference.PreferenceManager;
 import android.util.Log;
 
+import com.qualcomm.robotcore.eventloop.opmode.Disabled;
 import com.qualcomm.robotcore.eventloop.opmode.LinearOpMode;
 import com.qualcomm.robotcore.eventloop.opmode.TeleOp;
 
@@ -17,7 +18,7 @@ import club.towr5291.functions.FileLogger;
 
 
 @TeleOp(name = "LED Show", group = "5291")
-//@Disabled
+@Disabled
 public class BaseDriveLEDDisplay extends LinearOpMode {
     //set up TAG for logging prefic, this info will appear first in every log statemend
     private static final String TAG = "AutoDriveTeam5291";

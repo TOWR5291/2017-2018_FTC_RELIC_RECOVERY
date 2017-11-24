@@ -108,6 +108,8 @@ import club.towr5291.libraries.LibraryStateSegAuto;
 import club.towr5291.robotconfig.HardwareDriveMotors;
 import hallib.HalDashboard;
 
+import static org.opencv.core.Core.flip;
+
 
 /*
 TOWR 5291 Autonomous
@@ -211,6 +213,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
     private double COUNTS_PER_INCH_STRAFE_REAR_OFFSET;
     private double COUNTS_PER_INCH_STRAFE_LEFT_OFFSET;
     private double COUNTS_PER_INCH_STRAFE_RIGHT_OFFSET;
+    private double MECANUM_TURN_OFFSET;
+
     //vuforia localisation variables
     private OpenGLMatrix lastLocation = null;
     private double localisedRobotX;
@@ -294,6 +298,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
     private ElapsedTime mStateTime = new ElapsedTime();     // Time into current state, used for the timeout
     private int mintStepNumber;
     private int mintGlyphPosition = 0;                       // column the glyph needs to go in, 1 - Left, 2 - Center, 3 - Right
+    private boolean flipit = false;
 
     //hashmap for the steps to be stored in.  A Hashmap is like a fancy array
     private HashMap<String, LibraryStateSegAuto> autonomousSteps = new HashMap<String, LibraryStateSegAuto>();
@@ -537,6 +542,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 ROBOT_TRACK = 18;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
                 WHEEL_TURN_FUDGE = 1.12;                                                        // Fine tuning amount
                 COUNTS_PER_DEGREE = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
+                MECANUM_TURN_OFFSET = 0;
                 loadPowerTableTankTread();                                                          //load the power table
                 break;
             case "TileRunnerMecanum2x40":
@@ -556,6 +562,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 COUNTS_PER_DEGREE = (((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360) * WHEEL_TURN_FUDGE;
                 LIFTMAIN_COUNTS_PER_INCH = 420;                                                   //number of encoder counts per inch
                 LIFTTOP_COUNTS_PER_INCH = -420;                                                   //number of encoder counts per inch
+                MECANUM_TURN_OFFSET = 1.72;
                 break;
             case "11231 2016 Custom": //2016 - 11231 Drivetrain
                 COUNTS_PER_MOTOR_REV = 1120;                                                     // eg: TETRIX = 1440 pulses, NeveRest 20 = 560 pulses, NeveRest 40 =  1120, NeveRest 60 = 1680 pulses
@@ -565,6 +572,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 COUNTS_PER_INCH = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415926535)) * WHEEL_ACTUAL_FUDGE;
                 ROBOT_TRACK = 18;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
                 COUNTS_PER_DEGREE = ((2 * 3.1415926535 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360;
+                MECANUM_TURN_OFFSET = 0;
                 //loadPowerTableTileRunner();                                                         //load the power table
                 break;
             default:  //default for competition TileRunner-2x40
@@ -576,6 +584,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 COUNTS_PER_INCH = ((COUNTS_PER_MOTOR_REV * DRIVE_GEAR_REDUCTION) / (WHEEL_DIAMETER_INCHES * 3.1415)) * WHEEL_ACTUAL_FUDGE * REVERSE_DIRECTION;
                 ROBOT_TRACK = 16.5;                                                     //  distance between centerline of rear wheels robot will pivot on rear wheel of omni on front, 16.5 track is 103.67 inches full circle
                 COUNTS_PER_DEGREE = ((2 * 3.1415 * ROBOT_TRACK) * COUNTS_PER_INCH) / 360;
+                MECANUM_TURN_OFFSET = 0;
                 loadPowerTableTileRunner();                                                         //load the power table
                 break;
         }
@@ -1122,7 +1131,12 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                         fileLogger.writeEvent(3, TAG, "Init Colour Returned " + mColour + " Column " + vuMark.toString());
                     }
 
-                    mColour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, mintCaptureLoop);
+                    if (allianceColor.equals("Blue"))
+                        flipit = true;
+                    else
+                        flipit = false;
+
+                    mColour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, mintCaptureLoop, flipit);
                     fileLogger.writeEvent(3, TAG, "Colour Returned " + mColour + " Column " + vuMark.toString());
                     dashboard.displayPrintf(2, "Jewel Colour-" + mColour + " Column-" + vuMark.toString());
                     switch (vuMark) {
@@ -2331,20 +2345,19 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                     mintStartPositionRight2 = robotDrive.baseMotor4.getCurrentPosition();
                 }
                 mblnNextStepLastPos = false;
-
                 // Determine new target position
                 switch (mstrRobotCommand.substring(0, 3)) {
                     case "LTE":
-                        mintStepLeftTarget1 = mintStartPositionLeft1 - (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepLeftTarget2 = mintStartPositionLeft2 - (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepRightTarget1 = mintStartPositionRight1 + (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepRightTarget2 = mintStartPositionRight2 + (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepLeftTarget1 = mintStartPositionLeft1 + (int) (MECANUM_TURN_OFFSET * 0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepLeftTarget2 = mintStartPositionLeft2 + (int) (MECANUM_TURN_OFFSET * 0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepRightTarget1 = mintStartPositionRight1 - (int) (MECANUM_TURN_OFFSET * 0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepRightTarget2 = mintStartPositionRight2 - (int) (MECANUM_TURN_OFFSET * 0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
                         break;
                     case "RTE":
-                        mintStepLeftTarget1 = mintStartPositionLeft1 + (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepLeftTarget2 = mintStartPositionLeft2 + (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepRightTarget1 = mintStartPositionRight1 - (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
-                        mintStepRightTarget2 = mintStartPositionRight2 - (int) (0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepLeftTarget1 = mintStartPositionLeft1 - (int) (MECANUM_TURN_OFFSET * 0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepLeftTarget2 = mintStartPositionLeft2 - (int) (MECANUM_TURN_OFFSET * 0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepRightTarget1 = mintStartPositionRight1 + (int) (MECANUM_TURN_OFFSET * 0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
+                        mintStepRightTarget2 = mintStartPositionRight2 + (int) (MECANUM_TURN_OFFSET * 0.5 * Double.parseDouble(mstrRobotCommand.substring(3)) * COUNTS_PER_DEGREE);
                         break;
                 }
 
@@ -2393,9 +2406,11 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 fileLogger.writeEvent(3, "TankTurnStep()", "Current LPosition2:- " + intLeft2MotorEncoderPosition + " LTarget2:- " + mintStepLeftTarget2);
                 fileLogger.writeEvent(3, "TankTurnStep()", "Current RPosition1:- " + intRight1MotorEncoderPosition + " RTarget1:- " + mintStepRightTarget1);
                 fileLogger.writeEvent(3, "TankTurnStep()", "Current RPosition2:- " + intRight2MotorEncoderPosition + " RTarget2:- " + mintStepRightTarget2);
-                dashboard.displayPrintf(3, "Target", "Running to %7d :%7d", mintStepLeftTarget1, mintStepRightTarget1);
-                dashboard.displayPrintf(4, "Actual_Left", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
-                dashboard.displayPrintf(5, "ActualRight", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
+
+                dashboard.displayPrintf(4, LABEL_WIDTH, "Left  Target: ", "Running to %7d :%7d", mintStepLeftTarget1, mintStepLeftTarget2);
+                dashboard.displayPrintf(5, LABEL_WIDTH, "Left  Actual: ", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
+                dashboard.displayPrintf(6, LABEL_WIDTH, "Right Target: ", "Running to %7d :%7d", mintStepRightTarget1, mintStepRightTarget2);
+                dashboard.displayPrintf(7, LABEL_WIDTH, "Right Actual: ", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
 
                 if (mblnRobotLastPos) {
                     if (((Math.abs(dblDistanceToEndRight1 + dblDistanceToEndRight2) / 2) < 2.2) && ((Math.abs(dblDistanceToEndLeft1 + dblDistanceToEndLeft2) / 2) < 2.2)) {
@@ -2799,7 +2814,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
             } //end Case Running
             //check timeout value
             if (mStateTime.seconds() > mdblStepTimeout) {
-                fileLogger.writeEvent(1, "TankTurnGyro()", "Timeout:- " + mStateTime.seconds());
+                fileLogger.writeEvent(1, "MecanumStrafe()", "Timeout:- " + mStateTime.seconds());
                 //  Transition to a new state.
                 mintCurrentStateMecanumStrafe = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -3087,31 +3102,31 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
 
                 moveServosPair(servoJewelLeft, servoJewelRight, SERVOJEWELLEFT_MIN_RANGE, SERVOJEWELRIGHT_MIN_RANGE);
                 if (allianceColor.equals("Blue")) {
-                    if (mColour == Constants.ObjectColours.OBJECT_BLUE) {
+                    if ((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_RED_BLUE)){
                         autonomousStepsFile.insertSteps(3, "FWE27", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
                         autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
                         autonomousStepsFile.insertSteps(3, "FWE-2", true, false, 0, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
-                    } else if (mColour == Constants.ObjectColours.OBJECT_RED) {
+                    } else if ((mColour == Constants.ObjectColours.OBJECT_RED)  || (mColour == Constants.ObjectColours.OBJECT_BLUE_RED)) {
                         autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "FWE28", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "FWE25", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
                     } else {
                         //don't know colour so don't push any Jewel
-                        autonomousStepsFile.insertSteps(3, "FWE24", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "FWE24", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 0, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
                     }
                 } else if (allianceColor.equals("Red")) {
-                    if (mColour == Constants.ObjectColours.OBJECT_BLUE) {
+                    if ((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_BLUE_RED)) {
                         autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "FWE28", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
-                    } else if (mColour == Constants.ObjectColours.OBJECT_RED) {
+                        autonomousStepsFile.insertSteps(3, "FWE25", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                    } else if ((mColour == Constants.ObjectColours.OBJECT_RED) || (mColour == Constants.ObjectColours.OBJECT_RED_BLUE)) {
                         //need to move backwards
                         autonomousStepsFile.insertSteps(3, "FWE27", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
                         autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
                         autonomousStepsFile.insertSteps(3, "FWE-2", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
                     } else {
                         //don't know colour so don't push any Jewel
-                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
                         autonomousStepsFile.insertSteps(3, "FWE24", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 0, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
                     }
                 }
 
