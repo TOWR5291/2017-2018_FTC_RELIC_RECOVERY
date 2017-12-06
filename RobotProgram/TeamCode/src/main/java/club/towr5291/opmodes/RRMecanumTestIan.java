@@ -82,11 +82,25 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     private String robotConfig;
     private ElapsedTime runtime = new ElapsedTime();
 
+    // liftMode is used to determine if the controls are for the Glyph or for the Relic
+    private boolean liftMode = true;
+    private double liftModeDebounce = 0;
+
     //set up the variables for file logger and what level of debug we will log info at
     private FileLogger fileLogger;
     private int debug = 3;
 
     //servos
+    private Servo servoGlyphGripTopLeft;
+    private Servo servoGlyphGripBotLeft;
+    private Servo servoGlyphGripTopRight;
+    private Servo servoGlyphGripBotRight;
+    private Servo servoJewelLeft;
+    private Servo servoJewelRight;
+    private Servo servoRelicFront;
+    private Servo servoRelicWrist1;
+    private Servo servoRelicWrist2;
+    private Servo servoRelicGrip;
     // the servos are on the servo controller
     private final static double SERVOLIFTLEFTTOP_MIN_RANGE      = 0;
     private final static double SERVOLIFTLEFTTOP_MAX_RANGE      = 180;
@@ -122,12 +136,17 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     private final static double SERVOJEWELRIGHT_MIN_RANGE       = 4;
     private final static double SERVOJEWELRIGHT_MAX_RANGE       = 180;
     private final static double SERVOJEWELRIGHT_HOME            = 140;
-    private Servo servoGlyphGripTopLeft;
-    private Servo servoGlyphGripBotLeft;
-    private Servo servoGlyphGripTopRight;
-    private Servo servoGlyphGripBotRight;
-    private Servo servoJewelLeft;
-    private Servo servoJewelRight;
+
+    private final static double SERVORELICFRONT_MIN_RANGE       = 0;
+    private final static double SERVORELICFRONT_MAX_RANGE       = 180;
+    private final static double SERVORELICFRONT_HOME            = 0;
+    private final static double SERVORELICWRIST_MIN_RANGE       = 0;
+    private final static double SERVORELICWRIST_MAX_RANGE       = 180;
+    private final static double SERVORELICWRIST_HOME            = 180;
+    private final static double SERVORELICGRIP_MIN_RANGE        = 0;
+    private final static double SERVORELICGRIP_MAX_RANGE        = 180;
+    private final static double SERVORELICGRIP_HOME             = 0;   //open position is 0
+    private int armposition;
 
     private DigitalChannel green1LedChannel;
     private DigitalChannel red1LedChannel;
@@ -181,17 +200,14 @@ public class RRMecanumTestIan extends OpModeMasterLinear
         dashboard.setTextView((TextView)act.findViewById(R.id.textOpMode));
         dashboard.displayPrintf(0, "Starting Menu System");
 
-        if (debug >= 1)
-        {
-            //create logging based on initial settings, sharepreferences will adjust levels
-            fileLogger = new FileLogger(runtime, debug,true);
-            fileLogger.writeEvent("START", "-------------------------------------------------------------------------");
-            fileLogger.write("Time,SysMS,Thread,Event,Desc");
-            fileLogger.writeEvent(TAG, "Loading sharePreferences");
-            runtime.reset();
-            dashboard.displayPrintf(1, "FileLogger - " + runtime.toString());
-            dashboard.displayPrintf(2, "FileLogger - " + fileLogger.getFilename());
-        }
+        //create logging based on initial settings, sharepreferences will adjust levels
+        fileLogger = new FileLogger(runtime, debug,true);
+        fileLogger.writeEvent(1,"START", "-------------------------------------------------------------------------");
+        fileLogger.write("Time,SysMS,Thread,Event,Desc");
+        fileLogger.writeEvent(1,TAG, "Loading sharePreferences");
+        runtime.reset();
+        dashboard.displayPrintf(1, "FileLogger - " + runtime.toString());
+        dashboard.displayPrintf(2, "FileLogger - " + fileLogger.getFilename());
 
         //load menu settings and setup robot and debug level
         sharedPreferences = PreferenceManager.getDefaultSharedPreferences(hardwareMap.appContext);
@@ -209,13 +225,11 @@ public class RRMecanumTestIan extends OpModeMasterLinear
         dashboard.displayPrintf(7, "Config        - " + robotConfig);
         dashboard.displayPrintf(8, "Debug         - " + debug);
 
-        if (debug >= 1)
-        {
-            //adjust debug level based on shared preferences
-            fileLogger.setDebugLevel(debug);
-            fileLogger.writeEvent(TAG, "Loaded sharePreferences");
-            fileLogger.writeEvent(TAG, "Loading LED Settings");
-        }
+
+        //adjust debug level based on shared preferences
+        fileLogger.setDebugLevel(debug);
+        fileLogger.writeEvent(1,TAG, "Loaded sharePreferences");
+        fileLogger.writeEvent(1,TAG, "Loading LED Settings");
 
         // get a reference to a Modern Robotics DIM, and IO channels.
         green1LedChannel = hardwareMap.get(DigitalChannel.class, "green1");    //  Use generic form of device mapping
@@ -233,22 +247,17 @@ public class RRMecanumTestIan extends OpModeMasterLinear
 
         LedState(LedOn, LedOn, LedOn, LedOn, LedOn, LedOn);
 
-        if (debug >= 1)
-        {
-            fileLogger.writeEvent(TAG, "Loaded LED Settings");
-            fileLogger.writeEvent(TAG, "Loading baseHardware");
-        }
+        fileLogger.writeEvent(1,TAG, "Loaded LED Settings");
+        fileLogger.writeEvent(1, TAG, "Loading baseHardware");
 
         robotDrive.init(fileLogger, hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig));
-        armDrive.init(fileLogger, hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig), "lifttop", "liftbot", null, null);
+        armDrive.init(fileLogger, hardwareMap, robotConfigSettings.robotConfigChoice.valueOf(robotConfig), "lifttop", "liftbot", "relicarm", null);
 
-        if (debug >= 1)
-        {
-            fileLogger.writeEvent(TAG, "Loaded baseHardware");
-            fileLogger.writeEvent(TAG, "Setting setHardwareDriveRunWithoutEncoders");
-        }
+        fileLogger.writeEvent(1, TAG, "Loaded baseHardware");
+        fileLogger.writeEvent(1, TAG, "Setting setHardwareDriveRunWithoutEncoders");
 
         robotDrive.setHardwareDriveRunWithoutEncoders();
+        armDrive.setHardwareDriveRunWithoutEncoders();
 
         //config the servos
         servoGlyphGripTopLeft = hardwareMap.servo.get("griptopleft");
@@ -259,11 +268,13 @@ public class RRMecanumTestIan extends OpModeMasterLinear
         servoGlyphGripBotRight = hardwareMap.servo.get("gripbotright");
         servoJewelLeft = hardwareMap.servo.get("jewelleft");
         servoJewelRight = hardwareMap.servo.get("jewelright");
+        servoRelicFront = hardwareMap.servo.get("relicfront");
+        servoRelicWrist1 = hardwareMap.servo.get("relicwrist1");
+        servoRelicWrist2 = hardwareMap.servo.get("relicwrist2");
+        servoRelicWrist2.setDirection(Servo.Direction.REVERSE);
+        servoRelicGrip = hardwareMap.servo.get("relicgrip");
 
-        if (debug >= 1)
-        {
-            fileLogger.writeEvent(TAG, "Set setHardwareDriveRunWithoutEncoders");
-        }
+        fileLogger.writeEvent(1,TAG, "Set setHardwareDriveRunWithoutEncoders");
 
         // get a reference to our digitalTouch object.
         limitswitch1 = hardwareMap.get(DigitalChannel.class, "limittop");
@@ -273,67 +284,137 @@ public class RRMecanumTestIan extends OpModeMasterLinear
         limitswitch1.setMode(DigitalChannel.Mode.INPUT);
         limitswitch2.setMode(DigitalChannel.Mode.INPUT);
 
-        if (debug >= 1) fileLogger.writeEvent(TAG, "Set Limit Switches");
+        fileLogger.writeEvent(1,TAG, "Set Limit Switches");
 
         //lock the jewel arms home
         sendServosHome(servoGlyphGripTopLeft, servoGlyphGripBotLeft, servoGlyphGripTopRight, servoGlyphGripBotRight, servoJewelLeft, servoJewelRight);
 
+        //lock the relic servos in fetal position
+        moveServo(servoRelicFront,SERVORELICFRONT_HOME,SERVORELICFRONT_MIN_RANGE,SERVORELICFRONT_MAX_RANGE);
+        moveServo(servoRelicWrist1,SERVORELICWRIST_HOME,SERVORELICWRIST_MIN_RANGE,SERVORELICWRIST_MAX_RANGE);
+        moveServo(servoRelicWrist2,SERVORELICWRIST_HOME,SERVORELICWRIST_MIN_RANGE,SERVORELICWRIST_MAX_RANGE);
+        moveServo(servoRelicGrip,SERVORELICGRIP_HOME,SERVORELICGRIP_MIN_RANGE,SERVORELICGRIP_MAX_RANGE);
+        armposition = (int)SERVORELICGRIP_HOME;
+        armDrive.baseMotor3.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+        armDrive.baseMotor3.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
 
         // Wait for the game to start (driver presses PLAY)
         waitForStart();
-
         dashboard.clearDisplay();
 
         while (opModeIsActive()) {
 
-            if (limitswitch1.getState() == true) {
-                dashboard.displayPrintf(3, "Limit Switch Top Is Not Pressed");
-            } else {
-                dashboard.displayPrintf(3, "Limit Switch Top Is Pressed");
-            }
-            if (limitswitch2.getState() == true) {
-                dashboard.displayPrintf(4, "Limit Switch Bot Is Not Pressed");
-            } else {
-                dashboard.displayPrintf(4, "Limit Switch Bot Is Pressed");
+            // lines on driver stations
+            // 1 - Glyph or Relic Mode
+            // 2
+            // when in glyph mode
+            // 3 - Top Limit Switch Status
+            // 4 - Bottom Limit Switch Status
+            // 5 - Main Lift Encoder Position
+            // 6 - Top Lift Encoder Position
+            // when in Relic Mode
+            // 3 -
+            // 4 -
+            // 5 -
+            // 6 -
+
+            if (gamepad2.a) {
+                //if debounce time has expired we can use the button to change state
+                if (runtime.milliseconds() > (liftModeDebounce + 500) ){
+                    liftMode = !liftMode;
+                    liftModeDebounce = runtime.milliseconds();
+                    dashboard.clearDisplay();
+                    if (liftMode)
+                        dashboard.displayPrintf(1, "Glyph Mode active");
+                    else
+                        dashboard.displayPrintf(1, "Relic Mode active");
+                }
             }
 
-            if ((limitswitch1.getState() == false) && (gamepad2.right_stick_y > 0)){
-                armDrive.setHardwareDriveLeft1MotorPower(0);
-                armDrive.baseMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                armDrive.baseMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            } else {
-                armDrive.setHardwareDriveLeft1MotorPower(gamepad2.right_stick_y);
-            }
-            if ((limitswitch2.getState() == false) && (gamepad2.left_stick_y > 0)){
-                armDrive.setHardwareDriveLeft2MotorPower(0);
-                armDrive.baseMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
-                armDrive.baseMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
-            } else {
-                armDrive.setHardwareDriveLeft2MotorPower(-gamepad2.left_stick_y);
-            }
-            dashboard.displayPrintf(5, "Main Position " + armDrive.baseMotor2.getCurrentPosition());
-            dashboard.displayPrintf(6, "Top Position " + armDrive.baseMotor1.getCurrentPosition());
-
-            if ((gamepad2.right_trigger != 0) || (gamepad1.right_trigger != 0)){
-                LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
-                moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_GRAB, SERVOLIFTRIGHTTOP_GLYPH_GRAB);
-            } else if ((gamepad2.right_bumper) || (gamepad1.right_bumper)) {
-                LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
-                moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_START, SERVOLIFTRIGHTTOP_GLYPH_START);
-            } else {
-                LedState(LedOff, LedOff, LedOff, LedOff, LedOff, LedOff);
-                moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_RELEASE, SERVOLIFTRIGHTTOP_GLYPH_RELEASE);
+            if (gamepad2.y) {
+                moveServo(servoRelicFront, 180, SERVORELICFRONT_MIN_RANGE, SERVORELICFRONT_MAX_RANGE);
+                moveServo(servoRelicWrist1, 0, SERVORELICWRIST_MIN_RANGE, SERVORELICWRIST_MAX_RANGE);
+                moveServo(servoRelicWrist2, 0, SERVORELICWRIST_MIN_RANGE, SERVORELICWRIST_MAX_RANGE);
+                armposition = 0;
             }
 
-            if ((gamepad2.left_trigger != 0) || (gamepad1.left_trigger != 0) ) {
-                LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
-                moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_GRAB, SERVOLIFTRIGHTBOT_GLYPH_GRAB);
-            } else if ((gamepad2.left_bumper) || (gamepad1.left_bumper)) {
-                LedState(LedOff, LedOn, LedOn, LedOff, LedOn, LedOn);
-                moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_START, SERVOLIFTRIGHTBOT_GLYPH_START);
+            if (liftMode) {
+
+                if (limitswitch1.getState() == true) {
+                    dashboard.displayPrintf(3, "Limit Switch Top Is Not Pressed");
+                } else {
+                    dashboard.displayPrintf(3, "Limit Switch Top Is Pressed");
+                }
+                if (limitswitch2.getState() == true) {
+                    dashboard.displayPrintf(4, "Limit Switch Bot Is Not Pressed");
+                } else {
+                    dashboard.displayPrintf(4, "Limit Switch Bot Is Pressed");
+                }
+
+                if ((limitswitch1.getState() == false) && (gamepad2.right_stick_y > 0)) {
+                    armDrive.setHardwareDriveLeft1MotorPower(0);
+                    armDrive.baseMotor1.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    armDrive.baseMotor1.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                } else {
+                    // need to work out top position
+                    armDrive.setHardwareDriveLeft1MotorPower(gamepad2.right_stick_y);
+                }
+                if ((limitswitch2.getState() == false) && (gamepad2.left_stick_y > 0)) {
+                    armDrive.setHardwareDriveLeft2MotorPower(0);
+                    armDrive.baseMotor2.setMode(DcMotor.RunMode.STOP_AND_RESET_ENCODER);
+                    armDrive.baseMotor2.setMode(DcMotor.RunMode.RUN_WITHOUT_ENCODER);
+                } else {
+                    // need to work out top position
+                    armDrive.setHardwareDriveLeft2MotorPower(-gamepad2.left_stick_y);
+                }
+                dashboard.displayPrintf(5, "Main Position " + armDrive.baseMotor2.getCurrentPosition());
+                dashboard.displayPrintf(6, "Top Position " + armDrive.baseMotor1.getCurrentPosition());
+
+                if ((gamepad2.right_trigger != 0) || (gamepad1.right_trigger != 0)) {
+                    LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
+                    moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_GRAB, SERVOLIFTRIGHTTOP_GLYPH_GRAB);
+                } else if ((gamepad2.right_bumper) || (gamepad1.right_bumper)) {
+                    LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
+                    moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_START, SERVOLIFTRIGHTTOP_GLYPH_START);
+                } else {
+                    LedState(LedOff, LedOff, LedOff, LedOff, LedOff, LedOff);
+                    moveTopServos(servoGlyphGripTopLeft, servoGlyphGripTopRight, SERVOLIFTLEFTTOP_GLYPH_RELEASE, SERVOLIFTRIGHTTOP_GLYPH_RELEASE);
+                }
+
+                if ((gamepad2.left_trigger != 0) || (gamepad1.left_trigger != 0)) {
+                    LedState(LedOff, LedOff, LedOn, LedOff, LedOff, LedOn);
+                    moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_GRAB, SERVOLIFTRIGHTBOT_GLYPH_GRAB);
+                } else if ((gamepad2.left_bumper) || (gamepad1.left_bumper)) {
+                    LedState(LedOff, LedOn, LedOn, LedOff, LedOn, LedOn);
+                    moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_START, SERVOLIFTRIGHTBOT_GLYPH_START);
+                } else {
+                    LedState(LedOff, LedOff, LedOff, LedOff, LedOff, LedOff);
+                    moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_RELEASE, SERVOLIFTRIGHTBOT_GLYPH_RELEASE);
+                }
+
             } else {
-                LedState(LedOff, LedOff, LedOff, LedOff, LedOff, LedOff);
-                moveTopServos(servoGlyphGripBotLeft, servoGlyphGripBotRight, SERVOLIFTLEFTBOT_GLYPH_RELEASE, SERVOLIFTRIGHTBOT_GLYPH_RELEASE);
+                // we are in Relic Mode, the controls should only control the relic arm //13500 is max reach
+                armDrive.setHardwareDriveRight1MotorPower(-gamepad2.left_stick_y);
+                intRight1MotorEncoderPosition = armDrive.baseMotor3.getCurrentPosition();
+                fileLogger.writeEvent(3, "TeleOP", "Current RPosition1:- " + intRight1MotorEncoderPosition);
+                dashboard.displayPrintf(4, 255, "Arm  Actual: ", "Running at %7d", intRight1MotorEncoderPosition);
+                if (gamepad2.x) {
+                    moveServo(servoRelicGrip, 90, SERVORELICGRIP_MIN_RANGE, SERVORELICGRIP_MAX_RANGE);
+                }
+                if (gamepad2.b) {
+                    moveServo(servoRelicGrip, SERVORELICFRONT_HOME, SERVORELICGRIP_MIN_RANGE, SERVORELICGRIP_MAX_RANGE);
+                }
+
+                if (gamepad2.right_stick_y != 0) {
+                    armposition = armposition + (int) (1 * gamepad2.right_stick_y);
+                    if (armposition > SERVORELICWRIST_MAX_RANGE)
+                        armposition = (int)SERVORELICWRIST_MAX_RANGE;
+                    else if (armposition < SERVORELICWRIST_MIN_RANGE)
+                        armposition = (int)SERVORELICWRIST_MIN_RANGE;
+                    dashboard.displayPrintf(6, "Arm Position " + armposition);
+                    moveServo(servoRelicWrist1, armposition, SERVORELICWRIST_MIN_RANGE, SERVORELICWRIST_MAX_RANGE);
+                    moveServo(servoRelicWrist2, armposition, SERVORELICWRIST_MIN_RANGE, SERVORELICWRIST_MAX_RANGE);
+                }
             }
 
             dblLeftMotor1 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -1, 1);
@@ -349,10 +430,10 @@ public class RRMecanumTestIan extends OpModeMasterLinear
             intRight1MotorEncoderPosition = robotDrive.baseMotor3.getCurrentPosition();
             intRight2MotorEncoderPosition = robotDrive.baseMotor4.getCurrentPosition();
 
-            fileLogger.writeEvent(3, "TankTurnStep()", "Current LPosition1:- " + intLeft1MotorEncoderPosition);
-            fileLogger.writeEvent(3, "TankTurnStep()", "Current LPosition2:- " + intLeft2MotorEncoderPosition);
-            fileLogger.writeEvent(3, "TankTurnStep()", "Current RPosition1:- " + intRight1MotorEncoderPosition);
-            fileLogger.writeEvent(3, "TankTurnStep()", "Current RPosition2:- " + intRight2MotorEncoderPosition);
+            fileLogger.writeEvent(3, "TeleOP", "Current LPosition1:- " + intLeft1MotorEncoderPosition);
+            fileLogger.writeEvent(3, "TeleOP", "Current LPosition2:- " + intLeft2MotorEncoderPosition);
+            fileLogger.writeEvent(3, "TeleOP", "Current RPosition1:- " + intRight1MotorEncoderPosition);
+            fileLogger.writeEvent(3, "TeleOP", "Current RPosition2:- " + intRight2MotorEncoderPosition);
 
             dashboard.displayPrintf(6, 255, "Left  Actual: ", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
             dashboard.displayPrintf(7, 255, "Right Actual: ", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);

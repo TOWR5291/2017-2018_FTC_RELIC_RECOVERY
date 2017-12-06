@@ -299,6 +299,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
     private int mintStepNumber;
     private int mintGlyphPosition = 0;                       // column the glyph needs to go in, 1 - Left, 2 - Center, 3 - Right
     private boolean flipit = false;
+    private int quadrant;
 
     //hashmap for the steps to be stored in.  A Hashmap is like a fancy array
     private HashMap<String, LibraryStateSegAuto> autonomousSteps = new HashMap<String, LibraryStateSegAuto>();
@@ -313,6 +314,16 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
     private Constants.ObjectColours mColour;
 
     //servos
+    private Servo servoGlyphGripTopLeft;
+    private Servo servoGlyphGripBotLeft;
+    private Servo servoGlyphGripTopRight;
+    private Servo servoGlyphGripBotRight;
+    private Servo servoJewelLeft;
+    private Servo servoJewelRight;
+    private Servo servoRelicFront;
+    private Servo servoRelicWrist;
+    private Servo servoRelicGrip;
+
     // the servos are on the servo controller
     private final static double SERVOLIFTLEFTTOP_MIN_RANGE = 0;
     private final static double SERVOLIFTLEFTTOP_MAX_RANGE = 180;
@@ -348,12 +359,16 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
     private final static double SERVOJEWELRIGHT_MIN_RANGE = 4;
     private final static double SERVOJEWELRIGHT_MAX_RANGE = 180;
     private final static double SERVOJEWELRIGHT_HOME = 150;
-    private Servo servoGlyphGripTopLeft;
-    private Servo servoGlyphGripBotLeft;
-    private Servo servoGlyphGripTopRight;
-    private Servo servoGlyphGripBotRight;
-    private Servo servoJewelLeft;
-    private Servo servoJewelRight;
+
+    private final static double SERVORELICFRONT_MIN_RANGE       = 0;
+    private final static double SERVORELICFRONT_MAX_RANGE       = 180;
+    private final static double SERVORELICFRONT_HOME            = 0;
+    private final static double SERVORELICWRIST_MIN_RANGE       = 0;
+    private final static double SERVORELICWRIST_MAX_RANGE       = 180;
+    private final static double SERVORELICWRIST_HOME            = 180;
+    private final static double SERVORELICGRIP_MIN_RANGE        = 0;
+    private final static double SERVORELICGRIP_MAX_RANGE        = 180;
+    private final static double SERVORELICGRIP_HOME             = 0;   //open position is 0
 
     //LED Strips
     private DeviceInterfaceModule dim;                  // Device Object
@@ -1021,10 +1036,17 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
         servoGlyphGripBotRight = hardwareMap.servo.get("gripbotright");
         servoJewelLeft = hardwareMap.servo.get("jewelleft");
         servoJewelRight = hardwareMap.servo.get("jewelright");
+        servoRelicFront = hardwareMap.servo.get("relicfront");
+        servoRelicWrist = hardwareMap.servo.get("relicwrist");
+        servoRelicGrip = hardwareMap.servo.get("relicgrip");
 
         //lock the jewel arms home
         sendServosHome(servoGlyphGripTopLeft, servoGlyphGripBotLeft, servoGlyphGripTopRight, servoGlyphGripBotRight, servoJewelLeft, servoJewelRight);
         fileLogger.writeEvent(3, TAG, "Configuring Servos - Finish");
+        //lock the relic servos in fetal position
+        moveServo(servoRelicFront,SERVORELICFRONT_HOME,SERVORELICFRONT_MIN_RANGE,SERVORELICFRONT_MAX_RANGE);
+        moveServo(servoRelicWrist,SERVORELICWRIST_HOME,SERVORELICWRIST_MIN_RANGE,SERVORELICWRIST_MAX_RANGE);
+        moveServo(servoRelicGrip,SERVORELICGRIP_HOME,SERVORELICGRIP_MIN_RANGE,SERVORELICGRIP_MAX_RANGE);
 
         dashboard.displayPrintf(1, "initRobot Servos Loaded");
 
@@ -1131,12 +1153,16 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                         fileLogger.writeEvent(3, TAG, "Init Colour Returned " + mColour + " Column " + vuMark.toString());
                     }
 
-                    if (allianceColor.equals("Blue"))
-                        flipit = true;
-                    else
+                    if (allianceColor.equals("Blue")) {
                         flipit = false;
+                        quadrant = 4;
+                    }
+                    else {
+                        flipit = false;
+                        quadrant = 3;
+                    }
 
-                    mColour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, mintCaptureLoop, flipit);
+                    mColour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, mintCaptureLoop, flipit, quadrant);
                     fileLogger.writeEvent(3, TAG, "Colour Returned " + mColour + " Column " + vuMark.toString());
                     dashboard.displayPrintf(2, "Jewel Colour-" + mColour + " Column-" + vuMark.toString());
                     switch (vuMark) {
@@ -1152,8 +1178,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                         default:
                             mintGlyphPosition = 0;
                             break;
-
-
                     }
                     mintCaptureLoop++;
                 }

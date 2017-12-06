@@ -484,7 +484,7 @@ public class ConceptVuforiaOpGrabImage extends OpModeMasterLinear
 
             frame.close();
             Log.d("fl", "Debug Level Before" + fileLogger.getDebugLevel() );
-            Colour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, loop,false);
+            Colour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, loop,false,3);
             loop++;
 
             for (VuforiaTrackable trackable : allTrackables) {
