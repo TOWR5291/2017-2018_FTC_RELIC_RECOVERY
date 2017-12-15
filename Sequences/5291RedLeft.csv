@@ -33,15 +33,16 @@
 2,JWO0,FALSE,FALSE,0,0,0,0,0,0,0
 //turn left 90 degrees
 3,RTE90,FALSE,FALSE,0,0,0,0,0,0,.6
-// this step will calculate which position to load the glyph and the steps required to move sideways
-//should insert a bunch of mecanum strafe steps depending on which position the pictograph says
-1,SGP0,FALSE,FALSE,0,0,0,0,0,0,0
-//move forward 9 inches to place in column
-3,FWE9,FALSE,FALSE,0,0,0,0,0,0,.45
+//move forward 10 inches to place in column
+3,FWE10,FALSE,FALSE,0,0,0,0,0,0,.6
 //Set Bottom glyph grippers ready to grab 1= Home, 2= START, 3= RELEASE, 4= GRAB
 2,BGR0,TRUE,FALSE,3,0,0,0,0,0,0
-//move Backward 1 inches to place in column
-3,FWE-5,FALSE,FALSE,0,0,0,0,0,0,.5
+//move Backward 3 inches to place in column
+3,FWE-3,FALSE,FALSE,0,0,0,0,0,0,.6
+//move forward 3 inches to place in column
+3,FWE3,FALSE,FALSE,0,0,0,0,0,0,.6
+//move Backward 8 inches to place in column
+3,FWE-8,FALSE,FALSE,0,0,0,0,0,0,.6
 // turn around 180 degrees to face the glyphes
 3,LTE180,FALSE,FALSE,0,0,0,0,0,0,.6
 //leave this delay of 0 in there inserting a step doesn't work if inserting when at the last step,,,,,,,,,,

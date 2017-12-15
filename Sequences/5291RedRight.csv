@@ -30,13 +30,17 @@
 //should insert a bunch of mecanum strafe steps depending on which position the pictograph says
 1,SGP0,FALSE,FALSE,0,0,0,0,0,0,0
 //move forward 9 inches to place in column
-3,FWE9,FALSE,FALSE,0,0,0,0,0,0,.45
+3,FWE10,FALSE,FALSE,0,0,0,0,0,0,.6
 //Set Bottom glyph grippers ready to grab 1= Home, 2= START, 3= RELEASE, 4= GRAB
 2,BGR0,FALSE,FALSE,3,0,0,0,0,0,0
-//move Backward 5 inches to place in column
-3,FWE-5,FALSE,FALSE,0,0,0,0,0,0,.5
+//move Backward 3 inches to place in column
+3,FWE-3,FALSE,FALSE,0,0,0,0,0,0,.6
+//move forward 3 inches to place in column
+3,FWE3,FALSE,FALSE,0,0,0,0,0,0,.6
+//move Backward 8 inches to place in column
+3,FWE-8,FALSE,FALSE,0,0,0,0,0,0,.6
 // turm robot around 180 degrees to face glyphs
-3,RTE180,FALSE,FALSE,0,0,0,0,0,0,0.5
+//3,RTE180,FALSE,FALSE,0,0,0,0,0,0,0.5
 //leave this delay of 0 in there inserting a step doesn't work if inserting when at the last step,,,,,,,,,,
 //these are calibration steps for mecanum
 //1,DEL0,FALSE,FALSE,0,0,0,0,0,0,0

@@ -308,7 +308,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
 
     //OpenCV Stuff
     private JewelAnalysisOCV JewelColour = new JewelAnalysisOCV();
-    ;
+
     private int mintCaptureLoop = 0;
     private int mintNumberColourTries = 0;
     private Constants.ObjectColours mColour;
@@ -321,44 +321,45 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
     private Servo servoJewelLeft;
     private Servo servoJewelRight;
     private Servo servoRelicFront;
-    private Servo servoRelicWrist;
+    private Servo servoRelicWrist1;
+    private Servo servoRelicWrist2;
     private Servo servoRelicGrip;
 
     // the servos are on the servo controller
-    private final static double SERVOLIFTLEFTTOP_MIN_RANGE = 0;
-    private final static double SERVOLIFTLEFTTOP_MAX_RANGE = 180;
-    private final static double SERVOLIFTLEFTTOP_HOME = 165; //90
-    private final static double SERVOLIFTLEFTTOP_GLYPH_START = 125;  //need to work this out
-    private final static double SERVOLIFTLEFTTOP_GLYPH_RELEASE = 60;
-    private final static double SERVOLIFTLEFTTOP_GLYPH_GRAB = 30;
+    private final static double SERVOLIFTLEFTTOP_MIN_RANGE      = 0;
+    private final static double SERVOLIFTLEFTTOP_MAX_RANGE      = 180;
+    private final static double SERVOLIFTLEFTTOP_HOME           = 165; //90
+    private final static double SERVOLIFTLEFTTOP_GLYPH_START    = 125;  //need to work this out
+    private final static double SERVOLIFTLEFTTOP_GLYPH_RELEASE  = 60;
+    private final static double SERVOLIFTLEFTTOP_GLYPH_GRAB     = 30;
 
-    private final static double SERVOLIFTRIGHTTOP_MIN_RANGE = 0;
-    private final static double SERVOLIFTRIGHTTOP_MAX_RANGE = 180;
-    private final static double SERVOLIFTRIGHTTOP_HOME = 165;
-    private final static double SERVOLIFTRIGHTTOP_GLYPH_START = 125;  //need to work this out
+    private final static double SERVOLIFTRIGHTTOP_MIN_RANGE     = 0;
+    private final static double SERVOLIFTRIGHTTOP_MAX_RANGE     = 180;
+    private final static double SERVOLIFTRIGHTTOP_HOME          = 165;
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_START   = 125;  //need to work this out
     private final static double SERVOLIFTRIGHTTOP_GLYPH_RELEASE = 60;
-    private final static double SERVOLIFTRIGHTTOP_GLYPH_GRAB = 30;
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_GRAB    = 30;
 
-    private final static double SERVOLIFTLEFTBOT_MIN_RANGE = 0;
-    private final static double SERVOLIFTLEFTBOT_MAX_RANGE = 180;
-    private final static double SERVOLIFTLEFTBOT_HOME = 165;
-    private final static double SERVOLIFTLEFTBOT_GLYPH_START = 125;  //need to work this out
-    private final static double SERVOLIFTLEFTBOT_GLYPH_RELEASE = 60;
-    private final static double SERVOLIFTLEFTBOT_GLYPH_GRAB = 30;
+    private final static double SERVOLIFTLEFTBOT_MIN_RANGE      = 0;
+    private final static double SERVOLIFTLEFTBOT_MAX_RANGE      = 180;
+    private final static double SERVOLIFTLEFTBOT_HOME           = 165;
+    private final static double SERVOLIFTLEFTBOT_GLYPH_START    = 125;  //need to work this out
+    private final static double SERVOLIFTLEFTBOT_GLYPH_RELEASE  = 60;
+    private final static double SERVOLIFTLEFTBOT_GLYPH_GRAB     = 30;
 
-    private final static double SERVOLIFTRIGHTBOT_MIN_RANGE = 0;
-    private final static double SERVOLIFTRIGHTBOT_MAX_RANGE = 180;
-    private final static double SERVOLIFTRIGHTBOT_HOME = 165;
-    private final static double SERVOLIFTRIGHTBOT_GLYPH_START = 125;  //need to work this out
+    private final static double SERVOLIFTRIGHTBOT_MIN_RANGE     = 0;
+    private final static double SERVOLIFTRIGHTBOT_MAX_RANGE     = 180;
+    private final static double SERVOLIFTRIGHTBOT_HOME          = 165;
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_START   = 125;  //need to work this out
     private final static double SERVOLIFTRIGHTBOT_GLYPH_RELEASE = 60;
-    private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB = 30;
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB    = 30;
 
-    private final static double SERVOJEWELLEFT_MIN_RANGE = 0;
-    private final static double SERVOJEWELLEFT_MAX_RANGE = 180;
-    private final static double SERVOJEWELLEFT_HOME = 147;
-    private final static double SERVOJEWELRIGHT_MIN_RANGE = 4;
-    private final static double SERVOJEWELRIGHT_MAX_RANGE = 180;
-    private final static double SERVOJEWELRIGHT_HOME = 150;
+    private final static double SERVOJEWELLEFT_MIN_RANGE        = 0;
+    private final static double SERVOJEWELLEFT_MAX_RANGE        = 180;
+    private final static double SERVOJEWELLEFT_HOME             = 143;
+    private final static double SERVOJEWELRIGHT_MIN_RANGE       = 4;
+    private final static double SERVOJEWELRIGHT_MAX_RANGE       = 180;
+    private final static double SERVOJEWELRIGHT_HOME            = 149;
 
     private final static double SERVORELICFRONT_MIN_RANGE       = 0;
     private final static double SERVORELICFRONT_MAX_RANGE       = 180;
@@ -368,7 +369,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
     private final static double SERVORELICWRIST_HOME            = 180;
     private final static double SERVORELICGRIP_MIN_RANGE        = 0;
     private final static double SERVORELICGRIP_MAX_RANGE        = 180;
-    private final static double SERVORELICGRIP_HOME             = 0;   //open position is 0
+    private final static double SERVORELICGRIP_HOME             = 90;   //Closed is position 90
 
     //LED Strips
     private DeviceInterfaceModule dim;                  // Device Object
@@ -1037,7 +1038,9 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
         servoJewelLeft = hardwareMap.servo.get("jewelleft");
         servoJewelRight = hardwareMap.servo.get("jewelright");
         servoRelicFront = hardwareMap.servo.get("relicfront");
-        servoRelicWrist = hardwareMap.servo.get("relicwrist");
+        servoRelicWrist1 = hardwareMap.servo.get("relicwrist1");
+        servoRelicWrist2 = hardwareMap.servo.get("relicwrist2");
+        servoRelicWrist2.setDirection(Servo.Direction.REVERSE);
         servoRelicGrip = hardwareMap.servo.get("relicgrip");
 
         //lock the jewel arms home
@@ -1045,7 +1048,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
         fileLogger.writeEvent(3, TAG, "Configuring Servos - Finish");
         //lock the relic servos in fetal position
         moveServo(servoRelicFront,SERVORELICFRONT_HOME,SERVORELICFRONT_MIN_RANGE,SERVORELICFRONT_MAX_RANGE);
-        moveServo(servoRelicWrist,SERVORELICWRIST_HOME,SERVORELICWRIST_MIN_RANGE,SERVORELICWRIST_MAX_RANGE);
+        moveServo(servoRelicWrist1,SERVORELICWRIST_HOME,SERVORELICWRIST_MIN_RANGE,SERVORELICWRIST_MAX_RANGE);
+        moveServo(servoRelicWrist2,SERVORELICWRIST_HOME,SERVORELICWRIST_MIN_RANGE,SERVORELICWRIST_MAX_RANGE);
         moveServo(servoRelicGrip,SERVORELICGRIP_HOME,SERVORELICGRIP_MIN_RANGE,SERVORELICGRIP_MAX_RANGE);
 
         dashboard.displayPrintf(1, "initRobot Servos Loaded");
@@ -1155,14 +1159,14 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
 
                     if (allianceColor.equals("Blue")) {
                         flipit = false;
-                        quadrant = 4;
+                        quadrant = 3;
                     }
                     else {
                         flipit = false;
                         quadrant = 3;
                     }
 
-                    mColour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, mintCaptureLoop, flipit, quadrant);
+                    mColour = JewelColour.JewelAnalysisOCV(fileLogger, tmp, mintCaptureLoop, flipit, quadrant, false);
                     fileLogger.writeEvent(3, TAG, "Colour Returned " + mColour + " Column " + vuMark.toString());
                     dashboard.displayPrintf(2, "Jewel Colour-" + mColour + " Column-" + vuMark.toString());
                     switch (vuMark) {
@@ -2003,16 +2007,22 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 fileLogger.writeEvent(2, "runningDriveHeadingStep", "mStepLeftTarget1 :- " + mintStepLeftTarget1 + " mStepLeftTarget2 :- " + mintStepLeftTarget2);
                 fileLogger.writeEvent(2, "runningDriveHeadingStep", "mStepRightTarget1:- " + mintStepRightTarget1 + " mStepRightTarget2:- " + mintStepRightTarget2);
 
-                if (!(robotDrive.baseMotor1.getMode().equals(DcMotor.RunMode.RUN_TO_POSITION))) {
+                //if (!(robotDrive.baseMotor1.getMode().equals(DcMotor.RunMode.RUN_TO_POSITION))) {
                     // set motor controller to mode, Turn On RUN_TO_POSITION
                     robotDrive.setHardwareDriveRunToPosition();
-                }
+                //}
 
-                mintCurrentStateDriveHeading = stepState.STATE_RUNNING;
                 robotDrive.setHardwareDrivePower(Math.abs(mdblStepSpeed));
-
+                mintCurrentStateDriveHeading = stepState.STATE_RUNNING;
                 break;
             case STATE_RUNNING:
+                // pass target position to motor controller
+                robotDrive.baseMotor1.setTargetPosition(mintStepLeftTarget1);
+                robotDrive.baseMotor2.setTargetPosition(mintStepLeftTarget2);
+                robotDrive.baseMotor3.setTargetPosition(mintStepRightTarget1);
+                robotDrive.baseMotor4.setTargetPosition(mintStepRightTarget2);
+
+                robotDrive.setHardwareDrivePower(Math.abs(mdblStepSpeed));
 
                 int gyroDelay;
 
@@ -2414,7 +2424,13 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
             }
             break;
             case STATE_RUNNING: {
+                robotDrive.baseMotor1.setTargetPosition(mintStepLeftTarget1);
+                robotDrive.baseMotor2.setTargetPosition(mintStepLeftTarget2);
+                robotDrive.baseMotor3.setTargetPosition(mintStepRightTarget1);
+                robotDrive.baseMotor4.setTargetPosition(mintStepRightTarget2);
 
+                // set power on motor controller to start moving
+                robotDrive.setHardwareDrivePower(Math.abs(mdblStepSpeed));
                 intLeft1MotorEncoderPosition = robotDrive.baseMotor1.getCurrentPosition();
                 intLeft2MotorEncoderPosition = robotDrive.baseMotor2.getCurrentPosition();
                 intRight1MotorEncoderPosition = robotDrive.baseMotor3.getCurrentPosition();
@@ -2642,28 +2658,28 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                     case 1:  //glyph needs to go in Left Column
                         if (allianceColor.equals("Red")) {
                             //insert a mecanum strafe left of 19 inches
-                            autonomousStepsFile.insertSteps(6, "MST19", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(6, "MST21", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
                         } else {
                             //insert a mecanum strafe right of 4 inches
-                            autonomousStepsFile.insertSteps(6, "MST-4", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(6, "MST-5.5", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
                         }
                         break;
                     case 2:  //glyph needs to go in center column
                         if (allianceColor.equals("Red")) {
                             //insert a mecanum strafe left of 11.5 inches
-                            autonomousStepsFile.insertSteps(8, "MST11.5", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(8, "MST13", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
                         } else {
                             //insert a mecanum strafe right of 11.5 inches
-                            autonomousStepsFile.insertSteps(6, "MST-11.5", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(6, "MST-13", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
                         }
                         break;
                     case 3:  //glyph needs to go in right column
                         if (allianceColor.equals("Red")) {
                             //insert a mecanum strafe left of 4 inches
-                            autonomousStepsFile.insertSteps(8, "MST4", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(8, "MST5.5", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
                         } else {
                             //insert a mecanum strafe right of 19 inches
-                            autonomousStepsFile.insertSteps(6, "MST-19", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(6, "MST-21", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
                         }
 
                         break;
@@ -2677,7 +2693,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                         }
                         break;
                 }
-
 
                 fileLogger.writeEvent(3, "SetGlyphPosition", "COMPLETE");
                 mintCurrentStateSteGlyphPosition = stepState.STATE_COMPLETE;
@@ -2706,12 +2721,12 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
         int intLeft2MotorEncoderPosition;
         int intRight1MotorEncoderPosition;
         int intRight2MotorEncoderPosition;
+        double rdblSpeed;
 
         switch (mintCurrentStateMecanumStrafe) {
             case STATE_INIT: {
                 double adafruitIMUHeading;
                 double currentHeading;
-                double rdblSpeed;
 
                 mdblStepDistance = Double.parseDouble(mstrRobotCommand.substring(3));
 
@@ -2762,8 +2777,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 robotDrive.setHardwareDriveRunToPosition();
                 rdblSpeed = mdblStepSpeed;
 
-                if (rdblSpeed >= 0.58) {
-                    rdblSpeed = 0.58;  //This is the maximum speed, anything above 0.6 is the same as a speed of 1 for drive to position
+                if (rdblSpeed >= 0.7) {
+                    rdblSpeed = 0.7;  //This is the maximum speed, anything above 0.6 is the same as a speed of 1 for drive to position
                 }
                 // set power on motor controller to start moving
                 robotDrive.setHardwareDrivePower(rdblSpeed);  //set motor power
@@ -2771,6 +2786,17 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
             }
             break;
             case STATE_RUNNING: {
+                rdblSpeed = mdblStepSpeed;
+                if (rdblSpeed >= 0.7) {
+                    rdblSpeed = 0.7;  //This is the maximum speed, anything above 0.6 is the same as a speed of 1 for drive to position
+                }
+                // pass target position to motor controller
+                robotDrive.baseMotor1.setTargetPosition(mintStepLeftTarget1);
+                robotDrive.baseMotor2.setTargetPosition(mintStepLeftTarget2);
+                robotDrive.baseMotor3.setTargetPosition(mintStepRightTarget1);
+                robotDrive.baseMotor4.setTargetPosition(mintStepRightTarget2);
+                robotDrive.setHardwareDrivePower(rdblSpeed);  //set motor power
+
                 double adafruitIMUHeading;
 
                 adafruitIMUHeading = getAdafruitHeading();
@@ -2803,22 +2829,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 dashboard.displayPrintf(5, LABEL_WIDTH, "Left  Actual: ", "Running at %7d :%7d", intLeft1MotorEncoderPosition, intLeft2MotorEncoderPosition);
                 dashboard.displayPrintf(6, LABEL_WIDTH, "Right Target: ", "Running to %7d :%7d", mintStepRightTarget1, mintStepRightTarget2);
                 dashboard.displayPrintf(7, LABEL_WIDTH, "Right Actual: ", "Running at %7d :%7d", intRight1MotorEncoderPosition, intRight2MotorEncoderPosition);
-
-                //readRangeSensors();
-//                if (mdblRobotParm1 > 0)
-//                if (mdblRobotParm1 > 0)
-//                    direction = 1;
-//                else
-//                    direction = -1;
-//                double dblLeftMotor1 = Range.clip(mdblStepSpeed*direction, -1, 1);
-//                double dblLeftMotor2 = Range.clip(-mdblStepSpeed*direction, -1, 1);
-//                double dblRightMotor1 = Range.clip(-mdblStepSpeed*direction, -1, 1);
-//                double dblRightMotor2 = Range.clip(mdblStepSpeed*direction, -1, 1);
-//
-//                robotDrive.setHardwareDrivePower(dblLeftMotor1, dblLeftMotor2, dblRightMotor1, dblRightMotor2);
-
-//                fileLogger.writeEvent(3, "MecanumStrafe()", "Range Sensor2= " + mdblRangeSensor1);
-//                fileLogger.writeEvent(3, "MecanumStrafe()", "Range Sensor2= " + mdblRangeSensor2);
 
                 if (mblnRobotLastPos) {
                     if ((((dblDistanceToEndRight1 + dblDistanceToEndRight2) / 2) < 2) && (((dblDistanceToEndLeft1 + dblDistanceToEndLeft2) / 2) < 2)) {
@@ -3056,7 +3066,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                         break;
                 }
 
-
                 //  Transition to a new state.
                 mintCurrentStateTopGripperMove5291 = stepState.STATE_COMPLETE;
                 deleteParallelStep();
@@ -3070,7 +3079,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 }
             }
         }
-
     }
 
 
@@ -3111,7 +3119,6 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 }
             }
         }
-
     }
 
     private void OpenJewelServo() {
@@ -3123,34 +3130,108 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
             break;
             case STATE_RUNNING: {
                 fileLogger.writeEvent(2, "MoveJewelServo()", "Running");
-
                 moveServosPair(servoJewelLeft, servoJewelRight, SERVOJEWELLEFT_MIN_RANGE, SERVOJEWELRIGHT_MIN_RANGE);
                 if (allianceColor.equals("Blue")) {
-                    if ((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_RED_BLUE)){
-                        autonomousStepsFile.insertSteps(3, "FWE27", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "FWE-2", true, false, 0, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
-                    } else if ((mColour == Constants.ObjectColours.OBJECT_RED)  || (mColour == Constants.ObjectColours.OBJECT_BLUE_RED)) {
-                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "FWE25", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                    if (allianceStartPosition.equals("Right") ) {
+                        switch (mintGlyphPosition) {
+                            case 1:  //glyph needs to go in Left Column
+                                if ((mColour == Constants.ObjectColours.OBJECT_RED) || (mColour == Constants.ObjectColours.OBJECT_RED_BLUE)) {
+                                    autonomousStepsFile.insertSteps(3, "FWE27.5", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "RTE13", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "LTE13", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                } else {
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "FWE27.5", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                                }
+                                break;
+                            case 2:  //glyph needs to go in center Column
+                                if ((mColour == Constants.ObjectColours.OBJECT_RED) || (mColour == Constants.ObjectColours.OBJECT_RED_BLUE)) {
+                                    autonomousStepsFile.insertSteps(3, "FWE35", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "RTE13", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "LTE13", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                } else {
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "FWE35", true, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                }
+                                break;
+                            case 3:  //glyph needs to go in Right Column
+                                if ((mColour == Constants.ObjectColours.OBJECT_RED) || (mColour == Constants.ObjectColours.OBJECT_RED_BLUE)) {
+                                    autonomousStepsFile.insertSteps(3, "FWE42.5", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "RTE13", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "LTE13", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                } else {
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "FWE42.5", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                                }
+                                break;
+                            default:
+                                autonomousStepsFile.insertSteps(3, "FWE36", false, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                break;
+                        }
                     } else {
-                        //don't know colour so don't push any Jewel
-                        autonomousStepsFile.insertSteps(3, "FWE24", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 0, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                        if ((mColour == Constants.ObjectColours.OBJECT_RED) || (mColour == Constants.ObjectColours.OBJECT_RED_BLUE)) {
+                            autonomousStepsFile.insertSteps(3, "FWE24", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(3, "RTE13", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(3, "LTE13", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                        } else {
+                            autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(3, "FWE24", true, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                        }
                     }
                 } else if (allianceColor.equals("Red")) {
-                    if ((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_BLUE_RED)) {
-                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "FWE25", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
-                    } else if ((mColour == Constants.ObjectColours.OBJECT_RED) || (mColour == Constants.ObjectColours.OBJECT_RED_BLUE)) {
-                        //need to move backwards
-                        autonomousStepsFile.insertSteps(3, "FWE27", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 1000, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "FWE-2", true, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
-                    } else {
-                        //don't know colour so don't push any Jewel
-                        autonomousStepsFile.insertSteps(3, "FWE24", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
-                        autonomousStepsFile.insertSteps(3, "JWC0", false, false, 0, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                    if (allianceStartPosition.equals("Left") ) {
+                        switch (mintGlyphPosition) {
+                            case 1:  //glyph needs to go in Left Column
+                                if ((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_BLUE_RED)) {
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "FWE42.5", true, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                } else {
+                                    autonomousStepsFile.insertSteps(3, "FWE42.5", false, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "LTE13", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "RTE13", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                }
+                                break;
+                            case 2:  //glyph needs to go in center Column
+                                if ((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_BLUE_RED)) {
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "FWE35", true, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                } else {
+                                    autonomousStepsFile.insertSteps(3, "FWE35", false, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "LTE13", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "RTE13", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                }
+                                break;
+                            case 3:  //glyph needs to go in Right Column
+                                if ((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_BLUE_RED)) {
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "FWE27", true, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                } else {
+                                    autonomousStepsFile.insertSteps(3, "FWE27", false, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "LTE13", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "RTE13", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                }
+                                break;
+                            default:
+                                autonomousStepsFile.insertSteps(3, "FWE36", false, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                break;
+                        }
+                    } else {  //right position
+                        if ((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_BLUE_RED)) {
+                            autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(3, "FWE25", true, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                        } else {
+                            autonomousStepsFile.insertSteps(3, "FWE25", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(3, "LTE13", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                            autonomousStepsFile.insertSteps(3, "RTE13", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                        }
                     }
                 }
 
@@ -3228,16 +3309,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
             }
             break;
             case STATE_RUNNING: {
-                if (!((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_RED))) {
-                    mblnDisableVisionProcessing     = false;    //enable vision processing
-                    mblnReadyToCapture              = true;     //let OpenCV start doing its thing
-                }
+                mblnDisableVisionProcessing     = false;    //enable vision processing
+                mblnReadyToCapture              = true;     //let OpenCV start doing its thing
+
                 fileLogger.writeEvent(2,"DetectJewelColour()", "Running");
                 mintNumberColourTries++;
 
-                if (mColour == Constants.ObjectColours.OBJECT_BLUE) {    //means blue is to the right
-                    blnColourOK = true;
-                } else if (mColour == Constants.ObjectColours.OBJECT_RED) { //means blue is to the right
+                if (mColour == Constants.ObjectColours.UNKNOWN) {    //means blue is to the right
+                    blnColourOK = false;
+                } else {
                     blnColourOK = true;
                 }
 
@@ -3255,8 +3335,8 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 }
 
                 if (mintNumberColourTries >= 2) {
-                    mblnReadyToCapture              = false;
                     mblnDisableVisionProcessing     = true;  //disable vision processing
+                    mblnReadyToCapture              = false;
                     mintCurrentStateJewelColour5291 = stepState.STATE_COMPLETE;
                     fileLogger.writeEvent(2,"DetectJewelColour()", "FAILED too many attempts");
                     mblnReadyToCapture = false; //stop OpenCV from doing its thing
@@ -3269,6 +3349,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 fileLogger.writeEvent(1,"DetectJewelColour()", "Timeout:- " + mStateTime.seconds());
                 mblnDisableVisionProcessing         = true;  //disable vision processing
                 mblnReadyToCapture                  = false; //stop OpenCV from doing its thing
+
                 //  Transition to a new state.
                 mintCurrentStateJewelColour5291     = stepState.STATE_COMPLETE;
                 deleteParallelStep();

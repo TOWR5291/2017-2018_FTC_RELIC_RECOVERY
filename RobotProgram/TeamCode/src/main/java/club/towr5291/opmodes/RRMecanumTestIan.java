@@ -107,35 +107,35 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     private final static double SERVOLIFTLEFTTOP_HOME           = 165; //90
     private final static double SERVOLIFTLEFTTOP_GLYPH_START    = 125;  //need to work this out
     private final static double SERVOLIFTLEFTTOP_GLYPH_RELEASE  = 60;
-    private final static double SERVOLIFTLEFTTOP_GLYPH_GRAB     = 30;
+    private final static double SERVOLIFTLEFTTOP_GLYPH_GRAB     = 27;
 
     private final static double SERVOLIFTRIGHTTOP_MIN_RANGE     = 0;
     private final static double SERVOLIFTRIGHTTOP_MAX_RANGE     = 180;
     private final static double SERVOLIFTRIGHTTOP_HOME          = 165;
     private final static double SERVOLIFTRIGHTTOP_GLYPH_START   = 125;  //need to work this out
     private final static double SERVOLIFTRIGHTTOP_GLYPH_RELEASE = 60;
-    private final static double SERVOLIFTRIGHTTOP_GLYPH_GRAB    = 30;
+    private final static double SERVOLIFTRIGHTTOP_GLYPH_GRAB    = 27;
 
     private final static double SERVOLIFTLEFTBOT_MIN_RANGE      = 0;
     private final static double SERVOLIFTLEFTBOT_MAX_RANGE      = 180;
     private final static double SERVOLIFTLEFTBOT_HOME           = 165;
     private final static double SERVOLIFTLEFTBOT_GLYPH_START    = 125;  //need to work this out
     private final static double SERVOLIFTLEFTBOT_GLYPH_RELEASE  = 60;
-    private final static double SERVOLIFTLEFTBOT_GLYPH_GRAB     = 30;
+    private final static double SERVOLIFTLEFTBOT_GLYPH_GRAB     = 27;
 
     private final static double SERVOLIFTRIGHTBOT_MIN_RANGE     = 0;
     private final static double SERVOLIFTRIGHTBOT_MAX_RANGE     = 180;
     private final static double SERVOLIFTRIGHTBOT_HOME          = 165;
-    private final static double SERVOLIFTRIGHTBOT_GLYPH_START   = 125;  //need to work this out
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_START   = 125;
     private final static double SERVOLIFTRIGHTBOT_GLYPH_RELEASE = 60;
-    private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB    = 30;
+    private final static double SERVOLIFTRIGHTBOT_GLYPH_GRAB    = 27;
 
     private final static double SERVOJEWELLEFT_MIN_RANGE        = 0;
     private final static double SERVOJEWELLEFT_MAX_RANGE        = 180;
-    private final static double SERVOJEWELLEFT_HOME             = 140;
+    private final static double SERVOJEWELLEFT_HOME             = 135;
     private final static double SERVOJEWELRIGHT_MIN_RANGE       = 4;
     private final static double SERVOJEWELRIGHT_MAX_RANGE       = 180;
-    private final static double SERVOJEWELRIGHT_HOME            = 140;
+    private final static double SERVOJEWELRIGHT_HOME            = 135;
 
     private final static double SERVORELICFRONT_MIN_RANGE       = 0;
     private final static double SERVORELICFRONT_MAX_RANGE       = 180;
@@ -145,7 +145,7 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     private final static double SERVORELICWRIST_HOME            = 180;
     private final static double SERVORELICGRIP_MIN_RANGE        = 0;
     private final static double SERVORELICGRIP_MAX_RANGE        = 180;
-    private final static double SERVORELICGRIP_HOME             = 0;   //open position is 0
+    private final static double SERVORELICGRIP_HOME             = 90;   //Closed is Position 90
     private int armposition;
 
     private DigitalChannel green1LedChannel;
@@ -157,6 +157,12 @@ public class RRMecanumTestIan extends OpModeMasterLinear
     private DigitalChannel limitswitch1;  // Hardware Device Object
     private DigitalChannel limitswitch2;  // Hardware Device Object
     private final boolean LedOn = false;
+
+    private int mintStartPositionMain;                       //Main Lift Motor - start Position
+    private int mintTargetPositionMain;                      //Main Lift Motor - end Position
+
+    private int LIFTMAIN_COUNTS_PER_INCH = 420;                                                   //number of encoder counts per inch
+
     private boolean LedOff = true;
 
     private static HalDashboard dashboard = null;
@@ -322,6 +328,7 @@ public class RRMecanumTestIan extends OpModeMasterLinear
                 //if debounce time has expired we can use the button to change state
                 if (runtime.milliseconds() > (liftModeDebounce + 500) ){
                     liftMode = !liftMode;
+
                     liftModeDebounce = runtime.milliseconds();
                     dashboard.clearDisplay();
                     if (liftMode)
@@ -337,6 +344,16 @@ public class RRMecanumTestIan extends OpModeMasterLinear
                 moveServo(servoRelicWrist2, 0, SERVORELICWRIST_MIN_RANGE, SERVORELICWRIST_MAX_RANGE);
                 armposition = 0;
             }
+
+            dblLeftMotor1 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -1, 1);
+            dblLeftMotor2 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -1, 1);
+            dblRightMotor1 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -1, 1);
+            dblRightMotor2 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x, -1, 1);
+
+            //dblLeftMotor1 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -1, 1);
+            //dblLeftMotor2 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x, -1, 1);
+            //dblRightMotor1 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -1, 1);
+            //dblRightMotor2 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -1, 1);
 
             if (liftMode) {
 
@@ -399,14 +416,14 @@ public class RRMecanumTestIan extends OpModeMasterLinear
                 fileLogger.writeEvent(3, "TeleOP", "Current RPosition1:- " + intRight1MotorEncoderPosition);
                 dashboard.displayPrintf(4, 255, "Arm  Actual: ", "Running at %7d", intRight1MotorEncoderPosition);
                 if (gamepad2.x) {
-                    moveServo(servoRelicGrip, 90, SERVORELICGRIP_MIN_RANGE, SERVORELICGRIP_MAX_RANGE);
+                    moveServo(servoRelicGrip, 160, SERVORELICGRIP_MIN_RANGE, SERVORELICGRIP_MAX_RANGE);
                 }
                 if (gamepad2.b) {
-                    moveServo(servoRelicGrip, SERVORELICFRONT_HOME, SERVORELICGRIP_MIN_RANGE, SERVORELICGRIP_MAX_RANGE);
+                    moveServo(servoRelicGrip, SERVORELICGRIP_MIN_RANGE, SERVORELICGRIP_MIN_RANGE, SERVORELICGRIP_MAX_RANGE);
                 }
 
                 if (gamepad2.right_stick_y != 0) {
-                    armposition = armposition + (int) (1 * gamepad2.right_stick_y);
+                    armposition = armposition + (int) (3 * gamepad2.right_stick_y);
                     if (armposition > SERVORELICWRIST_MAX_RANGE)
                         armposition = (int)SERVORELICWRIST_MAX_RANGE;
                     else if (armposition < SERVORELICWRIST_MIN_RANGE)
@@ -415,12 +432,37 @@ public class RRMecanumTestIan extends OpModeMasterLinear
                     moveServo(servoRelicWrist1, armposition, SERVORELICWRIST_MIN_RANGE, SERVORELICWRIST_MAX_RANGE);
                     moveServo(servoRelicWrist2, armposition, SERVORELICWRIST_MIN_RANGE, SERVORELICWRIST_MAX_RANGE);
                 }
+
+                if ((gamepad2.left_trigger != 0) || (gamepad2.right_trigger != 0)) {
+                    if ((gamepad2.left_trigger != 0)) {
+                        dblLeftMotor1 = 0.3;
+                        dblLeftMotor2 = 0.3;
+                        dblRightMotor1 = -0.3;
+                        dblRightMotor2 = -0.3;
+                    } else if ((gamepad2.right_trigger != 0)) {
+                        dblLeftMotor1 = -0.3;
+                        dblLeftMotor2 = -0.3;
+                        dblRightMotor1 = +0.3;
+                        dblRightMotor2 = +0.3;
+
+                    }
+
+                }
             }
 
-            dblLeftMotor1 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x - gamepad1.right_stick_x, -1, 1);
-            dblLeftMotor2 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x - gamepad1.right_stick_x, -1, 1);
-            dblRightMotor1 = Range.clip(-gamepad1.left_stick_y + gamepad1.left_stick_x + gamepad1.right_stick_x, -1, 1);
-            dblRightMotor2 = Range.clip(-gamepad1.left_stick_y - gamepad1.left_stick_x + gamepad1.right_stick_x, -1, 1);
+            if ((gamepad1.left_trigger != 0) || (gamepad1.right_trigger != 0)) {
+                if ((gamepad1.left_trigger != 0)) {
+                    dblLeftMotor1 = 0.3;
+                    dblLeftMotor2 = 0.3;
+                    dblRightMotor1 = -0.3;
+                    dblRightMotor2 = -0.3;
+                } else if ((gamepad1.right_trigger != 0)) {
+                    dblLeftMotor1 = -0.3;
+                    dblLeftMotor2 = -0.3;
+                    dblRightMotor1 = +0.3;
+                    dblRightMotor2 = +0.3;
+                }
+            }
 
             if ((dblLeftMotor1 < 0) || (dblRightMotor1 < 0)) LedState(LedOff, LedOn, LedOff, LedOff, LedOn, LedOff);
             if ((dblLeftMotor1 > 0) || (dblRightMotor1 > 0)) LedState(LedOn, LedOff, LedOff, LedOn, LedOff, LedOff);

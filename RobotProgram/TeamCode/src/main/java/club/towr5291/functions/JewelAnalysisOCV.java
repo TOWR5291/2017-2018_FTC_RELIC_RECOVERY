@@ -113,11 +113,11 @@ public class JewelAnalysisOCV {
 
     }
 
-    public Constants.ObjectColours JewelAnalysisOCV(FileLogger fileLoggerFromMaster, Mat img, int count, boolean flipit, int quadrant) {
+    public Constants.ObjectColours JewelAnalysisOCV(FileLogger fileLoggerFromMaster, Mat img, int count, boolean flipit, int quadrant, boolean calibrate) {
 
         this.fileLogger = fileLoggerFromMaster;
 
-        debug = fileLogger.getDebugLevel();\
+        debug = fileLogger.getDebugLevel();
 
         //clear out old information
         finalImg = new Mat();
@@ -152,6 +152,8 @@ public class JewelAnalysisOCV {
         imageCounter = count;
         Rect roi = new Rect(img.width() / 2, img.height() / 2, img.width() / 2, img.height() / 2);
 
+        double offset = img.height() / 6;
+
         switch (quadrant) {
             case 1:
                 // top right
@@ -166,12 +168,12 @@ public class JewelAnalysisOCV {
             case 3:
                 //bottom right
                 // Just get where the Jewel is so we don't analyse the wrong items in the image
-                roi = new Rect(img.width() / 2, img.height() / 2, img.width() / 2, img.height() / 2);
+                roi = new Rect(img.width() / 2, img.height() / 2 - (int)offset, img.width() / 2, img.height() / 2);
                 break;
             case 4:
                 // bottom left
                 // Just get where the Jewel is so we don't analyse the wrong items in the image
-                roi = new Rect(0, img.height() / 2, img.width() / 2, img.height() / 2);
+                roi = new Rect(0, img.height() / 2 - (int)offset, img.width() / 2, img.height() / 2);
                 break;
             default:
                 // Just get where the Jewel is so we don't analyse the wrong items in the image
@@ -183,14 +185,14 @@ public class JewelAnalysisOCV {
             // camera image size by default is 1280x720
         }
 
-        SaveImage(2,img, imageTimeStamp + "-01 initial " + imageCounter );
+        SaveImage(3,img, imageTimeStamp + " 01 Initial " + imageCounter );
 
         Mat cropped = new Mat(img, roi);
         original = cropped.clone();
 
         fileLogger.writeEvent(3, TAG, "Cropped");
 
-        SaveImage(9, original, imageTimeStamp + "-02 cropped" + imageCounter );
+        SaveImage(3, original, imageTimeStamp + " 02 Cropped" + imageCounter );
 
         fileLogger.writeEvent(3, TAG, "HSV cvt.Color");
 
@@ -223,9 +225,6 @@ public class JewelAnalysisOCV {
         Core.extractChannel(original,red,2);
         Core.extractChannel(original,blue,0);
 
-        //red = rgb_channels.get( 0 );
-        //blue = rgb_channels.get( 2 );
-
         fileLogger.writeEvent(3, TAG, "Saving RED and Blue to 5 and 6");
 
         SaveImage(9,red, imageTimeStamp + "-05 red " + imageCounter);
@@ -235,32 +234,7 @@ public class JewelAnalysisOCV {
         fileLogger.writeEvent(3,TAG, "colorDiff Size " + red.rows() + ", " + red.cols());
         fileLogger.writeEvent(3,TAG, "colorDiff Type " + red.type());
 
-        colorDiff = new Mat(red.rows(), red.cols(), red.type());
-
-        SaveImage(9,red, imageTimeStamp + "-07 colorDiff " + imageCounter );
-
-        fileLogger.writeEvent(3,TAG, "Converting to absdiff colorDiff");
-
-        //this crashes unless you have the latest opencv manager apk installed
-        Core.absdiff( red, blue, colorDiff );
-
-        fileLogger.writeEvent(3, TAG, "Converting to absdiff colorDiff Done");
-
-        SaveImage(9,colorDiff, imageTimeStamp + "-08 absdiff " + imageCounter );
-
-        if(tmp1Img == null)
-            tmp1Img = colorDiff.clone();
-        else
-            colorDiff.copyTo(tmp1Img);
-
-        Imgproc.threshold( tmp1Img,  colorDiff, 20, 255, Imgproc.THRESH_BINARY );
-
-        SaveImage(9,colorDiff, imageTimeStamp + "-09 threshold " + imageCounter );
-
-        //fileLogger.writeEvent(1,TAG, "findLum() Start");
-        //findLum();
-
-        if (debug > 9) {
+        if (calibrate) {
             if (imageCounter < 1 )
                 findAreas();
             ObjectColourResult = Constants.ObjectColours.OBJECT_RED_BLUE;
@@ -280,226 +254,6 @@ public class JewelAnalysisOCV {
         return ObjectColourResult;
     }
 
-    private void findLum()
-    {
-        Core.split( hsvImg, hsv_channels );
-
-        Mat sat = hsv_channels.get( 1 );
-        Mat lum = hsv_channels.get( 2 );
-
-        SaveImage(9,sat, imageTimeStamp + "-10 findLum sat " + imageCounter );
-        SaveImage(9,lum, imageTimeStamp + "-11 findLum lum " + imageCounter );
-
-        lumAvg = Core.mean( lum ).val[0];
-
-        //if(tmp1Img == null)
-            tmp1Img = sat.clone();
-        //else
-        //    sat.copyTo(tmp1Img);
-
-        Core.normalize( tmp1Img, sat, 120, 255, Core.NORM_MINMAX );
-        lum.copyTo(tmp1Img);
-        Core.normalize( tmp1Img, lum,   0, 180, Core.NORM_MINMAX );
-
-        SaveImage(9,sat, imageTimeStamp + "-12 findLum sat normalize " + imageCounter );
-        SaveImage(9,lum, imageTimeStamp + "-13 findLum lum normalize " + imageCounter );
-
-        //if (white == null)
-            white = lum.clone();
-
-        Imgproc.GaussianBlur( lum, tmp1Img, new Size(25,25), 25);
-        SaveImage(9,tmp1Img, imageTimeStamp + "-14 findLum GaussianBlur " + imageCounter );
-
-        tmp1Img.copyTo(btnTmpImg);
-
-        Imgproc.threshold( tmp1Img, white, 255 - lumAvg, 255, Imgproc.THRESH_BINARY );
-
-        SaveImage(9,white, imageTimeStamp + "-15 findLum threshold " + imageCounter );
-        //+ or Imgproc.THRESH_OTSU
-        white.copyTo(tmp1Img);
-        Imgproc.erode( tmp1Img, white, Imgproc.getGaussianKernel( 5, 2 ) );
-
-        SaveImage(9,white, imageTimeStamp + "-16 findLum erode " + imageCounter );
-
-        findWeightedPos( white, white_blobs, white_matches, centroidWhite );
-
-        hsv_channels.set( 1, sat );
-        hsv_channels.set( 2, lum );
-
-        zonedImg = new Mat(hsvImg.rows(), hsvImg.cols(), hsvImg.type());
-
-        Core.merge( hsv_channels, zonedImg );
-        SaveImage(9,zonedImg, imageTimeStamp + "-17 findLum merge " + imageCounter );
-
-        if(tmpHsvImg == null)
-            tmpHsvImg = zonedImg.clone();
-        else
-            zonedImg.copyTo(tmpHsvImg);
-
-        List<Mat> tmp = new ArrayList<>();
-        Core.split( hsvImg, tmp );
-
-        //if(maskImg == null)
-          maskImg = new Mat(hsvImg.rows(), hsvImg.cols(), hsvImg.type());
-
-        //if(onesImg == null)
-            onesImg = Mat.ones( hsvImg.rows(), hsvImg.cols(), white.type() );
-
-        //if(zeroImg == null)
-            zeroImg = Mat.zeros( hsvImg.rows(), hsvImg.cols(), white.type() );
-
-        white.copyTo(tmp1Img);
-        Imgproc.dilate( tmp1Img, white, Imgproc.getGaussianKernel( 5, 2 ) );
-        SaveImage(9, white, imageTimeStamp + "-18 findLum dilate " + imageCounter );
-
-        tmp.set( 0, onesImg );
-        tmp.set( 1, onesImg );
-        tmp.set( 2, white );
-        Core.merge( tmp, maskImg );
-        SaveImage(9,maskImg, imageTimeStamp + "-19 findLum merge " + imageCounter );
-
-        Core.multiply( tmpHsvImg, maskImg, zonedImg );
-
-        SaveImage(9,zonedImg, imageTimeStamp + "-20 findLum multiply " + imageCounter );
-
-        //get known rubbish areas from hashmap and process
-        if (loadHSVCrapindex > 0) {
-            fileLogger.writeEvent(3, TAG, "Start Crap Filter " + loadHSVCrapindex);
-            // this process is 350ms
-            for (int x = 0; x < loadHSVCrapindex; x++) {
-                if (x == 0) {
-                    if (HSVCrapFilters.containsKey(String.valueOf(x))) {
-                        processingHSV = HSVCrapFilters.get(String.valueOf(String.valueOf(x)));
-                        Core.inRange(zonedImg, new Scalar(processingHSV.getmHLowerLimit(), processingHSV.getmSLowerLimit(), processingHSV.getmVLowerLimit()), new Scalar(processingHSV.getmHUpperLimit(), processingHSV.getmSUpperLimit(), processingHSV.getmVUpperLimit()), crap1);
-                    }
-                } else {
-                    if (HSVCrapFilters.containsKey(String.valueOf(x))) {
-                        processingHSV = HSVCrapFilters.get(String.valueOf(String.valueOf(x)));
-                        Core.inRange(zonedImg, new Scalar(processingHSV.getmHLowerLimit(), processingHSV.getmSLowerLimit(), processingHSV.getmVLowerLimit()), new Scalar(processingHSV.getmHUpperLimit(), processingHSV.getmSUpperLimit(), processingHSV.getmVUpperLimit()), crap2);
-                        Core.bitwise_or(crap1, crap2, crap1);
-                    }
-                }
-            }
-            fileLogger.writeEvent(3,TAG, "Finish Crap Filter");
-            Imgproc.dilate(crap1, crap1, new Mat());
-            Imgproc.dilate(crap1, crap1, new Mat());
-            Imgproc.erode(crap1, crap1, new Mat());
-            Imgproc.erode(crap1, crap1, new Mat());
-        } else {
-            fileLogger.writeEvent(3,TAG, "No Crap Filter, Make Blank MAT");
-            crap1 = new Mat();
-        }
-
-        SaveImage(9,crap1, imageTimeStamp + "-20.1 findLum crap inRange " + imageCounter);
-
-        zonedImg.copyTo(showImg);
-    }
-
-    private void findBlue()
-    {
-        Mat blue_areas = new Mat();
-        Mat blue1 = new Mat();
-
-        if (debug < 10) {
-            // Threshold based on color.  White regions match the desired color.  Black do not.
-            // We now have a binary image to work with.  Contour detection looks for white blobs
-            // from shelby robotics
-
-            fileLogger.writeEvent(3,TAG, "Start Blue Filter");
-
-            // this process is 300ms
-            for (int x = 0; x < loadHSVBlueindex; x++) {
-                if (x == 0) {
-                    if (HSVBlueFilters.containsKey(String.valueOf(x))) {
-                        processingHSV = HSVBlueFilters.get(String.valueOf(String.valueOf(x)));
-                        Core.inRange(zonedImg, new Scalar(processingHSV.getmHLowerLimit(), processingHSV.getmSLowerLimit(), processingHSV.getmVLowerLimit()), new Scalar(processingHSV.getmHUpperLimit(), processingHSV.getmSUpperLimit(), processingHSV.getmVUpperLimit()), blue_areas);
-                    }
-                } else {
-                    if (HSVBlueFilters.containsKey(String.valueOf(x))) {
-                        processingHSV = HSVBlueFilters.get(String.valueOf(String.valueOf(x)));
-                        Core.inRange(zonedImg, new Scalar(processingHSV.getmHLowerLimit(), processingHSV.getmSLowerLimit(), processingHSV.getmVLowerLimit()), new Scalar(processingHSV.getmHUpperLimit(), processingHSV.getmSUpperLimit(), processingHSV.getmVUpperLimit()), blue1);
-                        Core.bitwise_or(blue_areas, blue1, blue_areas);
-                    }
-                }
-            }
-            fileLogger.writeEvent(3,TAG, "Finish Blue Filter");
-            SaveImage(9,blue_areas, imageTimeStamp + "-23 findBlue bitwise_or " + imageCounter);
-
-            //filter out the known crap
-            if (!crap1.empty())
-                Core.subtract(blue_areas, crap1, blue_areas);
-            SaveImage(9,blue_areas, imageTimeStamp + "-23.1 findBlue subtract " + imageCounter);
-
-            blue_areas.copyTo(tmpHsvImg);
-
-            //Core.multiply(tmpHsvImg, colorDiff, blue_areas);
-            SaveImage(9,blue_areas, imageTimeStamp + "-24 findBlue multiply " + imageCounter);
-            blue_areas.copyTo(tmpHsvImg);
-            Imgproc.dilate(tmpHsvImg, blue_areas, new Mat());
-            //Imgproc.dilate(blue_areas, blue_areas, new Mat());
-            SaveImage(9,blue_areas, imageTimeStamp + "-25 findBlue dilate " + imageCounter);
-            //Imgproc.erode(blue_areas, blue_areas, new Mat());
-            //Imgproc.erode(blue_areas, blue_areas, new Mat());
-            Imgproc.erode(blue_areas, blue_areas, new Mat());
-            SaveImage(9,blue_areas, imageTimeStamp + "-25.1 findBlue erode " + imageCounter);
-        } else if (imageCounter < 1 ){
-            //lets try find a value or values that work
-            for (int x = 0; x < 265; x = x + 20) {
-                for (int y = 0; y < 265; y = y + 20) {
-                    for (int z = 0; z < 265; z = z + 20) {
-                        Core.inRange(zonedImg, new Scalar(x, y, z), new Scalar(x + 20, y + 20, z + 20), blue_areas);
-                        SaveImage(9,blue_areas, imageTimeStamp + "-21 Seeking " + imageCounter + "- x " + x + " y " + y + " z " + z);
-                        blue_areas.copyTo(tmpHsvImg);
-                    }
-                }
-            }
-        }
-        // There can be several blobs.  Find the largest that fills a certain amount
-        // of the image.  These are crude heuristics but should be fine if we control
-        // the conditions of when we start searching (ie, appx size of beacon in image
-        // frame, etc).
-        findWeightedPos(blue_areas, blue_blobs, blue_matches, centroidBlue);
-    }
-
-    private void findRed()
-    {
-        // Same game, just a different hue
-        Mat red1 = new Mat();
-        Mat red_areas = new Mat();
-        fileLogger.writeEvent(3,TAG, "Start Red Filter");
-
-        // this process is 200ms
-        for (int x = 0; x < loadHSVRedindex; x++) {
-            if (x == 0) {
-                if (HSVRedFilters.containsKey(String.valueOf(x))) {
-                    processingHSV = HSVRedFilters.get(String.valueOf(String.valueOf(x)));
-                    Core.inRange(zonedImg, new Scalar(processingHSV.getmHLowerLimit(), processingHSV.getmSLowerLimit(), processingHSV.getmVLowerLimit()), new Scalar(processingHSV.getmHUpperLimit(), processingHSV.getmSUpperLimit(), processingHSV.getmVUpperLimit()), red_areas);
-                }
-            } else {
-                if (HSVRedFilters.containsKey(String.valueOf(x))) {
-                    processingHSV = HSVRedFilters.get(String.valueOf(String.valueOf(x)));
-                    Core.inRange(zonedImg, new Scalar(processingHSV.getmHLowerLimit(), processingHSV.getmSLowerLimit(), processingHSV.getmVLowerLimit()), new Scalar(processingHSV.getmHUpperLimit(), processingHSV.getmSUpperLimit(), processingHSV.getmVUpperLimit()), red1);
-                    Core.bitwise_or(red_areas, red1, red_areas);
-                }
-            }
-        }
-        fileLogger.writeEvent(3,TAG, "Finish Red Filter");
-
-        //filter out the known crap
-        if (!crap1.empty())
-            Core.subtract(red_areas, crap1, red_areas);
-        SaveImage(9,red_areas, imageTimeStamp + "-28.1 findRed subtract " + imageCounter);
-
-        red_areas.copyTo(tmpHsvImg);
-
-        //Core.multiply( tmpHsvImg, colorDiff, red_areas );
-        SaveImage(9,red_areas, imageTimeStamp + "-29 findRed multiply " + imageCounter );
-        red_areas.copyTo(tmpHsvImg);
-        Imgproc.dilate( tmpHsvImg, red_areas, new Mat() );
-        SaveImage(9,red_areas, imageTimeStamp + "-30 findRed dilate " + imageCounter );
-        findWeightedPos( red_areas, red_blobs, red_matches, centroidRed );
-    }
-
     private void findAreas() {
         Mat imageAreas = new Mat();
         Mat mergeBlueSubtracted = new Mat();
@@ -509,22 +263,22 @@ public class JewelAnalysisOCV {
 
         fileLogger.writeEvent(3,TAG, "Finding HSV Values");
 
-        SaveImage(9,blue, "97 FA Blue " + imageCounter );
-        SaveImage(9,red, "97 FA Red " + imageCounter );
+        SaveImage(1,blue, "97 FA Blue " + imageCounter );
+        SaveImage(1,red, "97 FA Red " + imageCounter );
 
         Imgproc.cvtColor( blue, imageBlueRGB, Imgproc.COLOR_GRAY2RGB, 4);
-        SaveImage(9,imageBlueRGB, "98 FA BlueRGB " + imageCounter );
+        SaveImage(1,imageBlueRGB, "98 FA BlueRGB " + imageCounter );
         fileLogger.writeEvent(3,TAG, "Blue Channels " + blue.channels());
         fileLogger.writeEvent(3,TAG, "BlueRGB Channels " + imageBlueRGB.channels());
         fileLogger.writeEvent(3,TAG, "original Channels " + original.channels());
 
         Core.subtract(original, imageBlueRGB, mergeBlueSubtracted);
-        SaveImage(9,mergeBlueSubtracted, "98 FA BlueSub " + imageCounter );
+        SaveImage(1,mergeBlueSubtracted, "98 FA BlueSub " + imageCounter );
 
         Imgproc.cvtColor( red, imageRedRGB, Imgproc.COLOR_GRAY2RGB, 4);
-        SaveImage(9,imageRedRGB, "98 FA RedRGB " + imageCounter );
+        SaveImage(1,imageRedRGB, "98 FA RedRGB " + imageCounter );
         Core.subtract(original, imageRedRGB, mergeRedSubtracted);
-        SaveImage(9,mergeRedSubtracted, "98 FA RedSub " + imageCounter );
+        SaveImage(1,mergeRedSubtracted, "98 FA RedSub " + imageCounter );
 
         //lets try find a value or values that work
         for (int x = 0; x < 265; x = x + 20) {
@@ -532,11 +286,11 @@ public class JewelAnalysisOCV {
                 for (int z = 0; z < 265; z = z + 20) {
                     Core.inRange(mergeBlueSubtracted, new Scalar(x, y, z), new Scalar(x + 20, y + 20, z + 20), imageAreas);
                     if (Core.countNonZero(imageAreas) > 0){
-                        SaveImage(9,imageAreas, "99 FA B Seeking " + imageCounter + "- x " + x + " y " + y + " z " + z);
+                        SaveImage(1,imageAreas, "99 FA B Seeking " + imageCounter + "- x " + x + " y " + y + " z " + z);
                     }
                     Core.inRange(mergeRedSubtracted, new Scalar(x, y, z), new Scalar(x + 20, y + 20, z + 20), imageAreas);
                     if (Core.countNonZero(imageAreas) > 0) {
-                        SaveImage(9, imageAreas, "99 FA R Seeking " + imageCounter + "- x " + x + " y " + y + " z " + z);
+                        SaveImage(1, imageAreas, "99 FA R Seeking " + imageCounter + "- x " + x + " y " + y + " z " + z);
                     }
                 }
             }
@@ -714,7 +468,7 @@ public class JewelAnalysisOCV {
             centroidRedPosition = centroidRed.get(0);
 
             //can see 2 jewels, need to work out which one is left or right
-            if ((red_box.area() > 800) && (blue_box.area() > 800)) {
+            if ((red_box.area() > 10000) && (blue_box.area() > 10000)) {
                 if (centroidBluePosition.x < centroidRedPosition.x) {
                     ObjectColourResult = Constants.ObjectColours.OBJECT_BLUE_RED;
                     return;
