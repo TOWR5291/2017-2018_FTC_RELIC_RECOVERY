@@ -2657,7 +2657,7 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                 switch (mintGlyphPosition) {
                     case 1:  //glyph needs to go in Left Column
                         if (allianceColor.equals("Red")) {
-                            //insert a mecanum strafe left of 19 inches
+                            //insert a mecanum strafe left of  inches
                             autonomousStepsFile.insertSteps(6, "MST21", false, false, 0, 0, 0, 0, 0, 0, 0.55, mintCurrentStep + 1);
                         } else {
                             //insert a mecanum strafe right of 4 inches
@@ -3168,7 +3168,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                                 }
                                 break;
                             default:
-                                autonomousStepsFile.insertSteps(3, "FWE36", false, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                if ((mColour == Constants.ObjectColours.OBJECT_RED) || (mColour == Constants.ObjectColours.OBJECT_RED_BLUE)) {
+                                    autonomousStepsFile.insertSteps(3, "FWE35", false, false, 0, 0, 0, 0, 0, 0, 0.6, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "RTE13", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "LTE13", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                } else {
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "FWE35", true, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                }
                                 break;
                         }
                     } else {
@@ -3219,7 +3227,15 @@ public class AutoDriveTeam5291 extends OpModeMasterLinear {
                                 }
                                 break;
                             default:
-                                autonomousStepsFile.insertSteps(3, "FWE36", false, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                if ((mColour == Constants.ObjectColours.OBJECT_BLUE) || (mColour == Constants.ObjectColours.OBJECT_BLUE_RED)) {
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "FWE35", true, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                } else {
+                                    autonomousStepsFile.insertSteps(3, "FWE35", false, false, 0, 0, 0, 0, 0, 0, 0.7, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "LTE13", false, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "JWC0", false, false, 700, 0, 0, 0, 0, 0, 0, mintCurrentStep + 1);
+                                    autonomousStepsFile.insertSteps(3, "RTE13", true, false, 0, 0, 0, 0, 0, 0, 0.5, mintCurrentStep + 1);
+                                }
                                 break;
                         }
                     } else {  //right position
