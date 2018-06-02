@@ -27,6 +27,7 @@ public abstract class OpModeMasterLinear extends LinearOpMode {
 
     boolean initialized = false;
     private static OpModeMasterLinear instance = null;
+    private String TAG = "OpMasterLinear";
 
     boolean isInitialized() {
         return initialized;
@@ -44,7 +45,7 @@ public abstract class OpModeMasterLinear extends LinearOpMode {
                     case LoaderCallbackInterface.SUCCESS:
                     {
                         initialized = true;
-                        RobotLog.i("OpMasterLinear", "OpenCV loaded successfully");
+                        RobotLog.i(TAG, "OpenCV loaded successfully");
                     }
                     break;
                     default: {
@@ -58,13 +59,13 @@ public abstract class OpModeMasterLinear extends LinearOpMode {
 
         if (!OpenCVLoader.initDebug())
         {
-            RobotLog.d("OpMasterLinear", "Internal OpenCV library not found. Using OpenCV Manager for initialization");
+            RobotLog.d(TAG, "Internal OpenCV library not found. Using OpenCV Manager for initialization");
             OpenCVLoader.initAsync(OpenCVLoader.OPENCV_VERSION_3_3_0, hardwareMap.appContext,  mLoaderCallback);
             initialized = false;
         } else
         {
             initialized = true;
-            RobotLog.d("OpMasterLinear", "OpenCV library found inside package. Using it!");
+            RobotLog.d(TAG, "OpenCV library found inside package. Using it!");
             mLoaderCallback.onManagerConnected(LoaderCallbackInterface.SUCCESS);
         }
     }

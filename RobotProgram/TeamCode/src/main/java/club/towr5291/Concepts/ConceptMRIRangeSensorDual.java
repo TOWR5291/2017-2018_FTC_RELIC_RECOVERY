@@ -25,8 +25,8 @@ import com.qualcomm.robotcore.hardware.I2cDeviceSynchImpl;
 // Written by Ian Haden
 // Based of the single MR Range Sensor Code
 
-@TeleOp(name = "Concept Range Sensor Dual", group = "MRI")
 @Disabled
+@TeleOp(name = "Concept Range Sensor Dual", group = "5291Concept")
 public class ConceptMRIRangeSensorDual extends OpMode {
 
     //set up range sensor1

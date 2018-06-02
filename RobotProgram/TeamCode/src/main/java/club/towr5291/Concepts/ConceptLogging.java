@@ -13,7 +13,7 @@ import club.towr5291.functions.FileLogger;
  * Created by Ian Haden on 11/7/2016.
  */
 
-@TeleOp(name = "Concept Logging", group = "5291 Concepts")
+@TeleOp(name = "Concept Logging", group = "5291Concept")
 public class ConceptLogging extends OpMode {
 
     //set up the variables for the logger

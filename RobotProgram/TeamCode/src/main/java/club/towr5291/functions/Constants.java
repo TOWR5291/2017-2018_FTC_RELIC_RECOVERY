@@ -10,6 +10,48 @@ public abstract class Constants {
     public static final double BEACON_HEIGHT = 14.5;    //entire beacon height
     public static final double BEACON_WH_RATIO = BEACON_WIDTH / BEACON_HEIGHT; //entire beacon ratio
 
+    public enum stepState {
+        STATE_INIT,
+        STATE_START,
+        STATE_RUNNING,
+        STATE_PAUSE,
+        STATE_COMPLETE,
+        STATE_TIMEOUT,
+        STATE_ERROR,
+        STATE_FINISHED
+    }
+
+    public enum LEDColours {
+        LED_WHITE,  //all on
+        LED_RED, //red on
+        LED_BLUE, //blue on
+        LED_CYAN, //blue and green on
+        LED_GREEN,  //green on
+        LED_MAGENTA,  //red and blue on
+        LED_YELLOW,  //green and red on
+        LED_OFF
+
+    }
+
+    public enum LEDState {
+        STATE_NULL,
+        STATE_ERROR,
+        STATE_TEAM,
+        STATE_MOVING,
+        STATE_OBJECT,
+        STATE_SUCCESS,
+        STATE_COLOUR,
+        STATE_FLASHC_COLOUR,
+        STATE_FLASHV_COLOUR,
+        STATE_FINISHED
+    }
+
+    public enum RobotSide {
+        LEFT,
+        RIGHT,
+        BOTH
+    }
+
     public enum ObjectColours {
         OBJECT_RED,
         OBJECT_BLUE,

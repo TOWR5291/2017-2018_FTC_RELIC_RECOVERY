@@ -44,7 +44,6 @@ public class ConceptMRIRangeSensorDual2 extends OpMode {
         // get a reference to our compass
         rangeSensor1 = hardwareMap.get(ModernRoboticsI2cRangeSensor.class, "range1");
         rangeSensor2 = hardwareMap.get(ModernRoboticsI2cRangeSensor.class, "range2");
-
     }
 
     @Override
@@ -58,9 +57,6 @@ public class ConceptMRIRangeSensorDual2 extends OpMode {
         telemetry.addData("R2 cm optical", "%.2f cm", rangeSensor2.cmOptical());
         telemetry.addData("R2 cm", "%.2f cm", rangeSensor2.getDistance(DistanceUnit.CM));
         telemetry.update();
-
-
-
     }
 
     @Override
